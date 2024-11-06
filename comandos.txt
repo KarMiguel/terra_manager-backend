@@ -1,0 +1,13 @@
+npx prisma migrate dev --name inicial
+npx prisma generate
+npm run start:dev
+npx prisma migrate dev --schema=src/prisma/schema.prisma --name initial_migration
+npx prisma generate --schema=src/prisma/schema.prisma
+
+
+
+
+├── decorators/                 # Decoradores personalizados
+│   ├── filters/                # Filtros globais para tratamento de erros
+│   ├── guards/                 # Guards para autenticação/autorização
+│   └── utils/                  # Funções utilitárias compartilhadas
