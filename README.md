@@ -45,6 +45,9 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Acessar os endpoint
+- http://localhost:3000/api-docs
+  
 ## Run tests
 
 ```bash
