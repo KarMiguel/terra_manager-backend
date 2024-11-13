@@ -1,7 +1,9 @@
-import { Injectable, Query, Body, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Injectable, Query, Body, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
+import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Injectable()
 export abstract class CrudController<T> {
   constructor(private readonly service: CrudService<T>) {}
@@ -40,11 +42,6 @@ export abstract class CrudController<T> {
   @Get('findOne')
   async findOne(@Query('options') options?: Record<string, any>) {
     return this.service.findOne(options);
-  }
-
-  @Get(':id')
-  async findByPk(@Param('id') id: string, @Query('options') options?: Record<string, any>) {
-    return this.service.findByPk(+id, options);
   }
 
   @Delete(':id')

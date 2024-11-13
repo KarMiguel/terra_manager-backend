@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { calculatePagination } from '../src/common/utils/calculatePagination';
 import { Paginate } from '../src/common/utils/types';
-
+import { calculatePagination } from './common/utils/calculatePagination';
 
 @Injectable()
 export abstract class CrudService<T> {
@@ -40,6 +39,7 @@ export abstract class CrudService<T> {
       this.repository.findMany({ ...pagination, ...options }),
       this.repository.count({ where: options?.where }),
     ]);
+
     return { data, count };
   }
 
@@ -60,13 +60,6 @@ export abstract class CrudService<T> {
 
   async findOne(options: Record<string, any>) {
     return this.repository.findFirst({
-      ...options,
-    });
-  }
-
-  async findByPk(id: number, options?: Record<string, any>) {
-    return this.repository.findUnique({
-      where: { id },
       ...options,
     });
   }
