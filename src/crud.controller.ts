@@ -1,7 +1,7 @@
 import { Injectable, Query, Body, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
-import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Injectable()

@@ -1,9 +1,11 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { Usuario } from '@prisma/client';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { Role } from 'src/common/guards/roles.enum';
+import { BasicUser } from './interface/user.interface';
 
 @Injectable()
 export class AuthService {
@@ -41,42 +43,29 @@ export class AuthService {
   }
 
 
-  async register(data: {
-    email: string;
-    password: string;
-    idPlano?: number;
-    cpf: string;
-    name: string;
-    telefone?: string;
-    ativo?: boolean;
-    createdBy?: string;
-  }) {
-    // Verifica se o email já existe
+  async register(data: CreateUserDto): Promise<BasicUser> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
-
-    // Criptografa a senha e cria o usuário
+  
     const hashedPassword = await bcrypt.hash(data.password, 10);
+  
     const user = await this.userService.create({
+      name: data.name,
       email: data.email,
       password: hashedPassword,
-      role: 'user',
-      name: data.name,
-      cpf: data.cpf,
-      telefone: data.telefone ?? null,
-      ativo: data.ativo ?? true,
-      createdBy: data.createdBy ?? 'system',
-      dateCreated: new Date(),
-      dateModification: new Date(),
-      modifiedBy: data.createdBy ?? 'system',
-      idPlano: data.idPlano ?? null,
+      role: data.role || Role.USER,
+      cpf: data.cpf || null,
+      telefone: data.telefone || null,  
+      ativo: true,
     });
-
-    const { password, ...result } = user;
+  
     return {
-      user: result,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
     };
   }
 }

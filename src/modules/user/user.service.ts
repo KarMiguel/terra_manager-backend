@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CrudService } from '../../crud.service';
 import { Prisma, PrismaClient, Usuario } from '@prisma/client';
+import { BasicUser } from '../auth/interface/user.interface';
 
 @Injectable()
 export class UserService extends CrudService<Usuario> {
@@ -20,4 +21,25 @@ export class UserService extends CrudService<Usuario> {
       data,
     });
   }
+  
+  async findAllPaginated(
+    page: number,
+    size: number,
+  ): Promise<{ data: BasicUser[]; total: number }> {
+    const total = await this.prisma.usuario.count();
+
+    const data = await this.prisma.usuario.findMany({
+      skip: page, 
+      take: size, 
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
+
+    return { data, total };
+  }
+
 }
