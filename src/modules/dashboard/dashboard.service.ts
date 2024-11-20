@@ -53,7 +53,7 @@ export class DashboardService {
       const url = `${this.apiUrlCotacao}/${encodeURIComponent(symbol)}?token=${this.tokenCotacao}`;
       const response = await axios.get(url);
 
-      const resultado = response.data?.results?.[0]; // Corrigido para `results` em vez de `resultados`
+      const resultado = response.data?.results?.[0];
       if (!resultado) {
         throw new HttpException('Dados da commodity não encontrados', HttpStatus.NOT_FOUND);
       }
@@ -71,34 +71,6 @@ export class DashboardService {
       throw new HttpException(
         error.response?.data?.message || 'Erro ao buscar cotação da commodity',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  private readonly apiCulturaUrl = 'https://api.cnptia.embrapa.br/agritec/v2/culturas';
-  private readonly apiCulturaToken = 'd18039c1-df78-3bfb-9848-5e1197a74772';
-
-  async getCulturaById(): Promise<any> {
-    try {
-      const response = await axios.get(`${this.apiCulturaUrl}/${60}`, {
-        headers: {
-          accept: 'application/json',
-          Authorization: `Bearer ${this.apiCulturaToken}`,
-        },
-      });
-
-      if (response.status !== 200) {
-        throw new HttpException(
-          'Erro ao buscar dados da cultura',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      return response.data;
-    } catch (error) {
-      throw new HttpException(
-        `Erro: ${error.response?.data?.message || error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

@@ -23,8 +23,4 @@ export class DashboardController {
     return await this.dashboardService.getCommodityPrice(symbol);
   }
 
-  @Get('cultura')
-  async getCultura() {
-    return await this.dashboardService.getCulturaById();
-  }
 }
