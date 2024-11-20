@@ -3,7 +3,7 @@
   import { Usuario } from '@prisma/client';
   import { UserService } from './user.service';
   import { ApiTags } from '@nestjs/swagger';
-  import { BasicUser } from '../auth/interface/user.interface';
+  import { BasicUser } from './interface/user.interface';
 
   @Controller('/user')
   @ApiTags('User')

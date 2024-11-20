@@ -5,7 +5,7 @@ import { UserService } from '../user/user.service';
 import { Usuario } from '@prisma/client';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Role } from 'src/common/guards/roles.enum';
-import { BasicUser } from './interface/user.interface';
+import { BasicUser } from '../user/interface/user.interface';
 
 @Injectable()
 export class AuthService {

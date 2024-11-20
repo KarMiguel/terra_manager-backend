@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { CrudService } from '../../crud.service';
 import { Prisma, PrismaClient, Usuario } from '@prisma/client';
-import { BasicUser } from '../auth/interface/user.interface';
+import { BasicUser } from './interface/user.interface';
 
 @Injectable()
 export class UserService extends CrudService<Usuario> {
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'usuario');
   }
-
 
   async findByEmail(email: string): Promise<Usuario | null> {
     return this.prisma.usuario.findUnique({
