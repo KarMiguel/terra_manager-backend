@@ -74,5 +74,53 @@ export class DashboardService {
       );
     }
   }
-}
 
+  private readonly newsApiKey = 'd7bba934ec9545d98fbb26a9115172d6';
+  private readonly newsApiUrl = 'https://newsapi.org/v2/everything';
+
+  async getNewsByQuery(query: string, page: number = 1, pageSize: number = 10) {
+    try {
+      if (!query) {
+        throw new HttpException('O parâmetro "query" é obrigatório.', HttpStatus.BAD_REQUEST);
+      }
+
+      const url = `${this.newsApiUrl}?q=${(query)}&apiKey=${this.newsApiKey}&language=pt&page=${page}&pageSize=${pageSize}`;
+
+      console.log(`Fetching news with URL: ${url}`);
+
+      const response = await axios.get(url);
+
+      if (!response.data || !response.data.articles) {
+        console.error('Resposta da API:', response.data);
+        throw new HttpException('Nenhuma notícia encontrada.', HttpStatus.NOT_FOUND);
+      }
+
+      const { articles, totalResults } = response.data;
+
+      if (articles.length === 0) {
+        console.warn('Nenhuma notícia encontrada para a consulta:', query);
+        throw new HttpException('Nenhuma notícia encontrada.', HttpStatus.NOT_FOUND);
+      }
+
+      return {
+        totalResults,
+        currentPage: page,
+        pageSize,
+        articles: articles.map((article: any) => ({
+          titulo: article.title,
+          descricao: article.description,
+          url: article.url,
+          fonte: article.source?.name || 'Fonte desconhecida',
+          publicadoEm: article.publishedAt,
+        })),
+      };
+    } catch (error) {
+      console.error('Erro ao buscar notícias:', error.response?.data || error.message);
+
+      throw new HttpException(
+        error.response?.data?.message || 'Erro ao buscar notícias.',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
