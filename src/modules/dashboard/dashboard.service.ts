@@ -1,38 +1,39 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
-import { format } from 'path';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DashboardService {
-  private readonly apiClimaKey = 'a57060b1d446779adeabafbd162e5f4f';
-  private readonly apiClimaUrl = 'https://api.openweathermap.org/data/2.5/weather';
+  constructor(private readonly configService: ConfigService) {}
 
-  async getWeatherByCity(cityName: string) {
+  async getWeatherByCity(city: string, state?: string, country: string = 'BR') {
     try {
-      const url = `${this.apiClimaUrl}?q=${encodeURIComponent(
-        cityName,
-      )}&appid=${this.apiClimaKey}&units=metric&lang=pt_br`;
+      const apiClimaUrl = this.configService.get<string>('API_CLIMA_URL');
+      const apiClimaKey = this.configService.get<string>('API_CLIMA_KEY');
+
+      const query = [city, state, country].filter(Boolean).join(',');
+      const url = `${apiClimaUrl}?q=${encodeURIComponent(query)}&appid=${apiClimaKey}&units=metric&lang=pt_br`;
+
+      console.log(`Fetching weather data with URL: ${url}`);
 
       const response = await axios.get(url);
 
-      // Formatar os dados antes de retornar
       const {
         main: { temp, humidity },
         weather,
         wind: { speed },
         name,
       } = response.data;
-      
+
       return {
         cidade: name,
         temperatura: temp,
         humidade: humidity,
         condicao: weather[0]?.description || 'N/A',
         vento: `${speed} m/s`,
-        data: new Date()
+        data: new Date(),
       };
     } catch (error) {
-
       if (error.response) {
         throw new HttpException(
           error.response.data.message || 'Erro ao buscar dados do clima.',
@@ -45,12 +46,13 @@ export class DashboardService {
       );
     }
   }
-  private readonly apiUrlCotacao = 'https://brapi.dev/api/quote';
-  private readonly tokenCotacao = '4PR2z62mmaYrxCSCYCz9EL';
 
   async getCommodityPrice(symbol = 'SOJA') {
     try {
-      const url = `${this.apiUrlCotacao}/${encodeURIComponent(symbol)}?token=${this.tokenCotacao}`;
+      const apiUrlCotacao = this.configService.get<string>('API_COTACAO_URL');
+      const tokenCotacao = this.configService.get<string>('API_COTACAO_TOKEN');
+
+      const url = `${apiUrlCotacao}/${encodeURIComponent(symbol)}?token=${tokenCotacao}`;
       const response = await axios.get(url);
 
       const resultado = response.data?.results?.[0];
@@ -60,7 +62,7 @@ export class DashboardService {
 
       return {
         nome: resultado.longName || resultado.shortName || 'Não Encontrado',
-        simbolo: resultado.symbol, 
+        simbolo: resultado.symbol,
         precoAtual: resultado.regularMarketPrice,
         precoPassado: resultado.regularMarketPreviousClose,
         precoFuturo: resultado.regularMarketDayHigh,
@@ -75,51 +77,64 @@ export class DashboardService {
     }
   }
 
-  private readonly newsApiKey = 'd7bba934ec9545d98fbb26a9115172d6';
-  private readonly newsApiUrl = 'https://newsapi.org/v2/everything';
-
-  async getNewsByQuery(query: string, page: number = 1, pageSize: number = 10) {
+  async getNewsByQuery(query: string, pageSize: number = 5) {
     try {
       if (!query) {
         throw new HttpException('O parâmetro "query" é obrigatório.', HttpStatus.BAD_REQUEST);
       }
 
-      const url = `${this.newsApiUrl}?q=${(query)}&apiKey=${this.newsApiKey}&language=pt&page=${page}&pageSize=${pageSize}`;
+      const apiNewsUrl = this.configService.get<string>('API_NEWS_URL');
+      const newsApiKey = this.configService.get<string>('API_NEWS_KEY');
 
-      console.log(`Fetching news with URL: ${url}`);
+      let page = 1;
+      let filteredArticles: any[] = [];
+      const maxPages = 5;
 
-      const response = await axios.get(url);
+      while (filteredArticles.length < pageSize && page <= maxPages) {
+        const url = `${apiNewsUrl}?q=${encodeURIComponent(query)}&apiKey=${newsApiKey}&language=pt&page=${page}&pageSize=${pageSize}`;
 
-      if (!response.data || !response.data.articles) {
-        console.error('Resposta da API:', response.data);
-        throw new HttpException('Nenhuma notícia encontrada.', HttpStatus.NOT_FOUND);
+        console.log(`Fetching news with URL: ${url}`);
+
+        const response = await axios.get(url);
+
+        if (!response.data || !response.data.articles) {
+          console.warn('Nenhuma notícia encontrada na página:', page);
+          break;
+        }
+
+        const articles = response.data.articles.filter(article =>
+          article?.title !== "[Removed]" &&
+          article?.description !== "[Removed]" &&
+          article?.url !== "https://removed.com" &&
+          article?.source?.name !== "[Removed]",
+        );
+
+        filteredArticles = filteredArticles.concat(articles);
+        page++;
       }
 
-      const { articles, totalResults } = response.data;
+      filteredArticles = filteredArticles.slice(0, pageSize);
 
-      if (articles.length === 0) {
-        console.warn('Nenhuma notícia encontrada para a consulta:', query);
+      if (filteredArticles.length === 0) {
         throw new HttpException('Nenhuma notícia encontrada.', HttpStatus.NOT_FOUND);
       }
 
       return {
-        totalResults,
-        currentPage: page,
-        pageSize,
-        articles: articles.map((article: any) => ({
-          titulo: article.title,
-          descricao: article.description,
-          url: article.url,
+        totalResults: filteredArticles.length,
+        articles: filteredArticles.map(article => ({
+          titulo: article.title || 'Título não informado',
+          descricao: article.description || 'Descrição não informada',
+          url: article.url || 'URL não disponível',
           fonte: article.source?.name || 'Fonte desconhecida',
-          publicadoEm: article.publishedAt,
+          publicadoEm: article.publishedAt || 'Data não disponível',
         })),
       };
     } catch (error) {
       console.error('Erro ao buscar notícias:', error.response?.data || error.message);
 
       throw new HttpException(
-        error.response?.data?.message || 'Erro ao buscar notícias.',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        'Erro ao buscar notícias. Por favor, tente novamente mais tarde.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
