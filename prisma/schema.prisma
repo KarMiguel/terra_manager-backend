@@ -20,19 +20,19 @@ enum ROLE {
 }
 
 model Usuario {
-  id                 Int       @id @default(autoincrement())
-  password           String    @db.VarChar(100)
-  role               ROLE      @default(USER)
-  email              String    @unique @db.VarChar(100)
-  idPlano            Int?
-  cpf                String?   @unique @db.Char(11) 
-  name               String    @db.VarChar(100)
-  telefone           String?   @db.VarChar(14) 
-  ativo              Boolean   @default(true) 
-  createdBy          String?   @db.VarChar(255) 
-  dateCreated        DateTime  @default(now()) @db.Timestamp(0)
-  dateModification   DateTime  @updatedAt @db.Timestamp(0) 
-  modifiedBy         String?   @db.VarChar(255)
+  id                   Int       @id @default(autoincrement())
+  password             String    @db.VarChar(100)
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  role                 ROLE      @default(USER)
+  email                String    @unique @db.VarChar(100)
+  idPlano              Int?
+  cpf                  String?   @unique @db.Char(11)
+  name                 String    @db.VarChar(100)
+  telefone             String?   @db.VarChar(14)
+  ativo                Boolean   @default(true)
+  createdBy            String?   @db.VarChar(255)
+  dateCreated          DateTime  @default(now()) @db.Timestamp(0)
+  dateModification     DateTime  @updatedAt @db.Timestamp(0)
+  modifiedBy           String?   @db.VarChar(255)
 }
-
-
