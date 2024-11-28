@@ -41,10 +41,8 @@ export class AuthService {
       accessToken: accessToken,
       role: user.role,
       email: user.email,
-      name: user.name,
       telefone: user.telefone,
       cpf: user.cpf,
-      expiresAt: new Date(decodedToken.exp * 1000).toISOString(), 
       name: user.email,
       expires_at: new Date(decodedToken.exp * 1000).toISOString(),
     };
