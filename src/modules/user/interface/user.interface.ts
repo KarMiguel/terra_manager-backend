@@ -3,4 +3,6 @@ export interface BasicUser {
   email: string;
   name: string;
   role: string;
+  cpf:string;
+  telefone: string;
 }

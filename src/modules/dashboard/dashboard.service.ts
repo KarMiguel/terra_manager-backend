@@ -125,6 +125,7 @@ export class DashboardService {
           titulo: article.title || 'Título não informado',
           descricao: article.description || 'Descrição não informada',
           url: article.url || 'URL não disponível',
+          img: article.urlToImage || 'Imagem não disponível',
           fonte: article.source?.name || 'Fonte desconhecida',
           publicadoEm: article.publishedAt || 'Data não disponível',
         })),

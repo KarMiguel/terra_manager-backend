@@ -34,6 +34,8 @@ export class UserService extends CrudService<Usuario> {
         id: true,
         email: true,
         name: true,
+        cpf: true,
+        telefone: true,
         role: true,
       },
     });

@@ -35,10 +35,13 @@ export class AuthService {
     const decodedToken = this.jwtService.decode(accessToken) as { exp: number };
 
     return {
-      access_token: accessToken,
+      accessToken: accessToken,
       role: user.role,
-      name: user.email,
-      expires_at: new Date(decodedToken.exp * 1000).toISOString(), 
+      email: user.email,
+      name: user.name,
+      telefone: user.telefone,
+      cpf: user.cpf,
+      expiresAt: new Date(decodedToken.exp * 1000).toISOString(), 
     };
   }
 
@@ -66,6 +69,8 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      cpf: user.cpf,
+      telefone: user.telefone
     };
   }
 }
