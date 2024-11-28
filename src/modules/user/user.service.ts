@@ -21,6 +21,13 @@ export class UserService extends CrudService<Usuario> {
     });
   }
   
+  async updateUser(userId: number, data: Prisma.UsuarioUpdateInput): Promise<Usuario> {
+    return this.prisma.usuario.update({
+      where: { id: userId },
+      data,
+    });
+  }
+
   async findAllPaginated(
     page: number,
     size: number,
@@ -43,4 +50,14 @@ export class UserService extends CrudService<Usuario> {
     return { data, total };
   }
 
+  async findByResetPasswordToken(token: string): Promise<Usuario | null> {
+    return this.prisma.usuario.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+  }
 }
