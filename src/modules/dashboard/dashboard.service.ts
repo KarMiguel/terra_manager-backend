@@ -4,36 +4,53 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DashboardService {
+
   constructor(private readonly configService: ConfigService) {}
 
   async getWeatherByCity(city: string, state?: string, country: string = 'BR') {
     try {
       const apiClimaUrl = this.configService.get<string>('API_CLIMA_URL');
       const apiClimaKey = this.configService.get<string>('API_CLIMA_KEY');
-
+  
       const query = [city, state, country].filter(Boolean).join(',');
       const url = `${apiClimaUrl}?q=${encodeURIComponent(query)}&appid=${apiClimaKey}&units=metric&lang=pt_br`;
-
+  
       console.log(`Fetching weather data with URL: ${url}`);
-
+  
       const response = await axios.get(url);
-
-      const {
-        main: { temp, humidity },
-        weather,
-        wind: { speed },
-        name,
-      } = response.data;
-
+      const { main, weather, wind, name, coord } = response.data;
+  
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
+        query
+      )}&appid=${apiClimaKey}&units=metric&lang=pt_br`;
+  
+      const forecastResponse = await axios.get(forecastUrl);
+      const { list } = forecastResponse.data;
+  
+      const previsaoProximosDias = Object.values(
+        list.reduce((acc: any, entry: any) => {
+          const date = new Date(entry.dt * 1000).toISOString().split('T')[0]; 
+          if (!acc[date]) {
+            acc[date] = {
+              data: date,
+              temperaturaMin: entry.main.temp_min,
+              temperaturaMax: entry.main.temp_max,
+              condicao: entry.weather[0]?.description || 'N/A',
+              vento: `${entry.wind.speed} m/s`,
+              humidade: entry.main.humidity,
+            };
+          }
+          return acc;
+        }, {})
+      );
+  
       return {
-        cidade: name,
-        temperatura: temp,
-        humidade: humidity,
-        condicao: weather[0]?.description || 'N/A',
-        vento: `${speed} m/s`,
-        data: new Date(),
+        cidade: `${name} - ${state} - ${country}`,
+        condicaoAtual: weather[0]?.description || 'N/A',
+        previsaoProximosDias,
       };
     } catch (error) {
+      console.error('Error fetching weather data:', error);
       if (error.response) {
         throw new HttpException(
           error.response.data.message || 'Erro ao buscar dados do clima.',
@@ -46,7 +63,7 @@ export class DashboardService {
       );
     }
   }
-
+  
   async getCommodityPrice(symbol = 'SOJA') {
     try {
       const apiUrlCotacao = this.configService.get<string>('API_COTACAO_URL');
@@ -139,7 +156,7 @@ export class DashboardService {
       );
     }
   }
-  
+    
   async getSoilSummaryData(
     lon: number,
     lat: number,
@@ -194,41 +211,6 @@ export class DashboardService {
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  
-     
-  async function getWeatherForecast(city: string) {
-    const apiKey = 'a57060b1d446779adeabafbd162e5f4f';
-  
-    // Step 1: Get Coordinates
-    const geocodingUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)},BR&appid=${apiKey}`;
-    const geocodingResponse = await fetch(geocodingUrl);
-    const [location] = await geocodingResponse.json();
-    if (!location) {
-      throw new Error('Cidade não encontrada.');
-    }
-  
-    const { lat, lon } = location;
-  
-    // Step 2: Get Weather Forecast
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly&appid=${apiKey}&units=metric&lang=pt_br`;
-    const forecastResponse = await fetch(forecastUrl);
-    const forecastData = await forecastResponse.json();
-  
-    // Step 3: Format Data
-    const forecast = forecastData.daily.map((day: any) => ({
-      data: new Date(day.dt * 1000).toISOString(),
-      temperaturaMinima: day.temp.min,
-      temperaturaMaxima: day.temp.max,
-      humidade: day.humidity,
-      condicao: day.weather[0]?.description || 'N/A',
-      vento: `${day.wind_speed} m/s`
-    }));
-  
-    return {
-      cidade: location.name,
-      previsao: forecast
-    };
   }
-  
 }
-}
+

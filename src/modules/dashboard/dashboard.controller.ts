@@ -1,6 +1,7 @@
 import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
+import { Public } from 'src/common/guards/public.decorator';
 
 @Controller('/dashboard')
 @ApiTags('Dashboard')
@@ -8,7 +9,6 @@ export class DashboardController {
 
   constructor(private readonly dashboardService: DashboardService) {}
 
-  
   @Get('clima')
   @ApiQuery({ name: 'city', required: true, type: String, description: 'Nome da cidade', example: 'ARINOS' })
   @ApiQuery({ name: 'state', required: false, type: String, description: 'Estado da cidade (opcional)', example: 'MG' })
@@ -50,19 +50,9 @@ export class DashboardController {
     return await this.dashboardService.getNewsByQuery(parsedQuery, currentPageSize);
   }
 
- @Get('dados-solo')
- @ApiQuery({
-  name: 'log',
-  required: false,
-  type: String,
-  example: -45.9,
-})
-@ApiQuery({
-  name: 'lat',
-  required: false,
-  type: String,
-  example: -16.1,
-})
+  @Get('dados-solo')
+  @ApiQuery({ name: 'log', required: false, type: String, example: -45.9})
+  @ApiQuery({ name: 'lat', required: false, type: String, example: -16.1})
   @ApiQuery({
     name: 'properties',
     required: false,
