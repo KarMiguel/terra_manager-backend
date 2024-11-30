@@ -139,4 +139,96 @@ export class DashboardService {
       );
     }
   }
+  
+  async getSoilSummaryData(
+    lon: number,
+    lat: number,
+    properties: string[] = [
+      'clay', 'sand', 'silt', 'bdod', 'cec', 'nitrogen',
+      'phh2o', 'cfvo', 'ocd', 'ocs', 'soc'
+    ]
+  ) {
+    try {
+      const soilApiUrl = this.configService.get<string>('API_SOIL_URL');
+      if (!soilApiUrl) {
+        throw new Error('A variável de ambiente API_SOIL_URL não está configurada.');
+      }
+  
+      const propertyQuery = properties.map((prop) => `property=${prop}`).join('&');
+      const url = `${soilApiUrl}?lon=${lon}&lat=${lat}&${propertyQuery}`;
+  
+      console.log(`Buscando dados do solo de: ${url}`);
+  
+      const response = await axios.get(url);
+      const { geometry, properties: apiProperties, query_time_s } = response.data;
+  
+      if (!geometry || !apiProperties || !apiProperties.layers) {
+        throw new HttpException('Dados do solo não encontrados para a localização fornecida.', HttpStatus.NOT_FOUND);
+      }
+  
+      // Processar camadas
+      const layers = apiProperties.layers.filter((layer) =>
+        properties.includes(layer.name)
+      ).map((layer) => ({
+        nome: layer.name,
+        unidade: layer.unit_measure?.target_units || 'N/A',
+        profundidades: layer.depths.map((depth) => ({
+          faixa: depth.label || `${depth.range?.top_depth}-${depth.range?.bottom_depth} ${depth.range?.unit_depth || 'cm'}`,
+          media: depth.values?.mean || 'N/A',
+        })),
+      }));
+  
+      // Construir resposta resumida
+      return {
+        localizacao: {
+          longitude: geometry.coordinates[0],
+          latitude: geometry.coordinates[1],
+        },
+        propriedades: layers,
+        tempo_consulta_s: query_time_s,
+      };
+    } catch (error) {
+      console.error('Erro ao buscar dados de solo:', error.response?.data || error.message);
+      throw new HttpException(
+        error.response?.data?.message || 'Erro ao buscar dados do solo.',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  
+     
+  async function getWeatherForecast(city: string) {
+    const apiKey = 'a57060b1d446779adeabafbd162e5f4f';
+  
+    // Step 1: Get Coordinates
+    const geocodingUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)},BR&appid=${apiKey}`;
+    const geocodingResponse = await fetch(geocodingUrl);
+    const [location] = await geocodingResponse.json();
+    if (!location) {
+      throw new Error('Cidade não encontrada.');
+    }
+  
+    const { lat, lon } = location;
+  
+    // Step 2: Get Weather Forecast
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly&appid=${apiKey}&units=metric&lang=pt_br`;
+    const forecastResponse = await fetch(forecastUrl);
+    const forecastData = await forecastResponse.json();
+  
+    // Step 3: Format Data
+    const forecast = forecastData.daily.map((day: any) => ({
+      data: new Date(day.dt * 1000).toISOString(),
+      temperaturaMinima: day.temp.min,
+      temperaturaMaxima: day.temp.max,
+      humidade: day.humidity,
+      condicao: day.weather[0]?.description || 'N/A',
+      vento: `${day.wind_speed} m/s`
+    }));
+  
+    return {
+      cidade: location.name,
+      previsao: forecast
+    };
+  }
+  
+}
 }
