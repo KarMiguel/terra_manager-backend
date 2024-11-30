@@ -6,7 +6,7 @@ import { Public } from 'src/common/guards/public.decorator';
 @Controller('/dashboard')
 @ApiTags('Dashboard')
 export class DashboardController {
-
+  
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('clima')

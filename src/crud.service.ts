@@ -1,76 +1,126 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { Paginate } from '../src/common/utils/types';
-import { calculatePagination } from './common/utils/calculatePagination';
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { calculatePagination } from "./common/utils/calculatePagination";
+import { CrudServiceOptions, Paginate } from "./common/utils/types";
+import { plainToInstance } from "class-transformer";
+import { PrismaClient } from "@prisma/client";
 
 @Injectable()
-export abstract class CrudService<T> {
+export abstract class CrudService<T extends object, R extends object = T> {
   constructor(
     protected readonly prisma: PrismaClient,
     private readonly modelName: keyof PrismaClient,
+    private readonly responseClass: new () => R, 
   ) {}
 
   private get repository() {
     return this.prisma[this.modelName] as any;
   }
 
-  async create(data: T) {
-    return this.repository.create({ data });
+  protected mapToResponse(entity: T): R {
+    return plainToInstance(this.responseClass, entity, { excludeExtraneousValues: true });
   }
 
-  async update(id: number, data: Partial<T>) {
-    return this.repository.update({
-      where: { id },
-      data,
-    });
+  private filterOptions(options: CrudServiceOptions): Record<string, any> {
+    const validKeys = [
+      'where',
+      'include',
+      'orderBy',
+      'distinct',
+      'limit',
+      'skip',
+      'take',
+      'attributes',
+    ];
+
+    if (options.order) {
+      options.orderBy = options.order; 
+      delete options.order; 
+    }
+
+    return Object.keys(options).reduce((filtered, key) => {
+      if (validKeys.includes(key)) {
+        filtered[key] = options[key];
+      }
+      return filtered;
+    }, {} as Record<string, any>);
   }
 
-  async findAll(paginate?: Paginate, options?: Record<string, any>) {
+  async create(data: T): Promise<R> {
+    try {
+      const createdEntity = await this.repository.create({ data });
+      return this.mapToResponse(createdEntity);
+    } catch (error) {
+      throw new Error(`Erro ao criar a entidade: ${error.message}`);
+    }
+  }
+
+  async update(id: number, data: Partial<T>): Promise<R> {
+    try {
+      const updatedEntity = await this.repository.update({
+        where: { id },
+        data,
+      });
+      return this.mapToResponse(updatedEntity);
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Entidade com ID ${id} não encontrada.`);
+      }
+      throw error;
+    }
+  }
+
+  async findAll(
+    paginate?: Paginate,
+    options: CrudServiceOptions = {},
+  ): Promise<R[]> {
     const pagination = calculatePagination(paginate);
-    return this.repository.findMany({
+    const filteredOptions = this.filterOptions(options);
+    const entities = await this.repository.findMany({
       ...pagination,
-      ...options,
+      ...filteredOptions,
     });
+    return entities.map((entity) => this.mapToResponse(entity));
   }
 
-  async findAndCountAll(paginate?: Paginate, options?: Record<string, any>) {
+  async findAndCountAll(
+    paginate?: Paginate,
+    options: CrudServiceOptions = {},
+  ): Promise<{ data: R[]; count: number }> {
     const pagination = calculatePagination(paginate);
+    const filteredOptions = this.filterOptions(options);
+
     const [data, count] = await this.prisma.$transaction([
-      this.repository.findMany({ ...pagination, ...options }),
-      this.repository.count({ where: options?.where }),
+      this.repository.findMany({ ...pagination, ...filteredOptions }),
+      this.repository.count({ where: filteredOptions.where }),
     ]);
 
-    return { data, count };
+    return { data: data.map((entity) => this.mapToResponse(entity)), count };
   }
 
-  async isUnique(where: Record<string, any>, id?: number) {
-    const foundItem = await this.repository.findUnique({ where });
-
-    if (foundItem) {
-      return id && foundItem.id === id;
-    }
-    return true;
-  }
-
-  async count(options?: Record<string, any>) {
+  async count(options: CrudServiceOptions = {}): Promise<number> {
+    const filteredOptions = this.filterOptions(options);
     return this.repository.count({
-      where: options?.where,
+      where: filteredOptions.where,
     });
   }
 
-  async findOne(options: Record<string, any>) {
-    return this.repository.findFirst({
-      ...options,
+  async findOneById(id: number): Promise<R | null> {
+    const entity = await this.repository.findFirst({
+      where: { id },
     });
+  
+    return entity ? this.mapToResponse(entity) : null;
   }
+  
 
-  async delete(id: number) {
+  async delete(id: number): Promise<R> {
     try {
-      return await this.repository.delete({
+      const deletedEntity = await this.repository.delete({
         where: { id },
       });
+      return this.mapToResponse(deletedEntity);
     } catch (error) {
-      throw new BadRequestException('Item not found or already deleted');
+      throw new BadRequestException('Item não encontrado ou já deletado');
     }
   }
 }
