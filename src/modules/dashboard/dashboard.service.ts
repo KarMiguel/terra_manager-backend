@@ -1,11 +1,26 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
+import { cultivosData } from './data/cultivos.data';
 
 @Injectable()
 export class DashboardService {
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+  }
+  
+  private cultivos = cultivosData.culturas;
+
+  async getCultivoByName(nome: string) {
+    const cultivo = this.cultivos[nome.toLowerCase()];
+    if (!cultivo) {
+      throw new HttpException(
+        `Cultura "${nome}" não encontrada.`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return cultivo;
+  }
 
   async getWeatherByCity(city: string, state?: string, country: string = 'BR') {
     try {
@@ -212,5 +227,6 @@ export class DashboardService {
       );
     }
   }
+
 }
 
