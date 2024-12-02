@@ -4,36 +4,53 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DashboardService {
+
   constructor(private readonly configService: ConfigService) {}
 
   async getWeatherByCity(city: string, state?: string, country: string = 'BR') {
     try {
       const apiClimaUrl = this.configService.get<string>('API_CLIMA_URL');
       const apiClimaKey = this.configService.get<string>('API_CLIMA_KEY');
-
+  
       const query = [city, state, country].filter(Boolean).join(',');
       const url = `${apiClimaUrl}?q=${encodeURIComponent(query)}&appid=${apiClimaKey}&units=metric&lang=pt_br`;
-
+  
       console.log(`Fetching weather data with URL: ${url}`);
-
+  
       const response = await axios.get(url);
-
-      const {
-        main: { temp, humidity },
-        weather,
-        wind: { speed },
-        name,
-      } = response.data;
-
+      const { main, weather, wind, name, coord } = response.data;
+  
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
+        query
+      )}&appid=${apiClimaKey}&units=metric&lang=pt_br`;
+  
+      const forecastResponse = await axios.get(forecastUrl);
+      const { list } = forecastResponse.data;
+  
+      const previsaoProximosDias = Object.values(
+        list.reduce((acc: any, entry: any) => {
+          const date = new Date(entry.dt * 1000).toISOString().split('T')[0]; 
+          if (!acc[date]) {
+            acc[date] = {
+              data: date,
+              temperaturaMin: entry.main.temp_min,
+              temperaturaMax: entry.main.temp_max,
+              condicao: entry.weather[0]?.description || 'N/A',
+              vento: `${entry.wind.speed} m/s`,
+              humidade: entry.main.humidity,
+            };
+          }
+          return acc;
+        }, {})
+      );
+  
       return {
-        cidade: name,
-        temperatura: temp,
-        humidade: humidity,
-        condicao: weather[0]?.description || 'N/A',
-        vento: `${speed} m/s`,
-        data: new Date(),
+        cidade: `${name} - ${state} - ${country}`,
+        condicaoAtual: weather[0]?.description || 'N/A',
+        previsaoProximosDias,
       };
     } catch (error) {
+      console.error('Error fetching weather data:', error);
       if (error.response) {
         throw new HttpException(
           error.response.data.message || 'Erro ao buscar dados do clima.',
@@ -46,7 +63,7 @@ export class DashboardService {
       );
     }
   }
-
+  
   async getCommodityPrice(symbol = 'SOJA') {
     try {
       const apiUrlCotacao = this.configService.get<string>('API_COTACAO_URL');
@@ -139,4 +156,61 @@ export class DashboardService {
       );
     }
   }
+    
+  async getSoilSummaryData(
+    lon: number,
+    lat: number,
+    properties: string[] = [
+      'clay', 'sand', 'silt', 'bdod', 'cec', 'nitrogen',
+      'phh2o', 'cfvo', 'ocd', 'ocs', 'soc'
+    ]
+  ) {
+    try {
+      const soilApiUrl = this.configService.get<string>('API_SOIL_URL');
+      if (!soilApiUrl) {
+        throw new Error('A variável de ambiente API_SOIL_URL não está configurada.');
+      }
+  
+      const propertyQuery = properties.map((prop) => `property=${prop}`).join('&');
+      const url = `${soilApiUrl}?lon=${lon}&lat=${lat}&${propertyQuery}`;
+  
+      console.log(`Buscando dados do solo de: ${url}`);
+  
+      const response = await axios.get(url);
+      const { geometry, properties: apiProperties, query_time_s } = response.data;
+  
+      if (!geometry || !apiProperties || !apiProperties.layers) {
+        throw new HttpException('Dados do solo não encontrados para a localização fornecida.', HttpStatus.NOT_FOUND);
+      }
+  
+      // Processar camadas
+      const layers = apiProperties.layers.filter((layer) =>
+        properties.includes(layer.name)
+      ).map((layer) => ({
+        nome: layer.name,
+        unidade: layer.unit_measure?.target_units || 'N/A',
+        profundidades: layer.depths.map((depth) => ({
+          faixa: depth.label || `${depth.range?.top_depth}-${depth.range?.bottom_depth} ${depth.range?.unit_depth || 'cm'}`,
+          media: depth.values?.mean || 'N/A',
+        })),
+      }));
+  
+      // Construir resposta resumida
+      return {
+        localizacao: {
+          longitude: geometry.coordinates[0],
+          latitude: geometry.coordinates[1],
+        },
+        propriedades: layers,
+        tempo_consulta_s: query_time_s,
+      };
+    } catch (error) {
+      console.error('Erro ao buscar dados de solo:', error.response?.data || error.message);
+      throw new HttpException(
+        error.response?.data?.message || 'Erro ao buscar dados do solo.',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
+

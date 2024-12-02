@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 
-describe('DashboardController', () => {
+describe('DashboardController - Clima', () => {
   let dashboardController: DashboardController;
   let dashboardService: DashboardService;
 
@@ -14,7 +14,7 @@ describe('DashboardController', () => {
         {
           provide: DashboardService,
           useValue: {
-            getWeatherByCity: jest.fn(),
+            getWeatherByCity: jest.fn(), // Mock do serviço
           },
         },
       ],
@@ -24,33 +24,43 @@ describe('DashboardController', () => {
     dashboardService = module.get<DashboardService>(DashboardService);
   });
 
-  describe('getWeather', () => {
-    it('should call getWeatherByCity with the correct parameters and return the result', async () => {
-      const mockResponse = {
-        cidade: 'ARINOS',
-        temperatura: 25,
-        humidade: 60,
+  it('deve retornar os dados do clima ao chamar getWeather', async () => {
+    const mockResponse = {
+      cidade: 'ARINOS',
+      condicaoAtual: {
+        temperatura: 30,
         condicao: 'Ensolarado',
-        vento: '10 km/h',
-        data: new Date(),
-      };
+        humidade: 50,
+        vento: '15 km/h',
+      },
+      previsaoProximosDias: [
+        { dia: '2024-12-02', condicao: 'Nublado', temperatura: 28 },
+        { dia: '2024-12-03', condicao: 'Chuvoso', temperatura: 25 },
+      ],
+    };
 
-      jest.spyOn(dashboardService, 'getWeatherByCity').mockResolvedValue(mockResponse);
+    jest
+      .spyOn(dashboardService, 'getWeatherByCity')
+      .mockResolvedValue(mockResponse);
 
-      const city = 'ARINOS';
-      const state = 'MG';
-      const country = 'BR';
+    const result = await dashboardController.getWeather('ARINOS', 'MG', 'BR');
+    expect(result).toEqual(mockResponse);
+    expect(dashboardService.getWeatherByCity).toHaveBeenCalledWith(
+      'ARINOS',
+      'MG',
+      'BR',
+    );
+  });
 
-      const result = await dashboardController.getWeather(city, state, country);
+  it('deve lançar uma exceção ao não fornecer o parâmetro "city"', async () => {
+    await expect(
+      dashboardController.getWeather('', 'MG', 'BR'),
+    ).rejects.toThrow(HttpException);
 
-      expect(result).toEqual(mockResponse);
-      expect(dashboardService.getWeatherByCity).toHaveBeenCalledWith(city, state, country);
-    });
-
-    it('should throw an exception if city is not provided', async () => {
-      await expect(dashboardController.getWeather('', undefined, 'BR')).rejects.toThrowError(
-        new HttpException('O parâmetro "city" é obrigatório.', HttpStatus.BAD_REQUEST),
-      );
-    });
+    try {
+      await dashboardController.getWeather('', 'MG', 'BR');
+    } catch (error) {
+      expect(error.message).toBe('O parâmetro "city" é obrigatório.');
+    }
   });
 });
