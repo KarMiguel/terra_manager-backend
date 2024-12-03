@@ -28,18 +28,18 @@ export abstract class CrudController<T extends object, R extends object = T> {
     return this.service.update(+id, body);
   }
 
-  @Get()
-  async findAll(
-    @Query('options') options?: string,
-    @Query('paginate') paginate?: Paginate,
-  ): Promise<R[]> {
-    try {
-      const parsedOptions = options ? JSON.parse(options) : {};
-      return this.service.findAll(paginate, parsedOptions);
-    } catch (error) {
-      throw new Error('O parâmetro "options" deve ser um JSON válido.');
-    }
-  }
+  // @Get()
+  // async findAll(
+  //   @Query('options') options?: string,
+  //   @Query('paginate') paginate?: Paginate,
+  // ): Promise<R[]> {
+  //   try {
+  //     const parsedOptions = options ? JSON.parse(options) : {};
+  //     return this.service.findAll(paginate, parsedOptions);
+  //   } catch (error) {
+  //     throw new Error('O parâmetro "options" deve ser um JSON válido.');
+  //   }
+  // }
   
   @Get('list/count/all')
   async listCountAll(
@@ -54,10 +54,10 @@ export abstract class CrudController<T extends object, R extends object = T> {
   }
 }
 
-  @Get('count')
-  async count(@Query('options') options?: Record<string, any>): Promise<number> {
-    return this.service.count(options);
-  }
+  // @Get('count')
+  // async count(@Query('options') options?: Record<string, any>): Promise<number> {
+  //   return this.service.count(options);
+  // }
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<R | null> {

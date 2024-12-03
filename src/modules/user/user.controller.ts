@@ -21,25 +21,25 @@ export class UserController extends CrudController<Usuario, BasicUser> {
     return user;
   }
 
-  @Get('test')
-  async findAllBasic(
-    @Query('page') page?: string,
-    @Query('size') size?: string,
-    @Query('options') options?: string, 
-  ): Promise<{ data: BasicUser[]; total: number }> {
-    const pageNumber = parseInt(page || '1', 10); 
-    const sizeNumber = parseInt(size || '10', 10);
-    const skip = (pageNumber - 1) * sizeNumber;
+  // @Get('test')
+  // async findAllBasic(
+  //   @Query('page') page?: string,
+  //   @Query('size') size?: string,
+  //   @Query('options') options?: string, 
+  // ): Promise<{ data: BasicUser[]; total: number }> {
+  //   const pageNumber = parseInt(page || '1', 10); 
+  //   const sizeNumber = parseInt(size || '10', 10);
+  //   const skip = (pageNumber - 1) * sizeNumber;
 
-    let parsedOptions: Record<string, any> = {};
-    try {
-      if (options) {
-        parsedOptions = JSON.parse(options);
-      }
-    } catch (error) {
-      throw new Error('O parâmetro "options" deve ser um JSON válido.');
-    }
+  //   let parsedOptions: Record<string, any> = {};
+  //   try {
+  //     if (options) {
+  //       parsedOptions = JSON.parse(options);
+  //     }
+  //   } catch (error) {
+  //     throw new Error('O parâmetro "options" deve ser um JSON válido.');
+  //   }
 
-    return this.userService.findAllPaginated(skip, sizeNumber, parsedOptions);
-  }
+  //   return this.userService.findAllPaginated(skip, sizeNumber, parsedOptions);
+  // }
 }

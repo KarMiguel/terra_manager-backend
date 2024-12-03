@@ -69,18 +69,18 @@ export abstract class CrudService<T extends object, R extends object = T> {
     }
   }
 
-  async findAll(
-    paginate?: Paginate,
-    options: CrudServiceOptions = {},
-  ): Promise<R[]> {
-    const pagination = calculatePagination(paginate);
-    const filteredOptions = this.filterOptions(options);
-    const entities = await this.repository.findMany({
-      ...pagination,
-      ...filteredOptions,
-    });
-    return entities.map((entity) => this.mapToResponse(entity));
-  }
+  // async findAll(
+  //   paginate?: Paginate,
+  //   options: CrudServiceOptions = {},
+  // ): Promise<R[]> {
+  //   const pagination = calculatePagination(paginate);
+  //   const filteredOptions = this.filterOptions(options);
+  //   const entities = await this.repository.findMany({
+  //     ...pagination,
+  //     ...filteredOptions,
+  //   });
+  //   return entities.map((entity) => this.mapToResponse(entity));
+  // }
 
   async findAndCountAll(
     paginate?: Paginate,
@@ -95,13 +95,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
     ]);
 
     return { data: data.map((entity) => this.mapToResponse(entity)), count };
-  }
-
-  async count(options: CrudServiceOptions = {}): Promise<number> {
-    const filteredOptions = this.filterOptions(options);
-    return this.repository.count({
-      where: filteredOptions.where,
-    });
   }
 
   async findOneById(id: number): Promise<R | null> {

@@ -89,5 +89,31 @@ export class DashboardController {
       );
     }
   }
-  
+ 
+  @Get('dados-cultura')
+@ApiQuery({ 
+  name: 'nome', 
+  description: 'Cultura a ser buscada, como soja, milho, feijão', 
+  required: true, 
+  type: String, 
+  example: 'milho' 
+})
+
+async getCultivo(@Query('nome') nome: string) {
+  try {
+    if (!nome || typeof nome !== 'string') {
+      throw new HttpException(
+        'O parâmetro "nome" é obrigatório e deve ser uma string válida.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return await this.dashboardService.getCultivoByName(nome);
+  } catch (error) {
+    console.error(error.message);
+    throw new HttpException(
+      error.message || 'Erro ao buscar cultura.',
+      error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
 }

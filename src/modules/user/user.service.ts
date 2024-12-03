@@ -29,32 +29,30 @@ export class UserService extends CrudService<Usuario, BasicUser> {
     });
   }
 
-  async findAllPaginated(
-    skip: number,
-    size: number,
-    options: Record<string, any> = {},
-  ): Promise<{ data: BasicUser[]; total: number }> {
-    // Conta o total com base nos filtros fornecidos
-    const total = await this.prisma.usuario.count({
-      where: options.where, // Usa `where` do `options`, se fornecido
-    });
+  // async findAllPaginated(
+  //   skip: number,
+  //   size: number,
+  //   options: Record<string, any> = {},
+  // ): Promise<{ data: BasicUser[]; total: number }> {
 
-    // Filtra apenas os campos válidos para o Prisma
-    const validOptions = this.filterPrismaOptions(options);
+  //   const total = await this.prisma.usuario.count({
+  //     where: options.where, // Usa `where` do `options`, se fornecido
+  //   });
 
-    // Busca os dados paginados
-    const entities = await this.prisma.usuario.findMany({
-      skip,
-      take: size,
-      ...validOptions,
-    });
+  //   const validOptions = this.filterPrismaOptions(options);
 
-    const data = plainToInstance(BasicUser, entities, {
-      excludeExtraneousValues: true, 
-    });
+  //   const entities = await this.prisma.usuario.findMany({
+  //     skip,
+  //     take: size,
+  //     ...validOptions,
+  //   });
 
-    return { data, total };
-  }
+  //   const data = plainToInstance(BasicUser, entities, {
+  //     excludeExtraneousValues: true, 
+  //   });
+
+  //   return { data, total };
+  // }
 
   private filterPrismaOptions(options: Record<string, any>): Record<string, any> {
     const validKeys = ['where', 'orderBy', 'include', 'select', 'distinct', 'cursor'];
