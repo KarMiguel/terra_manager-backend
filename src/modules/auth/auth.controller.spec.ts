@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { Role } from 'src/common/guards/roles.enum'; // Importe o enum corretamente
+import { Role } from 'src/common/guards/roles.enum'; 
 import { ConflictException } from '@nestjs/common';
 
 describe('AuthController', () => {
@@ -45,10 +45,10 @@ describe('AuthController', () => {
 
   it('should return a register response', async () => {
     const result = {
-      id: 1,  // Corrigir aqui
+      id: 1,
       email: 'test@example.com',
       name: 'Test User',
-      role: Role.USER,  // Corrigir aqui
+      role: Role.USER,  
       cpf: '123.456.789-00',
       telefone: '123456789',
     };
