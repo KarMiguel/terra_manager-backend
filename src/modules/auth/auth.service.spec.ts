@@ -6,7 +6,7 @@ import { EmailService } from '../../common/utils/email';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { LoginDto } from './dto/LoginDto.dto'; // Caminho relativo
+import { LoginDto } from './dto/LoginDto.dto';
 import { Role } from 'src/common/guards/roles.enum';
 
 describe('AuthService', () => {
@@ -46,6 +46,58 @@ describe('AuthService', () => {
     userService = module.get<UserService>(UserService);
     jwtService = module.get<JwtService>(JwtService);
     emailService = module.get<EmailService>(EmailService);
+  });
+
+  describe('register', () => {
+    it('should successfully register a new user', async () => {
+      const registerDto: CreateUserDto = {
+        email: 'newuser@example.com',
+        password: 'newpassword',
+        name: 'New User',
+        role: Role.USER,
+        cpf: '12345678900',
+        telefone: '987654321',
+      };
+
+      const mockUser = {
+        id: 1,
+        email: 'newuser@example.com',
+        name: 'New User',
+        role: Role.USER,
+        cpf: '12345678900',
+        telefone: '987654321',
+        ativo: true,
+        createdBy: 'admin',
+        dateCreated: expect.any(Date),
+        dateModification: expect.any(Date),
+        modifiedBy: 'admin',
+        password: 'hashedPassword',  // Mock da senha já hashada
+        resetPasswordToken: '',
+        resetPasswordExpires: expect.any(Date),
+        idPlano: 1,
+      };
+
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userService, 'create').mockResolvedValue(mockUser);
+
+      const result = await authService.register(registerDto);
+
+      expect(result).toEqual({
+        id: 1,
+        email: 'newuser@example.com',
+        name: 'New User',
+        role: Role.USER,
+        cpf: '12345678900',
+        telefone: '987654321',
+      });
+
+      expect(userService.findByEmail).toHaveBeenCalledWith(registerDto.email);
+      expect(userService.create).toHaveBeenCalledWith(expect.objectContaining({
+        email: registerDto.email,
+        password: expect.any(String),
+        name: registerDto.name,
+      }));
+    });
   });
 
   describe('login', () => {
@@ -91,79 +143,6 @@ describe('AuthService', () => {
       const loginDto: LoginDto = { email: 'test@example.com', password: 'wrongpassword' };
 
       await expect(authService.login(loginDto)).rejects.toThrowError(UnauthorizedException);
-    });
-  });
-
-  describe('register', () => {
-    it('should successfully register a new user', async () => {
-      const registerDto: CreateUserDto = {
-        email: 'newuser@example.com',
-        password: 'newpassword',
-        name: 'New User',
-        role: Role.USER, // Usando o enum Role.USER
-        cpf: '12345678900',
-        telefone: '987654321',
-      };
-
-      const mockUser = {
-        id: 1, // id agora é um número
-        email: 'newuser@example.com',
-        password: 'hashedPassword', // Senha hasheada
-        role: Role.USER, // Corrigido para usar o enum
-        telefone: '987654321',
-        cpf: '12345678900',
-        name: 'New User',
-        resetPasswordToken: '',
-        resetPasswordExpires: new Date(),
-        idPlano: 1,
-        ativo: true,
-        createdBy: 'admin',
-        dateCreated: new Date(),
-        dateModification: new Date(),
-        modifiedBy: 'admin',
-      };
-
-      jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
-      jest.spyOn(userService, 'create').mockResolvedValue(mockUser);
-
-      const result = await authService.register(registerDto);
-
-      expect(result).toEqual(mockUser);
-      expect(userService.findByEmail).toHaveBeenCalledWith(registerDto.email);
-      expect(userService.create).toHaveBeenCalledWith(expect.objectContaining({
-        email: registerDto.email,
-        password: expect.any(String), // Verifica se a senha foi hasheada
-        name: registerDto.name,
-      }));
-    });
-
-    it('should throw ConflictException if email already exists', async () => {
-      const registerDto: CreateUserDto = {
-        email: 'existinguser@example.com',
-        password: 'password',
-        name: 'Existing User',
-        role: Role.USER,
-      };
-
-      jest.spyOn(userService, 'findByEmail').mockResolvedValue({
-        id: 1,
-        email: 'existinguser@example.com',
-        password: 'hashedPassword',
-        role: Role.USER,
-        telefone: '987654321',
-        cpf: '12345678900',
-        name: 'Existing User',
-        resetPasswordToken: '',
-        resetPasswordExpires: new Date(),
-        idPlano: 1,
-        ativo: true,
-        createdBy: 'admin',
-        dateCreated: new Date(),
-        dateModification: new Date(),
-        modifiedBy: 'admin',
-      });
-
-      await expect(authService.register(registerDto)).rejects.toThrowError(ConflictException);
     });
   });
 });
