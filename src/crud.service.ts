@@ -45,20 +45,23 @@ export abstract class CrudService<T extends object, R extends object = T> {
     }, {} as Record<string, any>);
   }
 
-  async create(data: T): Promise<R> {
-    try {
-      const createdEntity = await this.repository.create({ data });
-      return this.mapToResponse(createdEntity);
-    } catch (error) {
-      throw new Error(`Erro ao criar a entidade: ${error.message}`);
-    }
-  }
+  // async create(data: DTO): Promise<R> {
+  //   try {
+  //     const createdEntity = await this.repository.create({ data });
+  //     return this.mapToResponse(createdEntity);
+  //   } catch (error) {
+  //     throw new Error(`Erro ao criar a entidade: ${error.message}`);
+  //   }
+  // }
 
   async update(id: number, data: Partial<T>): Promise<R> {
     try {
       const updatedEntity = await this.repository.update({
         where: { id },
-        data,
+        data: {
+          ...data,
+          dateModification: new Date(), 
+        },
       });
       return this.mapToResponse(updatedEntity);
     } catch (error) {
@@ -115,5 +118,29 @@ export abstract class CrudService<T extends object, R extends object = T> {
     } catch (error) {
       throw new BadRequestException('Item não encontrado ou já deletado');
     }
+  }
+
+  async findAndCountByUserId(
+    userId: number,
+    paginate?: Paginate,
+    options: CrudServiceOptions = {},
+  ): Promise<{ data: R[]; count: number }> {
+    const pagination = calculatePagination(paginate);
+  
+    const where = {
+      ...options.where,
+      idUsuario: userId,
+    };
+  
+    const [entities, count] = await this.prisma.$transaction([
+      this.repository.findMany({ ...pagination, where }),
+      this.repository.count({ where }),
+    ]);
+  
+    const transformedData = plainToInstance(this.responseClass, entities, {
+      excludeExtraneousValues: true,
+    }) as R[]; 
+  
+    return { data: transformedData, count };
   }
 }

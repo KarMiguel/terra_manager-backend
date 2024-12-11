@@ -6,7 +6,7 @@ import { UserService } from '../user/user.service';
 import { Usuario } from '@prisma/client';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Role } from 'src/common/guards/roles.enum';
-import { BasicUser } from '../user/interface/user.interface';
+import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
 
 @Injectable()
@@ -49,7 +49,7 @@ export class AuthService {
   }
 
 
-  async register(data: CreateUserDto): Promise<BasicUser> {
+  async register(data: CreateUserDto): Promise<UserModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
       throw new ConflictException('User already exists');

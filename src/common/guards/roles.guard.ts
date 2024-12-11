@@ -1,5 +1,9 @@
-// src/guards/roles.guard.ts
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from './roles.enum';
 
@@ -11,22 +15,21 @@ export class RolesGuard implements CanActivate {
     const requiredRoles = this.reflector.get<Role[]>('roles', context.getHandler());
   
     if (!requiredRoles) {
-      return true;
+      return true; // Nenhuma função exigida para esta rota
     }
   
     const { user } = context.switchToHttp().getRequest();
-    console.log('Usuário:', user);
-  
+    console.log('Usuário autenticado:', user);
+
     if (!user || !user.role) {
-      throw new UnauthorizedException('User not authenticated');
+      throw new UnauthorizedException('Usuário não autenticado ou sem função definida.');
     }
   
     const hasRole = requiredRoles.some((role) => user.role === role);
     if (!hasRole) {
-      throw new UnauthorizedException('Insufficient role permissions');
+      throw new UnauthorizedException('Permissões insuficientes para acessar esta rota.');
     }
   
-    return hasRole;
+    return true;
   }
-  
 }

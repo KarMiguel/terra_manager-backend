@@ -2,12 +2,12 @@ import { Controller, Get, NotFoundException, Query, UseGuards } from '@nestjs/co
 import { CrudController } from '../../crud.controller';
 import { Usuario } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
-import { BasicUser } from './interface/user.interface';
+import { UserModel } from './interface/user.interface';
 import { UserService } from './user.service';
 
 @Controller('/user')
 @ApiTags('User')
-export class UserController extends CrudController<Usuario, BasicUser> {
+export class UserController extends CrudController<Usuario, UserModel> {
   constructor(private readonly userService: UserService) {
     super(userService);
   }

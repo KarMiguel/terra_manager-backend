@@ -35,4 +35,27 @@ model Usuario {
   dateCreated          DateTime  @default(now()) @db.Timestamp(0)
   dateModification     DateTime  @updatedAt @db.Timestamp(0)
   modifiedBy           String?   @db.VarChar(255)
+  
+  fazendas             Fazenda[] 
+}
+
+model Fazenda {
+  id                   Int       @id @default(autoincrement())
+  nome                 String    @db.VarChar(255)
+  latitude             Float
+  longitude            Float
+  areaTotal            Float? 
+  cnpj                 String?   @unique @db.VarChar(14)
+  soloPredominante     String?   @db.VarChar(255)
+  cultivoPredominante  String?   @db.VarChar(255)
+  municipio            String?   @db.VarChar(255)
+  uf                   String?   @db.VarChar(2)
+  idUsuario            Int
+  ativo                Boolean   @default(true)
+  createdBy            String?   @db.VarChar(255)
+  dateCreated          DateTime  @default(now())
+  dateModification     DateTime  @updatedAt
+  modifiedBy           String?   @db.VarChar(255)
+
+  usuario              Usuario   @relation(fields: [idUsuario], references: [id]) 
 }

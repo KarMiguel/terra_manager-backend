@@ -8,20 +8,25 @@ import {
   Post,
   Put,
   UseGuards,
+  Type,
+  Req,
 } from '@nestjs/common';
 import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { ApiBody, ApiQuery } from '@nestjs/swagger';
 
 @UseGuards(JwtAuthGuard)
 @Injectable()
 export abstract class CrudController<T extends object, R extends object = T> {
-  constructor(private readonly service: CrudService<T, R>) {}
-  
-  @Post()
-  async create(@Body() body: T): Promise<R> {
-    return this.service.create(body);
-  }
+  constructor(
+    private readonly service: CrudService<T, R>,
+  ) {}
+
+  // @Post()  
+  // async create(@Body() body: any): Promise<R> {
+  //   return this.service.create(body as any);
+  // }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() body: Partial<T>): Promise<R> {
@@ -42,6 +47,12 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
   
   @Get('list/count/all')
+  @ApiQuery({
+    name: 'options',
+    required: false,
+    description: 'Opções de filtro em formato JSON',
+    type: String,
+  })
   async listCountAll(
     @Query('options') options?: string,
     @Query('paginate') paginate?: Paginate,
@@ -53,6 +64,8 @@ export abstract class CrudController<T extends object, R extends object = T> {
     throw new Error('O parâmetro "options" deve ser um JSON válido.');
   }
 }
+
+
 
   // @Get('count')
   // async count(@Query('options') options?: Record<string, any>): Promise<number> {
@@ -77,4 +90,36 @@ export abstract class CrudController<T extends object, R extends object = T> {
   async delete(@Param('id') id: string): Promise<R> {
     return this.service.delete(+id);
   }
+  @Get('list/user')
+  @ApiQuery({
+    name: 'options',
+    required: false,
+    description: 'Opções de filtro em formato JSON',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'paginate',
+    required: false,
+    description: 'Opções de paginação (page e pageSize)',
+    type: Object,
+  })
+  async listByUser(
+    @Req() req,
+    @Query('options') options?: string,
+    @Query('paginate') paginate?: Paginate,
+  ): Promise<{ data: R[]; count: number }> {
+    const userId = req.user?.id;
+  
+    if (!userId) {
+      throw new Error('ID do usuário não encontrado no token.');
+    }
+  
+    try {
+      const parsedOptions = options ? JSON.parse(options) : {};
+      return this.service.findAndCountByUserId(userId, paginate, parsedOptions);
+    } catch (error) {
+      throw new Error('O parâmetro "options" deve ser um JSON válido.');
+    }
+  }
+    
 }

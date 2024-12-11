@@ -8,12 +8,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false, 
-      secretOrKey: configService.get<string>('JWT_SECURITY'), 
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECURITY'),
     });
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, username: payload.username, role: payload.role };
+    console.log('Payload JWT Validado:', payload);
+    if (!payload.sub || !payload.email) {
+      throw new Error('Token JWT inválido: campos obrigatórios ausentes.');
+    }
+
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

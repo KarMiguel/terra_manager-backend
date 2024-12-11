@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-export class BasicUser {
+export class UserModel {
   @Expose()
   id!: number;
 
