@@ -64,9 +64,18 @@ export class ProdutoEstoqueController extends CrudController<Fazenda, ProdutoEst
     if (!idUsuario) {
       throw new BadRequestException('Usuário não autenticado.');
     }
-  
-    const produtos = await this.produtoEstoqueService.listarPorFazenda(idFazenda, idUsuario);
-    return plainToInstance(ProdutoEstoqueModel, produtos, { excludeExtraneousValues: true });
-  } 
+
+    const { produtos, count } = await this.produtoEstoqueService.listarPorFazenda(
+      idFazenda,
+      idUsuario,
+    );
+
+    return {
+      produtos: plainToInstance(ProdutoEstoqueModel, produtos, {
+        excludeExtraneousValues: true,
+      }),
+      count,
+    };
+  }
 
 }

@@ -70,17 +70,20 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
   
     if (fazenda.idUsuario !== idUsuario) {
       throw new BadRequestException(
-        `O usuário logado não tem permissão para acessar estoque desta fazenda.`
+        `O usuário logado não tem permissão para acessar o estoque desta fazenda.`,
       );
     }
   
     const produtos = await this.prisma.produtosEstoque.findMany({
       where: { idFazenda },
     });
-    
-    return produtos;
-  }
   
+    const count = await this.prisma.produtosEstoque.count({
+      where: { idFazenda },
+    });
+  
+    return { produtos, count };
+  } 
   
 }
 
