@@ -1,0 +1,28 @@
+export enum CategoriaEstoqueEnum {
+    DEFENSIVOS = "DEFENSIVOS",
+    FERTILIZANTES = "FERTILIZANTES",
+    SEMENTES = "SEMENTES",
+    CONDICIONADORES = "CONDICIONADORES",
+    FERRAMENTAS = "FERRAMENTAS",
+    EQUIPAMENTOS = "EQUIPAMENTOS",
+    EMBALAGENS = "EMBALAGENS",
+  }
+  
+  export enum StatusEstoqueEnum {
+    DISPONIVEL = "DISPONIVEL",
+    EM_USO = "EM_USO",
+    ESGOTADO = "ESGOTADO",
+    DANIFICADO = "DANIFICADO",
+    EXPIRADO = "EXPIRADO",
+  }
+  
+  export enum UnidadeMedidaEnum {
+    QUILO = "QUILO",
+    GRAMA = "GRAMA",
+    LITRO = "LITRO",
+    METRO = "METRO",
+    CENTIMETRO = "CENTIMETRO",
+    METRO_QUADRADO = "METRO_QUADRADO",
+    METRO_CUBICO = "METRO_CUBICO",
+    TONELADA = "TONELADA",
+  }

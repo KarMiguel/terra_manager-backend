@@ -19,6 +19,35 @@ enum ROLE {
   MODERATOR
 }
 
+enum CategoriaEstoqueEnum {
+  DEFENSIVOS
+  FERTILIZANTES
+  SEMENTES
+  CONDICIONADORES
+  FERRAMENTAS
+  EQUIPAMENTOS
+  EMBALAGENS
+}
+
+enum StatusEstoqueEnum {
+  DISPONIVEL
+  EM_USO
+  ESGOTADO
+  DANIFICADO
+  EXPIRADO
+}
+
+enum UnidadeMedidaEnum {
+  QUILO
+  GRAMA
+  LITRO
+  METRO
+  CENTIMETRO
+  METRO_QUADRADO
+  METRO_CUBICO
+  TONELADA
+}
+
 model Usuario {
   id                   Int       @id @default(autoincrement())
   password             String    @db.VarChar(100)
@@ -58,4 +87,27 @@ model Fazenda {
   modifiedBy           String?   @db.VarChar(255)
 
   usuario              Usuario   @relation(fields: [idUsuario], references: [id]) 
+  produtosEstoque      produtosEstoque[]
+}
+
+model produtosEstoque {
+  id                   Int       @id @default(autoincrement())
+  descricao            String?
+  marca                String?
+  nome                 String?
+  quantidade           Int       @default(0)
+  valorUnitario        Float     @default(0.0)
+  unidadeMedida        UnidadeMedidaEnum
+  fornecedor           String?
+  dataValidade         DateTime?
+  categoria            CategoriaEstoqueEnum
+  status               StatusEstoqueEnum
+  idFazenda            Int
+  ativo                Boolean   @default(true)
+  createdBy            String?   @db.VarChar(255)
+  dateCreated          DateTime  @default(now())
+  dateModification     DateTime  @updatedAt
+  modifiedBy           String?   @db.VarChar(255)
+
+  fazenda              Fazenda   @relation(fields: [idFazenda], references: [id])
 }

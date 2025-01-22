@@ -29,10 +29,15 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: Partial<T>): Promise<R> {
-    return this.service.update(+id, body);
+  async update(
+    @Param('id') id: string,
+    @Body() body: Partial<T>,
+    @Req() req,
+  ): Promise<R> {
+    const modifiedBy = req.user?.email || 'unknown'; 
+    return this.service.update(+id, body, modifiedBy);
   }
-
+  
   // @Get()
   // async findAll(
   //   @Query('options') options?: string,
@@ -90,36 +95,37 @@ export abstract class CrudController<T extends object, R extends object = T> {
   async delete(@Param('id') id: string): Promise<R> {
     return this.service.delete(+id);
   }
-  @Get('list/user')
-  @ApiQuery({
-    name: 'options',
-    required: false,
-    description: 'Opções de filtro em formato JSON',
-    type: String,
-  })
-  @ApiQuery({
-    name: 'paginate',
-    required: false,
-    description: 'Opções de paginação (page e pageSize)',
-    type: Object,
-  })
-  async listByUser(
-    @Req() req,
-    @Query('options') options?: string,
-    @Query('paginate') paginate?: Paginate,
-  ): Promise<{ data: R[]; count: number }> {
-    const userId = req.user?.id;
   
-    if (!userId) {
-      throw new Error('ID do usuário não encontrado no token.');
-    }
+  // @Get('list/user')
+  // @ApiQuery({
+  //   name: 'options',
+  //   required: false,
+  //   description: 'Opções de filtro em formato JSON',
+  //   type: String,
+  // })
+  // @ApiQuery({
+  //   name: 'paginate',
+  //   required: false,
+  //   description: 'Opções de paginação (page e pageSize)',
+  //   type: Object,
+  // })
+  // async listByUser(
+  //   @Req() req,
+  //   @Query('options') options?: string,
+  //   @Query('paginate') paginate?: Paginate,
+  // ): Promise<{ data: R[]; count: number }> {
+  //   const userId = req.user?.id;
   
-    try {
-      const parsedOptions = options ? JSON.parse(options) : {};
-      return this.service.findAndCountByUserId(userId, paginate, parsedOptions);
-    } catch (error) {
-      throw new Error('O parâmetro "options" deve ser um JSON válido.');
-    }
-  }
+  //   if (!userId) {
+  //     throw new Error('ID do usuário não encontrado no token.');
+  //   }
+  
+  //   try {
+  //     const parsedOptions = options ? JSON.parse(options) : {};
+  //     return this.service.findAndCountByUserId(userId, paginate, parsedOptions);
+  //   } catch (error) {
+  //     throw new Error('O parâmetro "options" deve ser um JSON válido.');
+  //   }
+  // }
     
 }

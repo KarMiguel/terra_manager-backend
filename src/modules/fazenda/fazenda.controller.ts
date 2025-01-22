@@ -11,10 +11,8 @@ import { Paginate } from 'src/common/utils/types';
 @Controller('fazenda')
 export class FazendaController extends CrudController<Fazenda, FazendaModel> {
   constructor(private readonly fazendaService: FazendaService) {
-    super(fazendaService);
-    
+    super(fazendaService); 
   }
-
   
   @Post()
   @ApiOperation({ summary: 'Cria uma nova fazenda' })

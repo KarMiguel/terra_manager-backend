@@ -54,13 +54,14 @@ export abstract class CrudService<T extends object, R extends object = T> {
   //   }
   // }
 
-  async update(id: number, data: Partial<T>): Promise<R> {
+  async update(id: number, data: Partial<T>, modifiedBy: string): Promise<R> {
     try {
       const updatedEntity = await this.repository.update({
         where: { id },
         data: {
           ...data,
-          dateModification: new Date(), 
+          modifiedBy, // Adiciona o usuário que modificou
+          dateModification: new Date(), // Atualiza a data de modificação
         },
       });
       return this.mapToResponse(updatedEntity);
@@ -71,7 +72,7 @@ export abstract class CrudService<T extends object, R extends object = T> {
       throw error;
     }
   }
-
+  
   // async findAll(
   //   paginate?: Paginate,
   //   options: CrudServiceOptions = {},
