@@ -36,27 +36,30 @@ export class FazendaService extends CrudService<Fazenda, FazendaModel> {
     });
   }
 
-  
   async findAndCountByUser(
     userId: number,
     paginate?: Paginate,
     options: Record<string, any> = {},
   ): Promise<{ data: any[]; count: number }> {
-    const pagination = calculatePagination(paginate);
-
+    const pagination = calculatePagination(paginate || { page: 1, pageSize: 10 });
+  
     const where = {
       ...options.where,
       idUsuario: userId, 
     };
-
+  
     const [data, count] = await this.prisma.$transaction([
-      this.prisma.fazenda.findMany({ ...pagination, where }),
+      this.prisma.fazenda.findMany({
+        ...pagination,
+        where,
+        orderBy: options.order || undefined, 
+      }),
       this.prisma.fazenda.count({ where }),
     ]);
-
+  
     return { data, count };
   }
-
+  
   
 }
 

@@ -18,3 +18,5 @@ export type CrudServiceOptions = {
   attributes?: string[];
   [key: string]: any; // Permite extensibilidade
 };
+
+

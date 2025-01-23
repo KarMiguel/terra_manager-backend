@@ -51,7 +51,7 @@ export abstract class CrudController<T extends object, R extends object = T> {
   //   }
   // }
   
-  @Get('list/count/all')
+  @Get('list')
   @ApiQuery({
     name: 'options',
     required: false,

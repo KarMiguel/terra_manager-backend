@@ -20,7 +20,7 @@ export abstract class CrudService<T extends object, R extends object = T> {
     return plainToInstance(this.responseClass, entity, { excludeExtraneousValues: true });
   }
 
-  private filterOptions(options: CrudServiceOptions): Record<string, any> {
+  protected filterOptions(options: CrudServiceOptions): Record<string, any> {
     const validKeys = [
       'where',
       'include',
@@ -31,12 +31,22 @@ export abstract class CrudService<T extends object, R extends object = T> {
       'take',
       'attributes',
     ];
-
+  
     if (options.order) {
-      options.orderBy = options.order; 
+      const orderBy = Object.entries(options.order).map(([field, direction]) => {
+        if (typeof direction === 'string') {
+          const dir = direction.toLowerCase();
+          if (dir === 'asc' || dir === 'desc') {
+            return { [field]: dir };
+          }
+        }
+        return { [field]: 'asc' };
+      });
+  
+      options.orderBy = orderBy.length === 1 ? orderBy[0] : orderBy;
       delete options.order; 
     }
-
+  
     return Object.keys(options).reduce((filtered, key) => {
       if (validKeys.includes(key)) {
         filtered[key] = options[key];
@@ -44,6 +54,7 @@ export abstract class CrudService<T extends object, R extends object = T> {
       return filtered;
     }, {} as Record<string, any>);
   }
+  
 
   // async create(data: DTO): Promise<R> {
   //   try {
