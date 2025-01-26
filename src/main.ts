@@ -23,14 +23,26 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // Configuração do Swagger
   const config = new DocumentBuilder()
     .setTitle('API Documentation')
     .setDescription('API documentation for the application')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'access-token', // Identificador do esquema de autenticação
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api-docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true, // Manter o token inserido entre requisições
+    },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }
