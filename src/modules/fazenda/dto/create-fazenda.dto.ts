@@ -22,7 +22,7 @@ export class CreateFazendaDto {
   @IsNumber()
   areaTotal?: number;
 
-  @ApiProperty({ description: 'CNPJ da fazenda', example: '12345678000195' })
+  @ApiProperty({ description: 'CNPJ da fazenda', example: '12343778000195' })
   @IsOptional()
   @IsString()
   cnpj?: string;

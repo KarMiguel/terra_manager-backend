@@ -14,15 +14,21 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
   }
 
   
-  async createProdutoEstoque(data: CreateProdutoEstoqueDto, createdBy: string) {
-    return this.prisma.produtosEstoque.create({
+  async createProdutoEstoque(
+    data: CreateProdutoEstoqueDto,
+    createdBy: string,
+  ): Promise<ProdutoEstoqueModel> {
+    const createdProduto = await this.prisma.produtosEstoque.create({
       data: {
         ...data,
         createdBy,
       },
     });
+
+    return plainToInstance(ProdutoEstoqueModel, createdProduto, {
+      excludeExtraneousValues: true, 
+    });
   }
-  
 
   async aumentarQuantidade(id: number, quantidade: number) {
     if (quantidade <= 0) {

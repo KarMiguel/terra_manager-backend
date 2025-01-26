@@ -5,6 +5,7 @@ import { Prisma, PrismaClient, Fazenda } from '@prisma/client';
 import { CreateFazendaDto } from './dto/create-fazenda.dto';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
 import { Paginate } from 'src/common/utils/types';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class FazendaService extends CrudService<Fazenda, FazendaModel> {
@@ -12,9 +13,13 @@ export class FazendaService extends CrudService<Fazenda, FazendaModel> {
     super(prisma, 'fazenda', FazendaModel);
   }
 
-  async createFazenda(createFazendaDto: CreateFazendaDto, userId: number, createdBy: string): Promise<Fazenda> {
+  async createFazenda(
+    createFazendaDto: CreateFazendaDto,
+    userId: number,
+    createdBy: string,
+  ): Promise<FazendaModel> {
     if (!userId) {
-      throw new Error('O ID do usuário é obrigatório para criar uma fazenda.');
+      throw new BadRequestException('O ID do usuário é obrigatório para criar uma fazenda.');
     }
 
     if (createFazendaDto.cnpj) {
@@ -23,16 +28,20 @@ export class FazendaService extends CrudService<Fazenda, FazendaModel> {
       });
 
       if (existingFazenda) {
-        throw new BadRequestException(`CNPJ ${createFazendaDto.cnpj} já está registrado.`);
+        throw new BadRequestException(`O CNPJ ${createFazendaDto.cnpj} já está registrado.`);
       }
     }
 
-    return this.prisma.fazenda.create({
+    const createdFazenda = await this.prisma.fazenda.create({
       data: {
         ...createFazendaDto,
-        idUsuario: userId, 
-        createdBy, 
+        idUsuario: userId,
+        createdBy,
       },
+    });
+
+    return plainToInstance(FazendaModel, createdFazenda, {
+      excludeExtraneousValues: true, 
     });
   }
 

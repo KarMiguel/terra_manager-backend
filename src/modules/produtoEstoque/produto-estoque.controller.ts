@@ -2,7 +2,7 @@ import { ProdutoEstoqueModel } from './interface/produto-estoque.interface';
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { CrudController } from 'src/crud.controller';
 import { Fazenda } from '@prisma/client';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProdutoEstoqueService } from './produto-estoque.service';
 import { CreateProdutoEstoqueDto } from './dto/create-produto-estoque.dto';
 import { plainToInstance } from 'class-transformer';
@@ -10,6 +10,7 @@ import { Paginate } from 'src/common/utils/types';
 
 @ApiTags('Produto Estoque') 
 @Controller('produto-estoque')
+@ApiBearerAuth('access-token')
 export class ProdutoEstoqueController extends CrudController<Fazenda, ProdutoEstoqueModel> {
   constructor(private readonly produtoEstoqueService: ProdutoEstoqueService) {
     super(produtoEstoqueService);

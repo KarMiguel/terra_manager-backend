@@ -3,12 +3,12 @@ import { CrudController } from 'src/crud.controller';
 import { FazendaModel } from './interface/fazenda.interface';
 import { FazendaService } from './fazenda.service';
 import { Fazenda } from '@prisma/client';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateFazendaDto } from './dto/create-fazenda.dto';
-import { Paginate } from 'src/common/utils/types';
 
 @ApiTags('Fazenda') 
 @Controller('fazenda')
+@ApiBearerAuth('access-token')
 export class FazendaController extends CrudController<Fazenda, FazendaModel> {
   constructor(private readonly fazendaService: FazendaService) {
     super(fazendaService); 

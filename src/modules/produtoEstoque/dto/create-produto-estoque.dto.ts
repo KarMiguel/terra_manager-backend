@@ -31,7 +31,7 @@ export class CreateProdutoEstoqueDto {
 
   @ApiProperty({
     description: 'Unidade de medida do produto',
-    example: 'UNIDADE',
+    example: 'QUILO',
     enum: UnidadeMedidaEnum,
   })
   @IsEnum(UnidadeMedidaEnum)
@@ -54,7 +54,7 @@ export class CreateProdutoEstoqueDto {
 
   @ApiProperty({
     description: 'Categoria do produto no estoque',
-    example: 'INSUMOS',
+    example: 'DEFENSIVOS',
     enum: CategoriaEstoqueEnum,
   })
   @IsEnum(CategoriaEstoqueEnum)
