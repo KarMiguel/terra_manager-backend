@@ -1,18 +1,18 @@
 // Importa os módulos necessários para testes e as dependências do serviço de autenticação
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from '../src/modules/auth/auth.service';
-import { UserService } from '../src/modules/user/user.service';
+import { AuthService } from '../../src/modules/auth/auth.service';
+import { UserService } from '../../src/modules/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { EmailService } from '../src/common/utils/email';
+import { EmailService } from '../../src/common/utils/email';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto } from '../src/modules/user/dto/create-user.dto';
-import { LoginDto } from '../src/modules/auth/dto/LoginDto.dto';
+import { CreateUserDto } from '../../src/modules/user/dto/create-user.dto';
+import { LoginDto } from '../../src/modules/auth/dto/LoginDto.dto';
 import { Role } from 'src/common/guards/roles.enum';
 
 // Descreve o grupo de testes para o AuthService
 describe('AuthService', () => {
-  // Declaração das variáveis usadas nos testes
+  // Declaração das variáveis usadas nos testes'
   let authService: AuthService;
   let userService: UserService;
   let jwtService: JwtService;
@@ -57,7 +57,7 @@ describe('AuthService', () => {
   // Bloco de testes para o método `register` (registro de usuário)
   describe('register', () => {
     // Teste: Verifica se um novo usuário pode ser registrado com sucesso
-    it('should successfully register a new user', async () => {
+    it('deve registrar com sucesso um novo usuário', async () => {
       // DTO com os dados para registro
       const registerDto: CreateUserDto = {
         email: 'newuser@example.com',
@@ -110,6 +110,7 @@ describe('AuthService', () => {
         email: registerDto.email,
         password: expect.any(String),
         name: registerDto.name,
+
       }));
     });
   });
@@ -117,7 +118,7 @@ describe('AuthService', () => {
   // Bloco de testes para o método `login` (autenticação de usuário)
   describe('login', () => {
     // Teste: Verifica se um usuário pode fazer login com sucesso
-    it('should return a valid login response', async () => {
+    it('deve retornar uma resposta de login válida', async () => {
       // Mock de um usuário existente
       const mockUser = {
         id: 1,
@@ -160,7 +161,7 @@ describe('AuthService', () => {
     });
 
     // Teste: Verifica se uma exceção é lançada ao fornecer credenciais inválidas
-    it('should throw UnauthorizedException if credentials are invalid', async () => {
+    it('deve lançar UnauthorizedException se as credenciais forem inválidas', async () => {
       // Configura o mock para indicar que o usuário não existe
       jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
 

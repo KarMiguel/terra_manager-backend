@@ -1,7 +1,7 @@
 // Importa os módulos necessários para testes e as dependências do AuthController
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from '../src/modules/auth/auth.controller';
-import { AuthService } from '../src/modules/auth/auth.service';
+import { AuthController } from '../../src/modules/auth/auth.controller';
+import { AuthService } from '../../src/modules/auth/auth.service';
 import { Role } from 'src/common/guards/roles.enum'; 
 import { ConflictException } from '@nestjs/common';
 
