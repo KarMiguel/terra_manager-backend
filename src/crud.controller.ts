@@ -51,7 +51,7 @@ export abstract class CrudController<T extends object, R extends object = T> {
   //   }
   // }
   
-  @Get('list')
+  @Get()
   @ApiQuery({
     name: 'options',
     required: false,
