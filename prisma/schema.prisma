@@ -111,3 +111,30 @@ model produtosEstoque {
 
   fazenda              Fazenda   @relation(fields: [idFazenda], references: [id])
 }
+
+model Fornecedor {
+  id             Int      @id @default(autoincrement())
+  cnpj           String @unique @db.VarChar(14)
+  razaoSocial    String
+  nomeFantasia   String?
+  responsavel    String?
+  email          String?
+  telefone       String?
+  linkSite       String?
+  ativo          Boolean  @default(true)
+
+  logradouro     String?
+  numero         String?
+  complemento    String?
+  bairro         String?
+  cidade         String?
+  estado         String?
+  cep            String?
+
+  createdBy      String?
+  dateCreated    DateTime @default(now())
+  modifiedBy     String?
+  dateModified   DateTime?
+
+  @@map("fornecedor")
+}
