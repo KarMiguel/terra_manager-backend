@@ -24,7 +24,7 @@ export class ProdutoEstoqueModel {
   unidadeMedida: UnidadeMedidaEnum;
 
   @Expose()
-  fornecedor?: string;
+  idFornecedor: number;
 
   @Expose()
   dataValidade?: Date;

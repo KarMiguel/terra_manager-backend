@@ -38,10 +38,10 @@ export class CreateProdutoEstoqueDto {
   @IsNotEmpty()
   unidadeMedida: UnidadeMedidaEnum;
 
-  @ApiProperty({ description: 'Fornecedor do produto', example: 'Fornecedor Z' })
-  @IsString()
-  @IsOptional()
-  fornecedor?: string;
+  @ApiProperty({ description: 'Fornecedor do produto', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  idFornecedor: number;
 
   @ApiProperty({
     description: 'Data de validade do produto (ISO 8601)',
