@@ -48,6 +48,28 @@ enum UnidadeMedidaEnum {
   TONELADA
 }
 
+enum TipoPlantaEnum {
+  SOJA
+  MILHO
+  FEIJAO
+}
+
+enum TipoSoloEnum {
+  ARENOSO         
+  ARGILOSO        
+  SILTOSO         
+  MISTO           
+  HUMIFERO        
+  CALCARIO        
+  GLEISSOLO       
+  LATOSSOLO       
+  CAMBISSOLO      
+  ORGANOSSOLO     
+  NEOSSOLO        
+  PLANOSSOLO      
+  VERTISSOLO      
+}
+
 model Usuario {
   id                   Int       @id @default(autoincrement())
   password             String    @db.VarChar(100)
@@ -66,6 +88,9 @@ model Usuario {
   modifiedBy           String?   @db.VarChar(255)
   
   fazendas             Fazenda[] 
+  fornecedores         Fornecedor[]
+  pragas              Praga[]     
+  cultivares          Cultivar[]  
 }
 
 model Fazenda {
@@ -98,11 +123,11 @@ model produtosEstoque {
   quantidade           Int       @default(0)
   valorUnitario        Float     @default(0.0)
   unidadeMedida        UnidadeMedidaEnum
-  fornecedor           String?
   dataValidade         DateTime?
   categoria            CategoriaEstoqueEnum
   status               StatusEstoqueEnum
   idFazenda            Int
+  idFornecedor         Int
   ativo                Boolean   @default(true)
   createdBy            String?   @db.VarChar(255)
   dateCreated          DateTime  @default(now())
@@ -110,19 +135,18 @@ model produtosEstoque {
   modifiedBy           String?   @db.VarChar(255)
 
   fazenda              Fazenda   @relation(fields: [idFazenda], references: [id])
+  fornecedor     Fornecedor @relation(fields: [idFornecedor], references: [id])
 }
 
 model Fornecedor {
-  id             Int      @id @default(autoincrement())
-  cnpj           String @unique @db.VarChar(14)
+  id             Int               @id @default(autoincrement())
+  cnpj           String            @unique @db.VarChar(14)
   razaoSocial    String
   nomeFantasia   String?
   responsavel    String?
   email          String?
   telefone       String?
   linkSite       String?
-  ativo          Boolean  @default(true)
-
   logradouro     String?
   numero         String?
   complemento    String?
@@ -130,11 +154,63 @@ model Fornecedor {
   cidade         String?
   estado         String?
   cep            String?
-
+  idUsuario      Int
+  ativo          Boolean           @default(true)
   createdBy      String?
-  dateCreated    DateTime @default(now())
+  dateCreated    DateTime          @default(now())
+  dateModification DateTime        @updatedAt
   modifiedBy     String?
-  dateModified   DateTime?
 
-  @@map("fornecedor")
+  usuario         Usuario           @relation(fields: [idUsuario], references: [id])
+  produtosEstoque produtosEstoque[]
+  cultivares      Cultivar[]        
+
+}
+
+model Praga {
+  id             Int       @id @default(autoincrement())
+  nomeCientifico String    @db.VarChar(255)
+  nomeComum      String    @db.VarChar(255)
+  descricao      String?
+  idUsuario      Int
+  dateCreated    DateTime  @default(now())
+  dateModification DateTime @updatedAt
+  createdBy      String?
+  modifiedBy     String?
+
+  usuario        Usuario   @relation(fields: [idUsuario], references: [id])
+  cultivares     Cultivar[] 
+
+}
+
+model Cultivar {
+  id                    Int           @id @default(autoincrement())
+  nomeCientifico        String        @db.VarChar(255)
+  nomePopular           String        @db.VarChar(255)
+  tipoPlanta            TipoPlantaEnum
+  tipoSolo              TipoSoloEnum  
+  phSolo                Float
+  dataPlantioInicio     DateTime
+  dataPlantioFim        DateTime
+  periodoDias           Int
+  mmAgua                Float
+  aduboNitrogenio       Float
+  aduboFosforo          Float
+  aduboPotassio         Float
+  tempoCicloDias        Int
+  densidadePlantio      Float         
+  densidadeColheita     Float         
+  observacao            String?
+  idUsuario             Int
+  idPraga               Int?           
+  idFornecedor          Int?
+  createdBy             String?
+  dateCreated           DateTime      @default(now())
+  dateModification      DateTime      @updatedAt
+  modifiedBy            String?
+
+  usuario               Usuario       @relation(fields: [idUsuario], references: [id])
+  praga                 Praga?        @relation(fields: [idPraga], references: [id])
+  fornecedor            Fornecedor?   @relation(fields: [idFornecedor], references: [id])
+
 }
