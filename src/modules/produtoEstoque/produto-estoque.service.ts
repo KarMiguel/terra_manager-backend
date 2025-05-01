@@ -100,12 +100,7 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
               contains: options.where.nome, 
               mode: 'insensitive', 
           },
-          include: {
-            fazenda: true,
-            fornecedor: true,   
-          },
         }
-        
         : {}),
     };
   
@@ -114,6 +109,27 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
         ...pagination,
         ...this.filterOptions(options),
         where,
+        include: {
+          fazenda: {
+            select: {
+              id: true,
+              cnpj: true,
+              nome: true,
+              municipio: true,
+              uf: true
+            }
+          },
+          fornecedor: {
+            select: {
+              id: true,
+              razaoSocial: true,
+              cnpj: true,
+              nomeFantasia: true,
+              email: true,
+              telefone: true
+            }
+          }
+        },
       }),
       this.prisma.produtosEstoque.count({ where }),
     ]);
@@ -127,4 +143,3 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
   
 }
 
-//teste

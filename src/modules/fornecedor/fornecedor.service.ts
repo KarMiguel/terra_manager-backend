@@ -61,12 +61,16 @@ export class FornecedorService extends CrudService<Fornecedor, FornecedorModel> 
       this.prisma.fornecedor.findMany({
         ...pagination,
         where,
-        orderBy: options.order || undefined, 
+        orderBy: options.order || undefined,
       }),
       this.prisma.fornecedor.count({ where }),
     ]);
+
+    const dataPlainInstance: any[] = plainToInstance(FornecedorModel, data, {
+      excludeExtraneousValues: true,
+    });
   
-    return { data, count };
+    return { data: dataPlainInstance, count };
   }
   
 }

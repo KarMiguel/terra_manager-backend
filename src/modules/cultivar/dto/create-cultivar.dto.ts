@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsNumber, IsDate, IsOptional } from 'class-validator';
+import { IsString, IsEnum, IsNumber, IsDate, IsOptional, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoPlantaEnum, TipoSoloEnum } from '../enum/cultivar.enum';
 
@@ -44,15 +44,15 @@ export class CreateCultivarDto {
     description: 'Data de início do período de plantio',
     example: '2024-01-01',
   })
-  @IsDate()
-  dataPlantioInicio: Date;
+  @IsDateString()
+  dataPlantioInicio: string;
 
   @ApiProperty({
     description: 'Data de fim do período de plantio',
     example: '2024-03-31',
   })
-  @IsDate()
-  dataPlantioFim: Date;
+  @IsDateString()
+  dataPlantioFim: string;
 
   @ApiProperty({
     description: 'Período de dias entre plantio e colheita',

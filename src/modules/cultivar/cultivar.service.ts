@@ -22,12 +22,16 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma cultivar.');
     }
 
+    const dataToCreate = {
+      ...createCultivarDto,
+      dataPlantioInicio: new Date(createCultivarDto.dataPlantioInicio),
+      dataPlantioFim: new Date(createCultivarDto.dataPlantioFim),
+      idUsuario: userId,
+      createdBy,
+    };
+
     const createdCultivar = await this.prisma.cultivar.create({
-      data: {
-        ...createCultivarDto,
-        idUsuario: userId,
-        createdBy,
-      },
+      data: dataToCreate,
     });
 
     return plainToInstance(CultivarModel, createdCultivar, {
@@ -53,16 +57,64 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
         where,
         orderBy: options.order || undefined, 
         include: {
-          usuario: true,
-          praga: true,
-          fornecedor: true,
+          praga: {
+            select: {
+              id: true,
+              nomeCientifico: true,
+              nomeComum: true,
+              descricao: true
+            }
+          },
+          fornecedor: {
+            select: {
+              id: true,
+              razaoSocial: true,
+              cnpj: true,
+              nomeFantasia: true,
+              email: true,
+              telefone: true
+            }
+          }
         },
       }),
       this.prisma.cultivar.count({ where }),
     ]);
   
-    return { data, count };
+    const dataPlainInstance: any[] = plainToInstance(CultivarModel, data, {
+      excludeExtraneousValues: true,
+    });
+  
+    return { data: dataPlainInstance, count };
   }
   
+  async update(id: number, data: any, modifiedBy: string): Promise<CultivarModel> {
+    try {
+      // Remove campos que não existem no modelo
+      const { idPraga, idFornecedor, ...restData } = data;
+
+      // Converte strings de data para objetos Date
+      const dataToUpdate = {
+        ...restData,
+        ...(restData.dataPlantioInicio && { dataPlantioInicio: new Date(restData.dataPlantioInicio) }),
+        ...(restData.dataPlantioFim && { dataPlantioFim: new Date(restData.dataPlantioFim) }),
+        modifiedBy,
+        dateModified: new Date(),
+        // Adiciona os relacionamentos corretamente
+        ...(idPraga && { praga: { connect: { id: idPraga } } }),
+        ...(idFornecedor && { fornecedor: { connect: { id: idFornecedor } } }),
+      };
+
+      const updatedEntity = await this.prisma.cultivar.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+
+      return plainToInstance(CultivarModel, updatedEntity, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      throw new Error(`Erro ao atualizar cultivar: ${error.message}`);
+    }
+  }
 }
  

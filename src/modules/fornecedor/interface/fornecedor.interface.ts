@@ -46,9 +46,11 @@ export class FornecedorModel {
   @Expose()
   cep?: string;
 
+  @Expose()
+  observacao?: string;
 
   @Expose()
-  createdBy?: string;
+  idUsuario?: number;
 
 
 }

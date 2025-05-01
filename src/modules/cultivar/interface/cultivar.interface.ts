@@ -57,7 +57,7 @@ export class CultivarModel {
   observacao?: string;
 
   @Expose()
-  usuario?: UserModel;
+  idUsuario?: number;
 
   @Expose()
   praga?: PragaModel;
@@ -65,15 +65,4 @@ export class CultivarModel {
   @Expose()
   fornecedor?: FornecedorModel;
 
-  @Expose()
-  createdBy?: string;
-
-  @Expose()
-  dateCreated: Date;
-
-  @Expose()
-  dateModified: Date;
-
-  @Expose()
-  modifiedBy?: string;
 } 

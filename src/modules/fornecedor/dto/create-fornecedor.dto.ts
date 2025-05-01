@@ -124,12 +124,20 @@ export class CreateFornecedorDto {
   cep: string;
 
   @ApiPropertyOptional({
-    description: 'Site do fornecedor',
-    example: 'https://www.fornecedor.com.br',
+    description: 'ID da praga',
+    example: 1,
   })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  site?: string;
+  idPraga?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID da fazenda',
+    example: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  idFornecedor?: number;
 
   @ApiPropertyOptional({
     description: 'Observações adicionais sobre o fornecedor',
@@ -138,5 +146,4 @@ export class CreateFornecedorDto {
   @IsString()
   @IsOptional()
   observacao?: string;
-
 }
