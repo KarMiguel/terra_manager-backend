@@ -99,8 +99,13 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
             nome: {
               contains: options.where.nome, 
               mode: 'insensitive', 
-            },
-          }
+          },
+          include: {
+            fazenda: true,
+            fornecedor: true,   
+          },
+        }
+        
         : {}),
     };
   
