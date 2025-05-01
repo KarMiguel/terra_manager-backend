@@ -65,22 +65,46 @@ export abstract class CrudService<T extends object, R extends object = T> {
   //   }
   // }
 
-  async update(id: number, data: Partial<T>, modifiedBy: string): Promise<R> {
+  async update(id: number, data: any, modifiedBy: string): Promise<R> {
     try {
-      const updatedEntity = await this.repository.update({
+      // Verifica se o registro existe
+      const existingRecord = await this.prisma[String(this.modelName)].findUnique({
         where: { id },
-        data: {
-          ...data,
-          modifiedBy, // Adiciona o usuário que modificou
-          dateModification: new Date(), // Atualiza a data de modificação
-        },
       });
-      return this.mapToResponse(updatedEntity);
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`Entidade com ID ${id} não encontrada.`);
+
+      if (!existingRecord) {
+        throw new Error(`Registro com ID ${id} não encontrado`);
       }
-      throw error;
+
+      // Remove campos que não existem no modelo
+      const modelFields = Object.keys(this.prisma[String(this.modelName)].fields);
+      const filteredData = Object.keys(data).reduce((acc, key) => {
+        if (modelFields.includes(key)) {
+          acc[key] = data[key];
+        }
+        return acc;
+      }, {});
+
+      // Adiciona campos de auditoria
+      const dataToUpdate = {
+        ...filteredData,
+        modifiedBy,
+        dateModified: new Date(), // Usando o campo correto do Prisma
+      };
+
+      const updatedEntity = await this.prisma[String(this.modelName)].update({
+        where: { id },
+        data: dataToUpdate,
+      });
+
+      return plainToInstance(this.responseClass, updatedEntity, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      if (error.message.includes('não encontrado')) {
+        throw new Error(`Erro ao atualizar ${String(this.modelName)}: ${error.message}`);
+      }
+      throw new Error(`Erro ao atualizar ${String(this.modelName)}: ${error.message}`);
     }
   }
   

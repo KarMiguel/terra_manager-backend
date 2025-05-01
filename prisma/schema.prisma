@@ -159,6 +159,7 @@ model Fornecedor {
   cidade               String?
   estado               String?
   cep                  String?
+  observacao           String?
   idUsuario            Int               @map("id_usuario")
   ativo                Boolean           @default(true)
   createdBy            String?           @map("created_by")

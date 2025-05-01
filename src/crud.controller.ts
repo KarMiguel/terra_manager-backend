@@ -29,12 +29,24 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
 
   @Put(':id')
+  @ApiBody({
+    description: 'Dados para atualização do registro',
+    required: true,
+    type: Object,
+  })
   async update(
     @Param('id') id: string,
-    @Body() body: Partial<T>,
+    @Body() body: any,
     @Req() req,
   ): Promise<R> {
-    const modifiedBy = req.user?.email || 'unknown'; 
+    const modifiedBy = req.user?.email || 'unknown';
+    
+    // Se o serviço tiver um método update específico, use-o
+    if (typeof this.service.update === 'function') {
+      return this.service.update(+id, body, modifiedBy);
+    }
+    
+    // Caso contrário, use o método genérico do CrudService
     return this.service.update(+id, body, modifiedBy);
   }
   
