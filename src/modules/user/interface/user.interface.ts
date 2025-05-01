@@ -8,7 +8,7 @@ export class UserModel {
   email!: string;
 
   @Expose()
-  name!: string;
+  nome!: string;
 
   @Expose()
   role!: string;

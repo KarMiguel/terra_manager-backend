@@ -73,24 +73,25 @@ enum TipoSoloEnum {
 model Usuario {
   id                   Int       @id @default(autoincrement())
   password             String    @db.VarChar(100)
-  resetPasswordToken   String?
-  resetPasswordExpires DateTime?
+  resetPasswordToken   String?   @map("reset_password_token")
+  resetPasswordExpires DateTime? @map("reset_password_expires")
   role                 ROLE      @default(USER)
   email                String    @unique @db.VarChar(100)
-  idPlano              Int?
+  idPlano              Int?      @map("id_plano")
   cpf                  String?   @unique @db.Char(11)
-  name                 String    @db.VarChar(100)
+  nome                 String    @db.VarChar(100)
   telefone             String?   @db.VarChar(14)
   ativo                Boolean   @default(true)
-  createdBy            String?   @db.VarChar(255)
-  dateCreated          DateTime  @default(now()) @db.Timestamp(0)
-  dateModification     DateTime  @updatedAt @db.Timestamp(0)
-  modifiedBy           String?   @db.VarChar(255)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @map("date_created") @default(now()) @db.Timestamp(0)
+  dateModified         DateTime  @map("date_modified") @updatedAt @db.Timestamp(0)
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
   
   fazendas             Fazenda[] 
   fornecedores         Fornecedor[]
-  pragas              Praga[]     
-  cultivares          Cultivar[]  
+  cultivares           Cultivar[]  
+
+  @@map("usuario")
 }
 
 model Fazenda {
@@ -98,119 +99,124 @@ model Fazenda {
   nome                 String    @db.VarChar(255)
   latitude             Float
   longitude            Float
-  areaTotal            Float? 
+  areaTotal            Float?    @map("area_total")
   cnpj                 String?   @unique @db.VarChar(14)
-  soloPredominante     String?   @db.VarChar(255)
-  cultivoPredominante  String?   @db.VarChar(255)
+  soloPredominante     String?   @map("solo_predominante") @db.VarChar(255)
+  cultivoPredominante  String?   @map("cultivo_predominante") @db.VarChar(255)
   municipio            String?   @db.VarChar(255)
   uf                   String?   @db.VarChar(2)
-  idUsuario            Int
+  idUsuario            Int       @map("id_usuario")
   ativo                Boolean   @default(true)
-  createdBy            String?   @db.VarChar(255)
-  dateCreated          DateTime  @default(now())
-  dateModification     DateTime  @updatedAt
-  modifiedBy           String?   @db.VarChar(255)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @map("date_created") @default(now())
+  dateModified         DateTime  @map("date_modified") @updatedAt
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
 
   usuario              Usuario   @relation(fields: [idUsuario], references: [id]) 
-  produtosEstoque      produtosEstoque[]
+  produtosEstoque      ProdutosEstoque[]
+
+  @@map("fazenda")
 }
 
-model produtosEstoque {
+model ProdutosEstoque {
   id                   Int       @id @default(autoincrement())
   descricao            String?
   marca                String?
   nome                 String?
   quantidade           Int       @default(0)
-  valorUnitario        Float     @default(0.0)
-  unidadeMedida        UnidadeMedidaEnum
-  dataValidade         DateTime?
+  valorUnitario        Float     @map("valor_unitario") @default(0.0)
+  unidadeMedida        UnidadeMedidaEnum @map("unidade_medida")
+  dataValidade         DateTime? @map("data_validade")
   categoria            CategoriaEstoqueEnum
   status               StatusEstoqueEnum
-  idFazenda            Int
-  idFornecedor         Int
+  idFazenda            Int       @map("id_fazenda")
+  idFornecedor         Int       @map("id_fornecedor")
   ativo                Boolean   @default(true)
-  createdBy            String?   @db.VarChar(255)
-  dateCreated          DateTime  @default(now())
-  dateModification     DateTime  @updatedAt
-  modifiedBy           String?   @db.VarChar(255)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @map("date_created") @default(now())
+  dateModified         DateTime  @map("date_modified") @updatedAt
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
 
   fazenda              Fazenda   @relation(fields: [idFazenda], references: [id])
-  fornecedor     Fornecedor @relation(fields: [idFornecedor], references: [id])
+  fornecedor           Fornecedor @relation(fields: [idFornecedor], references: [id])
+
+  @@map("produtos_estoque")
 }
 
 model Fornecedor {
-  id             Int               @id @default(autoincrement())
-  cnpj           String            @unique @db.VarChar(14)
-  razaoSocial    String
-  nomeFantasia   String?
-  responsavel    String?
-  email          String?
-  telefone       String?
-  linkSite       String?
-  logradouro     String?
-  numero         String?
-  complemento    String?
-  bairro         String?
-  cidade         String?
-  estado         String?
-  cep            String?
-  idUsuario      Int
-  ativo          Boolean           @default(true)
-  createdBy      String?
-  dateCreated    DateTime          @default(now())
-  dateModification DateTime        @updatedAt
-  modifiedBy     String?
+  id                   Int               @id @default(autoincrement())
+  cnpj                 String            @unique @db.VarChar(14)
+  razaoSocial          String            @map("razao_social")
+  nomeFantasia         String?           @map("nome_fantasia")
+  responsavel          String?
+  email                String?
+  telefone             String?
+  linkSite             String?           @map("link_site")
+  logradouro           String?
+  numero               String?
+  complemento          String?
+  bairro               String?
+  cidade               String?
+  estado               String?
+  cep                  String?
+  idUsuario            Int               @map("id_usuario")
+  ativo                Boolean           @default(true)
+  createdBy            String?           @map("created_by")
+  dateCreated          DateTime          @map("date_created") @default(now())
+  dateModified         DateTime          @map("date_modified") @updatedAt
+  modifiedBy           String?           @map("modified_by")
 
-  usuario         Usuario           @relation(fields: [idUsuario], references: [id])
-  produtosEstoque produtosEstoque[]
-  cultivares      Cultivar[]        
+  usuario              Usuario           @relation(fields: [idUsuario], references: [id])
+  produtosEstoque      ProdutosEstoque[]
+  cultivares           Cultivar[]        
 
+  @@map("fornecedor")
 }
 
 model Praga {
-  id             Int       @id @default(autoincrement())
-  nomeCientifico String    @db.VarChar(255)
-  nomeComum      String    @db.VarChar(255)
-  descricao      String?
-  idUsuario      Int
-  dateCreated    DateTime  @default(now())
-  dateModification DateTime @updatedAt
-  createdBy      String?
-  modifiedBy     String?
+  id                   Int       @id @default(autoincrement())
+  nomeCientifico       String    @map("nome_cientifico") @db.VarChar(255)
+  nomeComum            String    @map("nome_comum") @db.VarChar(255)
+  descricao            String?
+  dateCreated          DateTime  @map("date_created") @default(now())
+  dateModified         DateTime  @map("date_modified") @updatedAt
+  createdBy            String?   @map("created_by")
+  modifiedBy           String?   @map("modified_by")
 
-  usuario        Usuario   @relation(fields: [idUsuario], references: [id])
-  cultivares     Cultivar[] 
+  cultivares           Cultivar[] 
 
+  @@map("praga")
 }
 
 model Cultivar {
   id                    Int           @id @default(autoincrement())
-  nomeCientifico        String        @db.VarChar(255)
-  nomePopular           String        @db.VarChar(255)
-  tipoPlanta            TipoPlantaEnum
-  tipoSolo              TipoSoloEnum  
-  phSolo                Float
-  dataPlantioInicio     DateTime
-  dataPlantioFim        DateTime
-  periodoDias           Int
-  mmAgua                Float
-  aduboNitrogenio       Float
-  aduboFosforo          Float
-  aduboPotassio         Float
-  tempoCicloDias        Int
-  densidadePlantio      Float         
-  densidadeColheita     Float         
+  nomeCientifico        String        @map("nome_cientifico") @db.VarChar(255)
+  nomePopular           String        @map("nome_popular") @db.VarChar(255)
+  tipoPlanta            TipoPlantaEnum @map("tipo_planta")
+  tipoSolo              TipoSoloEnum   @map("tipo_solo")
+  phSolo                Float          @map("ph_solo")
+  dataPlantioInicio     DateTime       @map("data_plantio_inicio")
+  dataPlantioFim        DateTime       @map("data_plantio_fim")
+  periodoDias           Int            @map("periodo_dias")
+  mmAgua                Float          @map("mm_agua")
+  aduboNitrogenio       Float          @map("adubo_nitrogenio")
+  aduboFosforo          Float          @map("adubo_fosforo")
+  aduboPotassio         Float          @map("adubo_potassio")
+  tempoCicloDias        Int            @map("tempo_ciclo_dias")
+  densidadePlantio      Float          @map("densidade_plantio")
+  densidadeColheita     Float          @map("densidade_colheita")
   observacao            String?
-  idUsuario             Int
-  idPraga               Int?           
-  idFornecedor          Int?
-  createdBy             String?
-  dateCreated           DateTime      @default(now())
-  dateModification      DateTime      @updatedAt
-  modifiedBy            String?
+  idUsuario             Int            @map("id_usuario")
+  idPraga               Int?           @map("id_praga")
+  idFornecedor          Int?           @map("id_fornecedor")
+  createdBy             String?        @map("created_by")
+  dateCreated           DateTime       @map("date_created") @default(now())
+  dateModified          DateTime       @map("date_modified") @updatedAt
+  modifiedBy            String?        @map("modified_by")
 
   usuario               Usuario       @relation(fields: [idUsuario], references: [id])
   praga                 Praga?        @relation(fields: [idPraga], references: [id])
   fornecedor            Fornecedor?   @relation(fields: [idFornecedor], references: [id])
 
+  @@map("cultivar")
 }

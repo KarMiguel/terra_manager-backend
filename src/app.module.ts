@@ -6,6 +6,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FazendaModule } from './modules/fazenda/fazenda.module';
 import { ProdutoEstoqueModule } from './modules/produtoEstoque/produto-estoque.module';
 import { FornecedorModule } from './modules/fornecedor/fornecedor.module';
+import { CultivarModule } from './modules/cultivar/cultivar.module';
+import { PragaModule } from './modules/praga/praga.module';
 
 @Module({
   imports: [
@@ -18,7 +20,9 @@ import { FornecedorModule } from './modules/fornecedor/fornecedor.module';
     DashboardModule,
     FazendaModule,
     ProdutoEstoqueModule,
-    FornecedorModule
+    FornecedorModule,
+    PragaModule,
+    CultivarModule
   ],
 })
 export class AppModule {}
