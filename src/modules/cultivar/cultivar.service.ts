@@ -10,7 +10,7 @@ import { calculatePagination } from 'src/common/utils/calculatePagination';
 @Injectable()
 export class CultivarService extends CrudService<Cultivar, CultivarModel> {
   constructor(protected readonly prisma: PrismaClient) {
-    super(prisma, 'praga', CultivarModel);
+    super(prisma, 'cultivar', CultivarModel);
   }
 
   async CreateCultivar(
@@ -21,24 +21,36 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma cultivar.');
     }
-
-    const dataToCreate = {
-      ...createCultivarDto,
-      dataPlantioInicio: new Date(createCultivarDto.dataPlantioInicio),
-      dataPlantioFim: new Date(createCultivarDto.dataPlantioFim),
-      idUsuario: userId,
+  
+    const { praga, ...rest } = createCultivarDto;
+  
+    const dataToCreate: any = {
+      ...rest,
+      dataPlantioInicio: new Date(rest.dataPlantioInicio),
+      dataPlantioFim:    new Date(rest.dataPlantioFim),
+      idUsuario:         userId,
       createdBy,
     };
-
+  
+    if (praga) {
+      dataToCreate.praga = {
+        create: {
+          nomeCientifico: praga.nomeCientifico,
+          nomeComum:      praga.nomeComum,
+          descricao:      praga.descricao,
+        }
+      };
+    }
+  
     const createdCultivar = await this.prisma.cultivar.create({
       data: dataToCreate,
     });
-
+  
     return plainToInstance(CultivarModel, createdCultivar, {
-      excludeExtraneousValues: true, 
+      excludeExtraneousValues: true,
     });
   }
-
+  
   async findAndCountByUser(
     userId: number,
     paginate?: Paginate,

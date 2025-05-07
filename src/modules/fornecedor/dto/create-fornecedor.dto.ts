@@ -46,6 +46,7 @@ export class CreateFornecedorDto {
     example: 'joao.silva@email.com',
   })
   @IsEmail()
+  @IsOptional()
   email: string;
 
   @ApiProperty({
@@ -53,6 +54,7 @@ export class CreateFornecedorDto {
     example: '+5511999999999',
   })
   @IsPhoneNumber()
+  @IsOptional()
   telefone: string;
 
   @ApiPropertyOptional({
@@ -76,6 +78,7 @@ export class CreateFornecedorDto {
     example: 'Rua das Flores, 123',
   })
   @IsString()
+  @IsOptional()
   logradouro?: string;
 
   @ApiPropertyOptional({
@@ -107,6 +110,7 @@ export class CreateFornecedorDto {
     example: 'São Paulo',
   })
   @IsString()
+  @IsOptional()
   cidade: string;
 
   @ApiProperty({
@@ -114,6 +118,7 @@ export class CreateFornecedorDto {
     example: 'SP',
   })
   @IsString()
+  @IsOptional()
   estado: string;
 
   @ApiProperty({
@@ -121,23 +126,8 @@ export class CreateFornecedorDto {
     example: '01234-567',
   })
   @IsString()
+  @IsOptional()
   cep: string;
-
-  @ApiPropertyOptional({
-    description: 'ID da praga',
-    example: 1,
-  })
-  @IsNumber()
-  @IsOptional()
-  idPraga?: number;
-
-  @ApiPropertyOptional({
-    description: 'ID da fazenda',
-    example: 1,
-  })
-  @IsNumber()
-  @IsOptional()
-  idFornecedor?: number;
 
   @ApiPropertyOptional({
     description: 'Observações adicionais sobre o fornecedor',

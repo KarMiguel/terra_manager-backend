@@ -1,6 +1,7 @@
-import { IsString, IsEnum, IsNumber, IsDate, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsEnum, IsNumber, IsDate, IsOptional, IsDateString, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoPlantaEnum, TipoSoloEnum } from '../enum/cultivar.enum';
+import { CreatePragaDto } from 'src/modules/praga/dto/create-praga.dto';
 
 export class CreateCultivarDto {
   @ApiProperty({
@@ -133,4 +134,13 @@ export class CreateCultivarDto {
   @IsNumber()
   @IsOptional()
   idFornecedor?: number;
+
+  @ApiPropertyOptional({
+    description: 'Se quisermos criar uma praga associada à cultivar',
+    example: 1,
+  })
+  @IsObject()
+  @IsOptional()
+  praga?: CreatePragaDto;
+
 } 
