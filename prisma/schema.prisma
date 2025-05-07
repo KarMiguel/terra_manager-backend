@@ -70,6 +70,21 @@ enum TipoSoloEnum {
   VERTISSOLO      
 }
 
+enum StatusPlantioEnum {
+  PLANEJADO
+  EXECUTADO
+  EM_MONITORAMENTO
+  CONCLUIDO
+}
+
+enum UnidadeDoseEnum {
+  KG_HA      // Quilogramas por hectare
+  G_HA       // Gramas por hectare
+  ML_HA      // Mililitros por hectare
+  L_HA       // Litros por hectare
+  TON_HA     // Toneladas por hectare
+}
+
 model Usuario {
   id                   Int       @id @default(autoincrement())
   password             String    @db.VarChar(100)
@@ -114,6 +129,7 @@ model Fazenda {
 
   usuario              Usuario   @relation(fields: [idUsuario], references: [id]) 
   produtosEstoque      ProdutosEstoque[]
+  plantios             Plantio[]
 
   @@map("fazenda")
 }
@@ -218,6 +234,72 @@ model Cultivar {
   usuario               Usuario       @relation(fields: [idUsuario], references: [id])
   praga                 Praga?        @relation(fields: [idPraga], references: [id])
   fornecedor            Fornecedor?   @relation(fields: [idFornecedor], references: [id])
+  plantios              Plantio[]
 
   @@map("cultivar")
+}
+
+model Plantio {
+  id                         Int               @id @default(autoincrement())
+  idCultivar                 Int               @map("id_cultivar")
+  idFazenda                  Int               @map("id_fazenda")
+
+  dataPlantio                DateTime          @map("data_plantio")
+  dataEmergencia             DateTime?         @map("data_emergencia")
+  dataPrevistaColheita       DateTime?         @map("data_prevista_colheita")
+  dataMaturacao              DateTime?         @map("data_maturacao")
+
+  areaPlantada               Float             @map("area_plantada")           // hectares
+  densidadePlanejada         Float             @map("densidade_planejada")     // plantas/ha planejadas
+  densidadePlantioReal       Float             @map("densidade_plantio_real")  // plantas/ha efetivas
+
+  phSoloInicial              Float?            @map("ph_solo_inicial")         // pH antes do plantio
+  umidadeSoloInicial         Float?            @map("umidade_solo_inicial")    // % de umidade ao plantar
+
+  loteSemente                String?           @map("lote_semente")            // código do lote de semente
+  taxaGerminacao             Float?            @map("taxa_germinacao")         // % de germinação
+  tratamentoSemente          String?           @map("tratamento_semente")      // fungicida, inoculante etc
+
+  profundidadeSemeadura       Float?            @map("profundidade_semeadura")  // cm
+  espacamentoEntreLinhas      Float?            @map("espacamento_entre_linhas")// cm
+  orientacaoTransplantio      String?           @map("orientacao_transplantio") // N-S, L-O etc
+
+  mmAguaAplicado             Float             @map("mm_agua_aplicado")        // lâmina de água aplicada (mm)
+  irrigacaoVolume            Float?            @map("irrigacao_volume")        // volume irrigado (mm)
+  irrigacaoDuracao           Int?              @map("irrigacao_duracao")       // duração da irrigação (minutos)
+
+  aduboNitrogenioDose        Float?            @map("adubo_nitrogenio_dose")   
+  aduboNitrogenioUnidade     UnidadeDoseEnum?   @map("adubo_nitrogenio_unidade") 
+  aduboFosforoDose           Float?            @map("adubo_fosforo_dose")      
+  aduboFosforoUnidade        UnidadeDoseEnum?   @map("adubo_fosforo_unidade")  
+  aduboPotassioDose          Float?            @map("adubo_potassio_dose")     
+  aduboPotassioUnidade       UnidadeDoseEnum?   @map("adubo_potassio_unidade") 
+
+  defensivoUtilizado         String?           @map("defensivo_utilizado")     
+  doseDefensivo              Float?            @map("dose_defensivo")          
+  unidadeDefensivo           UnidadeDoseEnum?   @map("unidade_defensivo")       
+
+  rendimentoEstimado         Float?            @map("rendimento_estimado")     // kg/ha
+ 
+  custoSemente               Float?            @map("custo_semente")           // R$/ha
+  custoFertilizante          Float?            @map("custo_fertilizante")      // R$/ha
+  custoDefensivo             Float?            @map("custo_defensivo")         // R$/ha
+  custoCombustivel           Float?            @map("custo_combustivel")       // R$
+  custoOutros                Float?            @map("custo_outros")            // R$
+  custoTotal                 Float?            @map("custo_total")             // R$
+
+  statusPlantio              StatusPlantioEnum @map("status_plantio")            @default(PLANEJADO)
+
+  observacao                 String?           @map("observacao")              
+  ativo                      Boolean           @default(true)
+
+  createdBy                  String?           @map("created_by")              @db.VarChar(255)
+  dateCreated                DateTime          @map("date_created")            @default(now())
+  dateModified               DateTime          @map("date_modified")           @updatedAt
+  modifiedBy                 String?           @map("modified_by")             @db.VarChar(255)
+
+  cultivar Cultivar @relation(fields: [idCultivar], references: [id], onDelete: Restrict)
+  fazenda  Fazenda  @relation(fields: [idFazenda], references: [id], onDelete: Restrict)
+
+  @@map("plantio")
 }

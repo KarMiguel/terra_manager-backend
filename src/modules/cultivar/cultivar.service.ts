@@ -99,34 +99,5 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
     return { data: dataPlainInstance, count };
   }
   
-  async update(id: number, data: any, modifiedBy: string): Promise<CultivarModel> {
-    try {
-      // Remove campos que não existem no modelo
-      const { idPraga, idFornecedor, ...restData } = data;
-
-      // Converte strings de data para objetos Date
-      const dataToUpdate = {
-        ...restData,
-        ...(restData.dataPlantioInicio && { dataPlantioInicio: new Date(restData.dataPlantioInicio) }),
-        ...(restData.dataPlantioFim && { dataPlantioFim: new Date(restData.dataPlantioFim) }),
-        modifiedBy,
-        dateModified: new Date(),
-        // Adiciona os relacionamentos corretamente
-        ...(idPraga && { praga: { connect: { id: idPraga } } }),
-        ...(idFornecedor && { fornecedor: { connect: { id: idFornecedor } } }),
-      };
-
-      const updatedEntity = await this.prisma.cultivar.update({
-        where: { id },
-        data: dataToUpdate,
-      });
-
-      return plainToInstance(CultivarModel, updatedEntity, {
-        excludeExtraneousValues: true,
-      });
-    } catch (error) {
-      throw new Error(`Erro ao atualizar cultivar: ${error.message}`);
-    }
-  }
 }
  
