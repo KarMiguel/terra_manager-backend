@@ -59,7 +59,7 @@ describe('AuthController', () => {
     const result = {
       id: 1, // ID do usuário registrado
       email: 'test@example.com',
-      name: 'Test User',
+      nome: 'Test User',
       role: Role.USER,  // Papel do usuário
       cpf: '123.456.789-00',
       telefone: '123456789',
@@ -70,7 +70,7 @@ describe('AuthController', () => {
 
     // Executa o método `register` do controlador e verifica o resultado
     expect(await authController.register({
-      name: 'Test User',
+      nome: 'Test User',
       email: 'test@example.com',
       password: 'password',
     })).toEqual(result);

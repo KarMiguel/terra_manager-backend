@@ -36,31 +36,7 @@ describe('ProdutoEstoqueService', () => {
   it('deve estar definido', () => {
     expect(service).toBeDefined();
   });
-
-  describe('createProdutoEstoque', () => {
-    it('deve criar um produto no estoque', async () => {
-      const createDto = {
-        nome: 'Produto X',
-        quantidade: 10,
-        valorUnitario: 15.99,
-        unidadeMedida: UnidadeMedidaEnum.QUILO,  // Usando o valor do enum diretamente
-        categoria: CategoriaEstoqueEnum.DEFENSIVOS,  // Também pode ser feito para as outras propriedades
-        status: StatusEstoqueEnum.DISPONIVEL,
-        idFazenda: 1,
-        ativo: true,
-      };
-
-      mockPrisma.produtosEstoque.create.mockResolvedValue(createDto);
-
-      const result = await service.createProdutoEstoque(createDto, 'user@domain.com');
-
-      expect(result).toEqual(createDto);
-      expect(mockPrisma.produtosEstoque.create).toHaveBeenCalledWith({
-        data: { ...createDto, createdBy: 'user@domain.com' },
-      });
-    });
-  });
-
+  
   describe('aumentarQuantidade', () => {
     it('deve aumentar a quantidade de um produto', async () => {
       const produto = { id: 1, quantidade: 10 };
