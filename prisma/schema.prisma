@@ -52,6 +52,11 @@ enum TipoPlantaEnum {
   SOJA
   MILHO
   FEIJAO
+  ARROZ
+  CAFE
+  ALGODAO
+  BANANA
+  LARANJA
 }
 
 enum TipoSoloEnum {

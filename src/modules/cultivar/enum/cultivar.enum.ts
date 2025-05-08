@@ -1,7 +1,12 @@
 export enum TipoPlantaEnum {
   SOJA = "SOJA",
   MILHO = "MILHO",
-  FEIJAO = "FEIJAO"
+  FEIJAO = "FEIJAO",
+  ARROZ = "ARROZ",
+  CAFE = "CAFE",
+  ALGODAO = "ALGODAO",
+  BANANA = "BANANA",
+  LARANJA = "LARANJA"
 }
 
 export enum TipoSoloEnum {

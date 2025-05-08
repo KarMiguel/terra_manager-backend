@@ -96,5 +96,16 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
     return await this.cultivarService.findAndCountByUser(userId, paginate, parsedOptions);
   }
   
+  @Get('check-cultivars')
+  @ApiOperation({ summary: 'Retorna quais cultivares o usuário possui acesso' })
+  async checkUserCultivars(@Req() req): Promise<Record<string, boolean>> {
+    const userId = req.user?.id;
+  
+    if (!userId) {
+      throw new BadRequestException('ID do usuário não encontrado no token.');
+    }
+  
+    return await this.cultivarService.checkUserCultivars(userId);
+  }
 
 }

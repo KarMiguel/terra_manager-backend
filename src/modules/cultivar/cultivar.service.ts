@@ -6,6 +6,7 @@ import { CrudService } from 'src/crud.service';
 import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
+import { TipoPlantaEnum } from './enum/cultivar.enum';
 
 @Injectable()
 export class CultivarService extends CrudService<Cultivar, CultivarModel> {
@@ -99,5 +100,29 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
     return { data: dataPlainInstance, count };
   }
   
+  async checkUserCultivars(userId: number): Promise<Record<string, boolean>> {
+    if (!userId) {
+      throw new BadRequestException('O ID do usuário é obrigatório.');
+    }
+
+    const userCultivars = await this.prisma.cultivar.findMany({
+      where: {
+        idUsuario: userId
+      },
+      select: {
+        tipoPlanta: true
+      }
+    });
+
+    const userCultivarSet = new Set(userCultivars.map(c => c.tipoPlanta.toUpperCase()));
+
+    const result: Record<string, boolean> = {};
+    Object.values(TipoPlantaEnum).forEach(cultivar => {
+      result[cultivar] = userCultivarSet.has(cultivar);
+    });
+
+    return result;
+  }
+
 }
  
