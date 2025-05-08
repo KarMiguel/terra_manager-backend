@@ -61,7 +61,19 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
   
     const where = {
       ...options.where,
-      idUsuario: userId, 
+      idUsuario: userId,
+      ...(options.where?.nomeCientifico && {
+        nomeCientifico: {
+          mode: 'insensitive',
+          contains: options.where.nomeCientifico
+        }
+      }),
+      ...(options.where?.nomePopular && {
+        nomePopular: {
+          mode: 'insensitive',
+          contains: options.where.nomePopular
+        }
+      }),
     };
   
     const [data, count] = await this.prisma.$transaction([

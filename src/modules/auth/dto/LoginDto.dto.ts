@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class LoginDto {
   @ApiProperty({
     description: 'Email do usuário para autenticação.',
-    example: 'usuario@email.com',
+    example: 'carlosmiguel.dsa12@email.com',
   })
   @IsNotEmpty({ message: 'O campo "email" é obrigatório.' })
   @IsEmail({}, { message: 'O campo "email" deve ser um e-mail válido.' })
@@ -12,7 +12,7 @@ export class LoginDto {
 
   @ApiProperty({
     description: 'Senha do usuário.',
-    example: 'senha123',
+    example: '123456',
   })
   @IsNotEmpty({ message: 'O campo "password" é obrigatório.' })
   @IsString({ message: 'O campo "password" deve ser uma string.' })

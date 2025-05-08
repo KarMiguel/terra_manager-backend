@@ -97,7 +97,7 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
   }
   
   @Get('check-cultivars')
-  @ApiOperation({ summary: 'Retorna quais cultivares o usuário possui acesso' })
+  @ApiOperation({ summary: 'Retorna quais cultivares o usuário possui pelo Tipo de Planta' })
   async checkUserCultivars(@Req() req): Promise<Record<string, boolean>> {
     const userId = req.user?.id;
   
