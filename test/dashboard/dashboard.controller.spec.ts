@@ -26,6 +26,12 @@ describe('DashboardController', () => {
 
     dashboardController = module.get<DashboardController>(DashboardController);
     dashboardService = module.get<DashboardService>(DashboardService);
+
+    jest.spyOn(console,'error').mockImplementation(() =>{});  
+  });
+
+  afterEach(() =>{
+    jest.restoreAllMocks();
   });
 
   it('deve retornar os dados do clima ao chamar getWeather', async () => {
@@ -149,11 +155,11 @@ describe('DashboardController', () => {
     await expect(
       dashboardController.getCultivo(''),
     ).rejects.toThrow(HttpException);
-
+  
     try {
       await dashboardController.getCultivo('');
     } catch (error) {
       expect(error.message).toBe('O parâmetro "nome" é obrigatório e deve ser uma string válida.');
     }
-  });
+  });  
 });
