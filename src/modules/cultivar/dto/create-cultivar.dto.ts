@@ -137,7 +137,12 @@ export class CreateCultivarDto {
 
   @ApiPropertyOptional({
     description: 'Se quisermos criar uma praga associada à cultivar',
-    example: 1,
+    example: {
+      nomeCientifico: 'Aedes aegypti',
+      nomeComum: 'Aedes',
+      descricao: 'Aedes é uma espécie de mosquito que pode transmitir dengue, zika e chikungunya.',
+    },
+    required: false,
   })
   @IsObject()
   @IsOptional()

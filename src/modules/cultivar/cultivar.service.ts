@@ -25,26 +25,51 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
   
     const { praga, ...rest } = createCultivarDto;
   
+    let idPraga: number | undefined = rest.idPraga;
+    
+    if (praga) {
+      const createdPraga = await this.prisma.praga.create({
+        data: {
+          nomeCientifico: praga.nomeCientifico,
+          nomeComum: praga.nomeComum,
+          descricao: praga.descricao,
+          createdBy,
+        }
+      });
+      idPraga = createdPraga.id;
+    }
+  
     const dataToCreate: any = {
       ...rest,
       dataPlantioInicio: new Date(rest.dataPlantioInicio),
       dataPlantioFim:    new Date(rest.dataPlantioFim),
       idUsuario:         userId,
+      idPraga:           idPraga,
       createdBy,
     };
   
-    if (praga) {
-      dataToCreate.praga = {
-        create: {
-          nomeCientifico: praga.nomeCientifico,
-          nomeComum:      praga.nomeComum,
-          descricao:      praga.descricao,
-        }
-      };
-    }
-  
     const createdCultivar = await this.prisma.cultivar.create({
       data: dataToCreate,
+      include: {
+        praga: {
+          select: {
+            id: true,
+            nomeCientifico: true,
+            nomeComum: true,
+            descricao: true
+          }
+        },
+        fornecedor: {
+          select: {
+            id: true,
+            razaoSocial: true,
+            nomeFantasia: true,
+            cnpj: true,
+            email: true,
+            telefone: true
+          }
+        }
+      }
     });
   
     return plainToInstance(CultivarModel, createdCultivar, {

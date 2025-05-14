@@ -1,12 +1,12 @@
 import { PlantioModel } from './interface/plantio.interface';
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import { CrudController } from 'src/crud.controller';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam } from '@nestjs/swagger';
 import { CreatePlantioDto } from './dto/create-plantio.dto';
 import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
 import { PlantioService } from './plantio.service';
-import { Plantio } from '@prisma/client';
+import { Plantio, TipoPlantaEnum } from '@prisma/client';
 
 @ApiTags('Plantio')
 @Controller('plantio')
@@ -67,5 +67,28 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
     );
 
     return { data: plainToInstance(PlantioModel, data, { excludeExtraneousValues: true }), count };
+  }
+
+  @Get('fazenda/:idFazenda/tipo-planta/:tipoPlanta')
+  @ApiOperation({ summary: 'Lista plantios por ID da fazenda e tipo de planta do cultivar' })
+  @ApiParam({
+    name: 'idFazenda',
+    description: 'ID da fazenda',
+    type: Number,
+    required: true
+  })
+  @ApiParam({
+    name: 'tipoPlanta',
+    description: 'Tipo de planta',
+    enum: TipoPlantaEnum,
+    required: true,
+    type: 'string',
+    example: TipoPlantaEnum.SOJA
+  })
+  async listarPorFazendaTipoPlanta(
+    @Param('idFazenda', ParseIntPipe) idFazenda: number,
+    @Param('tipoPlanta') tipoPlanta: TipoPlantaEnum,
+  ): Promise<PlantioModel[]> {
+    return this.plantioService.listarPorFazendaTipoPlanta(idFazenda, tipoPlanta);
   }
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CrudService } from 'src/crud.service';
-import { PrismaClient, Fazenda, Plantio } from '@prisma/client';
+import { PrismaClient, Fazenda, Plantio, TipoPlantaEnum } from '@prisma/client';
 
 import { plainToInstance } from 'class-transformer';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
@@ -50,7 +50,6 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
     });
   }
   
-
   async listarPorFazenda(
     idFazenda: number,
     idUsuario: number,
@@ -112,5 +111,31 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
   
     return { data, count };
   }
+
+  async listarPorFazendaTipoPlanta(
+    idFazenda: number,
+    tipoPlanta: TipoPlantaEnum
+  ): Promise<PlantioModel[]> {
+    const plantios = await this.prisma.plantio.findMany({
+      where: {
+        idFazenda,
+        cultivar: {
+          tipoPlanta
+        }
+      },
+      include: {
+        cultivar: {
+          select: { id: true, nomePopular: true, nomeCientifico: true, tipoPlanta: true },
+        },
+        fazenda: {
+          select: { id: true, nome: true, municipio: true, uf: true },
+        },
+      },
+      orderBy: { dataPlantio: 'desc' },
+    });
+
+    return plainToInstance(PlantioModel, plantios, {
+      excludeExtraneousValues: true,
+    });
+  }
 }
-  
