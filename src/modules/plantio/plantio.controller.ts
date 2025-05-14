@@ -6,7 +6,8 @@ import { CreatePlantioDto } from './dto/create-plantio.dto';
 import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
 import { PlantioService } from './plantio.service';
-import { Plantio, TipoPlantaEnum } from '@prisma/client';
+import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
+import { Plantio } from '@prisma/client';
 
 @ApiTags('Plantio')
 @Controller('plantio')
