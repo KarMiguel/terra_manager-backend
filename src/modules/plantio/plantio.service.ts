@@ -116,7 +116,7 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
   async listarPorFazendaTipoPlanta(
     idFazenda: number,
     tipoPlanta: TipoPlantaEnum
-  ): Promise<PlantioModel[]> {
+  ): Promise<{ data: PlantioModel[]; count: number }> {
     const plantios = await this.prisma.plantio.findMany({
       where: {
         idFazenda,
@@ -135,8 +135,10 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
       orderBy: { dataPlantio: 'desc' },
     });
 
-    return plainToInstance(PlantioModel, plantios, {
+    const data = plainToInstance(PlantioModel, plantios, {
       excludeExtraneousValues: true,
     });
+
+    return { data, count: data.length };
   }
 }

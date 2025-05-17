@@ -89,7 +89,7 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   async listarPorFazendaTipoPlanta(
     @Param('idFazenda', ParseIntPipe) idFazenda: number,
     @Param('tipoPlanta') tipoPlanta: TipoPlantaEnum,
-  ): Promise<PlantioModel[]> {
+  ): Promise<{ data: PlantioModel[]; count: number }> {
     return this.plantioService.listarPorFazendaTipoPlanta(idFazenda, tipoPlanta);
   }
 }

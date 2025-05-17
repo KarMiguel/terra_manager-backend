@@ -34,7 +34,7 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
       },
-      'access-token', // Identificador do esquema de autenticação
+      'access-token', 
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
