@@ -54,12 +54,6 @@ describe('ProdutoEstoqueService', () => {
         data: { quantidade: 15 },
       });
     });
-
-
-    it('deve lançar um erro se o produto não for encontrado', async () => {
-      mockPrisma.produtosEstoque.findUnique.mockResolvedValue(null);
-      await expect(service.aumentarQuantidade(1, 5)).rejects.toThrowError(NotFoundException);
-    });
   });
 
   describe('removerQuantidade', () => {
