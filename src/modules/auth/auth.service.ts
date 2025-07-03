@@ -43,7 +43,7 @@ export class AuthService {
       email: user.email,
       telefone: user.telefone,
       cpf: user.cpf,
-      name: user.email,
+      name: user.nome,
       expires_at: new Date(decodedToken.exp * 1000).toISOString(),
     };
   }

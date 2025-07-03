@@ -18,6 +18,11 @@ import {
     @ApiProperty({ description: 'ID da fazenda onde o plantio ocorreu', example: 1 })
     @IsInt()
     idFazenda: number;
+
+    @ApiProperty({ description: 'ID da analise solo associada', example: 1 })
+    @IsInt()
+    @IsOptional()
+    idAnaliseSolo?: number;
   
     @ApiProperty({ description: 'Data em que o plantio foi realizado', example: '2025-05-06T10:00:00.000Z' })
     @IsDateString()

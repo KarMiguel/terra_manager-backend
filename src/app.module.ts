@@ -9,6 +9,7 @@ import { FornecedorModule } from './modules/fornecedor/fornecedor.module';
 import { CultivarModule } from './modules/cultivar/cultivar.module';
 import { PragaModule } from './modules/praga/praga.module';
 import { PlantioModule } from './modules/plantio/plantio.module';
+import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { PlantioModule } from './modules/plantio/plantio.module';
     FornecedorModule,
     PragaModule,
     CultivarModule,
-    PlantioModule
+    PlantioModule,
+    AnaliseSoloModule
   ],
 })
 export class AppModule {}

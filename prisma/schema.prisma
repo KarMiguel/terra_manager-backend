@@ -110,6 +110,8 @@ model Usuario {
   fazendas             Fazenda[] 
   fornecedores         Fornecedor[]
   cultivares           Cultivar[]  
+  
+  analisesSolo          AnaliseSolo[]
 
   @@map("usuario")
 }
@@ -244,10 +246,37 @@ model Cultivar {
   @@map("cultivar")
 }
 
+model AnaliseSolo {
+  id                Int                 @id @default(autoincrement())
+  idUsuario         Int                 @map("id_usuario")
+
+  areaTotal         Float?              @map("area_total")
+  hAi               Float?              @map("h_ai")
+  sb                Float?              @map("sb")
+  ctc               Float?              @map("ctc")
+  v                 Float?              @map("v")
+  m                 Float?              @map("m")
+  mo                Float?              @map("mo")
+
+  ativo             Boolean           @default(true)
+  createdBy         String?           @map("created_by")              @db.VarChar(255)
+  dateCreated       DateTime          @map("date_created")            @default(now())
+  dateModified      DateTime          @map("date_modified")           @updatedAt
+  modifiedBy        String?           @map("modified_by")             @db.VarChar(255)
+
+  usuario           Usuario       @relation(fields: [idUsuario], references: [id])
+  plantios          Plantio[]
+
+  @@map("analise_solo")
+
+}
+
+
 model Plantio {
   id                         Int               @id @default(autoincrement())
   idCultivar                 Int               @map("id_cultivar")
   idFazenda                  Int               @map("id_fazenda")
+  idAnaliseSolo              Int?              @map("id_analise_solo")
 
   dataPlantio                DateTime          @map("data_plantio")
   dataEmergencia             DateTime?         @map("data_emergencia")
@@ -305,6 +334,8 @@ model Plantio {
 
   cultivar Cultivar @relation(fields: [idCultivar], references: [id], onDelete: Restrict)
   fazenda  Fazenda  @relation(fields: [idFazenda], references: [id], onDelete: Restrict)
+  analiseSolo AnaliseSolo? @relation(fields: [idAnaliseSolo], references: [id], onDelete: Cascade)
 
   @@map("plantio")
 }
+

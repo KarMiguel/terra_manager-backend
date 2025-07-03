@@ -2,6 +2,7 @@ import { Expose, Type } from 'class-transformer';
 import { UnidadeDoseEnum, StatusPlantioEnum } from '../enum/plantio.enum';
 import { CultivarModel } from 'src/modules/cultivar/interface/cultivar.interface';
 import { FazendaModel } from 'src/modules/fazenda/interface/fazenda.interface';
+import { AnaliseSoloModel } from 'src/modules/analiseSolo/interface/analise-solo.interface';
 
 export class PlantioModel {
   @Expose()
@@ -12,6 +13,9 @@ export class PlantioModel {
 
   @Expose()
   idFazenda: number;
+
+  @Expose()
+  idAnaliseSolo?: number;
 
   @Expose()
   @Type(() => Date)
@@ -142,4 +146,8 @@ export class PlantioModel {
   @Expose()
   @Type(() => FazendaModel)
   fazenda?: FazendaModel;
+
+  @Expose()
+  @Type(() => AnaliseSoloModel)
+  analiseSolo?: AnaliseSoloModel;
 }

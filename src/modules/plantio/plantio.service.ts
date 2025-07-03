@@ -99,6 +99,9 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
           fazenda: {
             select: { id: true, nome: true, municipio: true, uf: true },
           },
+          analiseSolo: {
+            select: { id: true, hAi: true, sb: true, ctc: true, v: true, m: true, mo: true },
+          },
         },
         orderBy: { dataPlantio: 'desc' },
         ...this.filterOptions(options),
@@ -130,6 +133,9 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
         },
         fazenda: {
           select: { id: true, nome: true, municipio: true, uf: true },
+        },
+        analiseSolo: {
+          select: { id: true, hAi: true, sb: true, ctc: true, v: true, m: true, mo: true },
         },
       },
       orderBy: { dataPlantio: 'desc' },
