@@ -6,7 +6,7 @@ import { Paginate } from 'src/common/utils/types';
 import { CrudService } from 'src/crud.service';
 
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
-import { AdubacaoResponseModel, AnaliseSoloModel, CalagemModel, CalagemResponseModel } from './interface/analise-solo.interface';
+import { AdubacaoResponseModel, AnaliseSoloModel, CalagemModel, CalagemResponseModel, NutrienteComparacaoResponseModel } from './interface/analise-solo.interface';
 import { CultivarService } from '../cultivar/cultivar.service';
 import { CalculosUtil } from './util/calculos.util';
 
@@ -156,5 +156,45 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
       kTotalAreaKg: Number(doseK * plantio.areaPlantada).toFixed(2) + ' kg',
       areaHa: Number(plantio.areaPlantada).toFixed(2) + ' ha',
     };
+  }
+
+  async comparativoNutrientes(idPlantio: number): Promise<any> {
+    const analiseSolo = await this.findByPlantioId(idPlantio);
+
+    const plantio = await this.prisma.plantio.findUnique({
+      where: { id: idPlantio },
+      include: { cultivar: true },
+    });
+
+    if (!plantio || !plantio.cultivar) {
+      throw new BadRequestException('Plantio ou cultivar não encontrados.');
+    }
+
+    const cultivar = plantio.cultivar;
+
+    const data = {
+      data: {
+        // Dados da análise de solo - valores encontrados no solo
+        analiseSolo: {
+          ph: analiseSolo.ph ? Number(analiseSolo.ph).toFixed(1) : '-',              // pH do solo (escala 0-14, adimensional)
+          n: analiseSolo?.n ? Number(analiseSolo.n).toFixed(2) + ' kg/ha' : '-',                  // Nitrogênio disponível no solo (mg/dm³)
+          p: analiseSolo?.p ? Number(analiseSolo.p).toFixed(2) + ' kg/ha' : '-',                  // Fósforo disponível no solo (mg/dm³) 
+          k: analiseSolo?.k ? Number(analiseSolo.k).toFixed(2) + ' kg/ha' : '-',                  // Potássio disponível no solo (mg/dm³)
+          ca: analiseSolo?.sb ? Number(analiseSolo.sb).toFixed(2) + ' kg/ha' : '-',            // Cálcio + Magnésio (soma de bases - cmolc/dm³)
+          mg: analiseSolo?.m ? Number(analiseSolo.m).toFixed(1) + ' kg/ha' : '-',                      // Saturação por alumínio (% - índice de toxidez)
+         },
+        // Exigências nutricionais da cultivar - doses recomendadas
+        cultivar: {
+          ph: cultivar.phSolo ? Number(cultivar.phSolo).toFixed(1) : '-',                          // pH ideal para a cultivar (escala 0-14)
+          n: cultivar.aduboNitrogenio ? Number(cultivar.aduboNitrogenio).toFixed(2) + ' kg/ha' : '-',    // Nitrogênio necessário (kg/ha)
+          p: cultivar.aduboFosforo ? Number(cultivar.aduboFosforo).toFixed(2) + ' kg/ha' : '-',          // Fósforo necessário (kg/ha)
+          k: cultivar.aduboPotassio ? Number(cultivar.aduboPotassio).toFixed(2) + ' kg/ha' : '-',        // Potássio necessário (kg/ha)
+          ca: cultivar.aduboCalcio ? Number(cultivar.aduboCalcio).toFixed(2) + ' kg/ha' : '-',           // Cálcio necessário (kg/ha)
+          mg: cultivar.aduboMagnesio ? Number(cultivar.aduboMagnesio).toFixed(2) + ' kg/ha' : '-',       // Magnésio necessário (kg/ha)
+        },
+      },
+    };
+
+    return data;
   }
 } 

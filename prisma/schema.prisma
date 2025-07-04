@@ -226,6 +226,8 @@ model Cultivar {
   aduboNitrogenio       Float?          @map("adubo_nitrogenio")
   aduboFosforo          Float?          @map("adubo_fosforo")
   aduboPotassio         Float?          @map("adubo_potassio")
+  aduboCalcio           Float?          @map("adubo_calcio")
+  aduboMagnesio         Float?          @map("adubo_magnesio")
   tempoCicloDias        Int?            @map("tempo_ciclo_dias")
   densidadePlantio      Float?          @map("densidade_plantio")
   densidadeColheita     Float?          @map("densidade_colheita")
@@ -250,6 +252,7 @@ model AnaliseSolo {
   id                Int                 @id @default(autoincrement())
   idUsuario         Int                 @map("id_usuario")
 
+  ph                Float?              @map("ph")
   areaTotal         Float?              @map("area_total")
   hAi               Float?              @map("h_ai")
   sb                Float?              @map("sb")

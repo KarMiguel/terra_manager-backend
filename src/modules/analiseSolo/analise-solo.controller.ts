@@ -6,7 +6,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
-import { AdubacaoResponseModel, AnaliseSoloModel, CalagemResponseModel } from './interface/analise-solo.interface';
+import { AdubacaoResponseModel, AnaliseSoloModel, CalagemResponseModel, NutrienteComparacaoResponseModel } from './interface/analise-solo.interface';
 
 @ApiTags('Análise de Solo') 
 @Controller('analise-solo')
@@ -119,6 +119,12 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
   @ApiOperation({ summary: 'Calcula a adubação' })
   async calculaAdubacao(@Param('idPlantio') idPlantio: string): Promise<AdubacaoResponseModel> {
     return this.analiseSoloService.calculoAdubacao(+idPlantio);
+  }
+
+  @Get('comparativo-nutrientes/:idPlantio')
+  @ApiOperation({ summary: 'Retorna comparação entre exigência da cultivar e análise de solo' })
+  async comparativo(@Param('idPlantio') idPlantio: string): Promise<any> {
+    return this.analiseSoloService.comparativoNutrientes(+idPlantio);
   }
 
 } 

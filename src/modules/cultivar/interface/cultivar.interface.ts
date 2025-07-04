@@ -45,6 +45,12 @@ export class CultivarModel {
   aduboPotassio: number;
 
   @Expose()
+  aduboCalcio?: number;
+
+  @Expose()
+  aduboMagnesio?: number;
+
+  @Expose()
   tempoCicloDias: number;
 
   @Expose()

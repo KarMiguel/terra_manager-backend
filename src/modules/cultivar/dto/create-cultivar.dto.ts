@@ -90,6 +90,22 @@ export class CreateCultivarDto {
   @IsNumber()
   aduboPotassio: number;
 
+  @ApiPropertyOptional({
+    description: 'Quantidade de cálcio no adubo (kg/ha)',
+    example: 20,
+  })
+  @IsNumber()
+  @IsOptional()
+  aduboCalcio?: number;
+
+  @ApiPropertyOptional({
+    description: 'Quantidade de magnésio no adubo (kg/ha)',
+    example: 15,
+  })
+  @IsNumber()
+  @IsOptional()
+  aduboMagnesio?: number;
+
   @ApiProperty({
     description: 'Tempo total do ciclo em dias',
     example: 150,
