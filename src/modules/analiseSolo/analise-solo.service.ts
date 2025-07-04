@@ -6,9 +6,9 @@ import { Paginate } from 'src/common/utils/types';
 import { CrudService } from 'src/crud.service';
 
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
-import { AdubacaoModel, AnaliseSoloModel, CalagemModel } from './interface/analise-solo.interface';
+import { AdubacaoResponseModel, AnaliseSoloModel, CalagemModel, CalagemResponseModel } from './interface/analise-solo.interface';
 import { CultivarService } from '../cultivar/cultivar.service';
-import { FATOR_CONVERSAO, EFICIENCIA } from './interface/enum/analise-solo.util';
+import { CalculosUtil } from './util/calculos.util';
 
 @Injectable()
 export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloModel> {
@@ -25,6 +25,15 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
   ): Promise<AnaliseSoloModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma análise de solo.');
+    }
+
+    // Verifica se o usuário existe
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id: userId },
+    });
+
+    if (!usuario) {
+      throw new BadRequestException('Usuário não encontrado.');
     }
 
     const createdAnaliseSolo = await this.prisma.analiseSolo.create({
@@ -89,7 +98,7 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
     });
   }
 
-  async calculaCalagem(idPlantio: number): Promise<CalagemModel> {
+  async calculaCalagem(idPlantio: number): Promise<CalagemResponseModel> {
 
     const analiseSolo = await this.findByPlantioId(idPlantio);
 
@@ -97,16 +106,15 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
       throw new BadRequestException('Plantio não possui análise de solo.');
     }
 
-    const { ctc, v, valorCultural, prnt, areaTotal } = analiseSolo;
+    const calc = CalculosUtil.calcCalagem(analiseSolo);
 
-    const rc = ctc * (valorCultural - v) / prnt;
-
-    const rct = rc * areaTotal;
-
-    return { rc, rct };
+    return {
+      rencomedacaoCalagem: Number(calc.rc).toFixed(2) + ' t/ha',
+      recomendacaoCalagemTotal: Number(calc.rct).toFixed(2) + ' t/ha',
+    };
   }
 
-  async calculoAdubacao(idPlantio: number): Promise<AdubacaoModel> {
+  async calculoAdubacao(idPlantio: number): Promise<AdubacaoResponseModel> {
     const analiseSolo = await this.findByPlantioId(idPlantio);
 
     if (!analiseSolo) {
@@ -121,47 +129,32 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
     if (!plantio || !plantio.cultivar) {
       throw new BadRequestException('Plantio ou cultivar não encontrados.');
     }
+    
+    const { aduboNitrogenio: exigN, aduboFosforo: exigP, aduboPotassio: exigK } = plantio.cultivar;
 
-    const {
-      aduboNitrogenio: exigN = 0,
-      aduboFosforo: exigP = 0,
-      aduboPotassio: exigK = 0,
-    } = plantio.cultivar;
+    // Verificação se há dados suficientes para o cálculo
+    if (exigN == null || exigP == null || exigK == null) {
+      throw new BadRequestException('A cultivar deve possuir valores de aduboNitrogenio, aduboFosforo e aduboPotassio cadastrados para o cálculo de adubação.');
+    }
 
-    // Função para calcular adubação com conversão de mg/dm³ para kg/ha
-    const calcDoseKgHa = (soloMgDm3: number | null | undefined, exigKgHa: number, eficiencia: number): number => {
-      const soloMgDm3Value = soloMgDm3 ?? 0;
-      
-      // Conversão: 1 mg/dm³ ≈ 2 kg/ha (camada 0-20cm, densidade 1,0 g/cm³)
-      const soloKgHa = soloMgDm3Value * FATOR_CONVERSAO;
-      
-      // Fórmula: Adubação = (Exigência - Disponível no solo) ÷ Eficiência
-      const necessidade = Math.max(exigKgHa - soloKgHa, 0);
-      const dose = necessidade / eficiencia;
-      
-      return Number(dose.toFixed(2));
-    };
+    // Verificação se há dados da análise de solo
+    if (!analiseSolo.n && !analiseSolo.p && !analiseSolo.k) {
+      throw new BadRequestException('Análise de solo não possui dados de NPK');
+    }
 
-    const doseN = calcDoseKgHa(analiseSolo.n, exigN, EFICIENCIA.N);
-    const doseP = calcDoseKgHa(analiseSolo.p, exigP, EFICIENCIA.P);
-    const doseK = calcDoseKgHa(analiseSolo.k, exigK, EFICIENCIA.K);
+    // Função para calcular adubação usando a fórmula clássica sem valores padrão
+    const doseN = CalculosUtil.calcDoseKgHa(analiseSolo.n, exigN, CalculosUtil.EFICIENCIA.N);
+    const doseP = CalculosUtil.calcDoseKgHa(analiseSolo.p, exigP, CalculosUtil.EFICIENCIA.P);
+    const doseK = CalculosUtil.calcDoseKgHa(analiseSolo.k, exigK, CalculosUtil.EFICIENCIA.K);
 
-    // Área do plantio para cálculo total
-    const areaHa = plantio.areaPlantada;
-
-    // Cálculo da dose total por área (kg totais)
-    const nTotalKg = Number((doseN * areaHa).toFixed(2));
-    const pTotalKg = Number((doseP * areaHa).toFixed(2));
-    const kTotalKg = Number((doseK * areaHa).toFixed(2));
-
-    return { 
-      n: doseN,           // kg/ha
-      p: doseP,           // kg/ha
-      k: doseK,           // kg/ha
-      nTotalKg,           // kg totais para toda a área
-      pTotalKg,           // kg totais para toda a área
-      kTotalKg,           // kg totais para toda a área
-      areaHa              // área em hectares
+    return {
+      n: Number(doseN).toFixed(2) + ' kg/ha',
+      p: Number(doseP).toFixed(2) + ' kg/ha',
+      k: Number(doseK).toFixed(2) + ' kg/ha',
+      nTotalAreaKg: Number(doseN * plantio.areaPlantada).toFixed(2) + ' kg',
+      pTotalAreaKg: Number(doseP * plantio.areaPlantada).toFixed(2) + ' kg',
+      kTotalAreaKg: Number(doseK * plantio.areaPlantada).toFixed(2) + ' kg',
+      areaHa: Number(plantio.areaPlantada).toFixed(2) + ' ha',
     };
   }
 } 

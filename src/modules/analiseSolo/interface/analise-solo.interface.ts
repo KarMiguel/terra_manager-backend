@@ -52,33 +52,23 @@ export class AnaliseSoloModel {
 } 
 
 export class CalagemModel {
-  @Expose()
-  rc: number;
+  rc: number | string;
+  rct: number | string;
 
-  @Expose()
-  rct: number;
 }
 
-export class AdubacaoModel {
-  @Expose()
-  n: number;
+export class CalagemResponseModel {
+  rencomedacaoCalagem: string;
+  recomendacaoCalagemTotal: string;
+}
 
-  @Expose()
-  p: number;
-
-  @Expose()
-  k: number;
-
-  @Expose()
-  nTotalKg: number;
-
-  @Expose()
-  pTotalKg: number;
-
-  @Expose()
-  kTotalKg: number;
-
-  @Expose()
-  areaHa: number;
+export class AdubacaoResponseModel {
+  n: string;   // dose de N por hectare
+  p: string;   // dose de P por hectare
+  k: string;   // dose de K por hectare
+  nTotalAreaKg: string; // total de N para toda a área
+  pTotalAreaKg: string; // total de P para toda a área
+  kTotalAreaKg: string; // total de K para toda a área
+  areaHa: string;   // área em hectares
 }
 

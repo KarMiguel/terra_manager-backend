@@ -1,15 +1,17 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AnaliseSolo } from '@prisma/client';
 import { CrudController } from 'src/crud.controller';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
-import { AdubacaoModel, AnaliseSoloModel, CalagemModel } from './interface/analise-solo.interface';
+import { AdubacaoResponseModel, AnaliseSoloModel, CalagemResponseModel } from './interface/analise-solo.interface';
 
 @ApiTags('Análise de Solo') 
 @Controller('analise-solo')
 @ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSoloModel> {
   constructor(private readonly analiseSoloService: AnaliseSoloService) {
     super(analiseSoloService); 
@@ -17,12 +19,12 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
   
   @Post()
   @ApiOperation({ summary: 'Cria uma nova análise de solo' })
-  async create(@Body() createAnaliseSoloDto: CreateAnaliseSoloDto, @Req() req): Promise<any> {
-    const userId = req.user.id;
-    const createdBy = req.user.email; 
+  async create(@Body() createAnaliseSoloDto: CreateAnaliseSoloDto, @Req() req): Promise<AnaliseSoloModel> {
+    const userId = req.user?.id;
+    const createdBy = req.user?.email; 
 
     if (!userId || !createdBy) {
-      throw new Error('ID ou email do usuário não encontrado no token.');
+      throw new BadRequestException('ID ou email do usuário não encontrado no token.');
     }
 
     return this.analiseSoloService.createAnaliseSolo(createAnaliseSoloDto, userId, createdBy);
@@ -109,13 +111,13 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
 
   @Get('calagem/:idPlantio')
   @ApiOperation({ summary: 'Calcula a calagem' })
-  async calculaCalagem(@Param('idPlantio') idPlantio: string): Promise<CalagemModel> {
+  async calculaCalagem(@Param('idPlantio') idPlantio: string): Promise<CalagemResponseModel> {
     return this.analiseSoloService.calculaCalagem(+idPlantio);
   }
 
   @Get('adubacao/:idPlantio')
   @ApiOperation({ summary: 'Calcula a adubação' })
-  async calculaAdubacao(@Param('idPlantio') idPlantio: string): Promise<AdubacaoModel> {
+  async calculaAdubacao(@Param('idPlantio') idPlantio: string): Promise<AdubacaoResponseModel> {
     return this.analiseSoloService.calculoAdubacao(+idPlantio);
   }
 
