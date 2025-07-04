@@ -97,16 +97,10 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
     return await this.analiseSoloService.findAndCountByUser(userId, paginate, parsedOptions);
   }
 
-  @Get('plantio/:plantioId')
+  @Get('plantio/:idPlantio')
   @ApiOperation({ summary: 'Busca análise de solo pelo ID do plantio' })
-  async findByPlantioId(@Param('plantioId') plantioId: string): Promise<AnaliseSoloModel | null> {
-    const id = parseInt(plantioId);
-    
-    if (isNaN(id)) {
-      throw new BadRequestException('ID do plantio deve ser um número válido.');
-    }
-
-    return this.analiseSoloService.findByPlantioId(id);
+  async findByPlantioId(@Param('idPlantio') idPlantio: string): Promise<AnaliseSoloModel | null> {
+    return this.analiseSoloService.findByPlantioId(+idPlantio);
   }
 
   @Get('calagem/:idPlantio')

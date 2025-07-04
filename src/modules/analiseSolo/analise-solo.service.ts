@@ -73,13 +73,13 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
     return { data, count };
   }
 
-  async findByPlantioId(plantioId: number): Promise<AnaliseSoloModel | null> {
-    if (!plantioId) {
+  async findByPlantioId(idPlantio: number): Promise<AnaliseSoloModel | null> {
+    if (!idPlantio) {
       throw new BadRequestException('O ID do plantio é obrigatório.');
     }
 
     const plantio = await this.prisma.plantio.findUnique({
-      where: { id: plantioId },
+      where: { id: idPlantio },
       include: {
         analiseSolo: true,
       },
