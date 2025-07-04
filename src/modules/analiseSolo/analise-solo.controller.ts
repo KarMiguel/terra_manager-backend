@@ -1,10 +1,11 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
-import { CrudController } from 'src/crud.controller';
-import { AnaliseSoloModel } from './interface/analise-solo.interface';
-import { AnaliseSoloService } from './analise-solo.service';
-import { AnaliseSolo } from '@prisma/client';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { AnaliseSolo } from '@prisma/client';
+import { CrudController } from 'src/crud.controller';
+
+import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
+import { AdubacaoModel, AnaliseSoloModel, CalagemModel } from './interface/analise-solo.interface';
 
 @ApiTags('Análise de Solo') 
 @Controller('analise-solo')
@@ -105,4 +106,17 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
 
     return this.analiseSoloService.findByPlantioId(id);
   }
+
+  @Get('calagem/:idPlantio')
+  @ApiOperation({ summary: 'Calcula a calagem' })
+  async calculaCalagem(@Param('idPlantio') idPlantio: string): Promise<CalagemModel> {
+    return this.analiseSoloService.calculaCalagem(+idPlantio);
+  }
+
+  @Get('adubacao/:idPlantio')
+  @ApiOperation({ summary: 'Calcula a adubação' })
+  async calculaAdubacao(@Param('idPlantio') idPlantio: string): Promise<AdubacaoModel> {
+    return this.analiseSoloService.calculoAdubacao(+idPlantio);
+  }
+
 } 

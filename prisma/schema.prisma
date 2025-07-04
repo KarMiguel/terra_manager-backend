@@ -257,6 +257,11 @@ model AnaliseSolo {
   v                 Float?              @map("v")
   m                 Float?              @map("m")
   mo                Float?              @map("mo")
+  prnt              Float?              @map("prnt")
+  valorCultural     Float?              @map("valor_cultural")
+  n                 Float?              @map("n")    
+  p                 Float?              @map("p")
+  k                 Float?              @map("k")
 
   ativo             Boolean           @default(true)
   createdBy         String?           @map("created_by")              @db.VarChar(255)

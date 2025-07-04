@@ -36,4 +36,29 @@ export class CreateAnaliseSoloDto {
   @IsOptional()
   @IsNumber()
   mo?: number;
+
+  @ApiProperty({ description: 'Valor Cultural', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  valorCultural?: number;
+
+  @ApiProperty({ description: 'PRNT', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  prnt?: number;
+
+  @ApiProperty({ description: 'N', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  n?: number;
+
+  @ApiProperty({ description: 'P', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  p?: number;
+
+  @ApiProperty({ description: 'K', example: 100 })
+  @IsOptional()
+  @IsNumber()
+  k?: number;
 } 

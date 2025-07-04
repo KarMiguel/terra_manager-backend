@@ -135,7 +135,11 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
           select: { id: true, nome: true, municipio: true, uf: true },
         },
         analiseSolo: {
-          select: { id: true, hAi: true, sb: true, ctc: true, v: true, m: true, mo: true },
+          select: {
+            id: true, hAi: true, sb: true, ctc: true, v: true, m: true, mo: true,
+            n: true, p: true, k: true, valorCultural: true, prnt: true, areaTotal: true,
+        
+          },
         },
       },
       orderBy: { dataPlantio: 'desc' },
