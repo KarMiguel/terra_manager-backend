@@ -8,16 +8,21 @@ import { CrudServiceOptions, Paginate } from 'src/common/utils/types';
 import { PlantioModel } from './interface/plantio.interface';
 import { CreatePlantioDto } from './dto/create-plantio.dto';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
+import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class PlantioService extends CrudService<Plantio, PlantioModel> {
+  protected logHelper: LogHelper;
+
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'plantio', PlantioModel);
+    this.logHelper = new LogHelper(prisma);
   }
 
   async createPlantio(
     dto: CreatePlantioDto,
     createdBy: string,
+    logContext?: LogContext,
   ): Promise<PlantioModel> {
     const {
       dataPlantio,
@@ -45,6 +50,20 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
     const created = await this.prisma.plantio.create({
       data: dataToCreate,
     });
+
+    // Registra log da operação CREATE
+    if (logContext) {
+      this.logHelper.createLog(
+        TipoOperacaoEnum.CREATE,
+        'plantio',
+        logContext,
+        {
+          idRegistro: created.id,
+          dadosNovos: created,
+          descricao: `Criação de plantio ID ${created.id}`,
+        },
+      ).catch(err => console.error('Erro ao registrar log:', err));
+    }
   
     return plainToInstance(PlantioModel, created, {
       excludeExtraneousValues: true,

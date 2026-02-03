@@ -5,6 +5,7 @@ import { CrudController } from 'src/crud.controller';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
 import { FornecedorService } from './fornecedor.service';
 import { FornecedorModel } from './interface/fornecedor.interface';
+import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Fornecedor') 
 @Controller('fornecedor')
@@ -31,6 +32,10 @@ export class FornecedorController extends CrudController<Fornecedor, FornecedorM
     status: 401, 
     description: 'Não autorizado - Token JWT inválido ou ausente' 
   })
+  @ApiResponse({ 
+    status: 409, 
+    description: 'Conflito - CNPJ ou outro campo único já está registrado' 
+  })
   async create(@Body() createFornecedorDto: CreateFornecedorDto, @Req() req): Promise<any> {
     const userId = req.user.id;
     const createdBy = req.user.email; 
@@ -39,7 +44,14 @@ export class FornecedorController extends CrudController<Fornecedor, FornecedorM
       throw new Error('ID ou email do usuário não encontrado no token.');
     }
 
-    return this.fornecedorService.createFornecedor(createFornecedorDto, userId, createdBy);
+    const logContext: LogContext = {
+      idUsuario: userId,
+      emailUsuario: createdBy,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+
+    return this.fornecedorService.createFornecedor(createFornecedorDto, userId, createdBy, logContext);
   }
 
   @Get('lista')

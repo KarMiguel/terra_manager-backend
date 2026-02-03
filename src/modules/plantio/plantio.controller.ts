@@ -8,6 +8,7 @@ import { Paginate } from 'src/common/utils/types';
 import { PlantioService } from './plantio.service';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
 import { Plantio } from '@prisma/client';
+import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Plantio')
 @Controller('plantio')
@@ -38,7 +39,13 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
     @Body() createPlantioDto: CreatePlantioDto,
     @Req() req,
   ): Promise<PlantioModel> {
-    return this.plantioService.createPlantio(createPlantioDto, req.user?.email);
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: req.user?.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.plantioService.createPlantio(createPlantioDto, req.user?.email, logContext);
   }
 
   @Get('fazenda/:idFazenda')

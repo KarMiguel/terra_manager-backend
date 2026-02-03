@@ -4,7 +4,9 @@ Catch,
 ArgumentsHost,
 HttpException,
 HttpStatus,
+ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -12,6 +14,18 @@ catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
+
+    // Detecta erros de unique constraint do Prisma
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (exception.code === 'P2002') {
+        // Unique constraint violation
+        const target = exception.meta?.target as string[] | undefined;
+        const field = target ? target.join(', ') : 'campo único';
+        exception = new ConflictException(
+          `Já existe um registro com o(s) valor(es) informado(s) para ${field}.`
+        );
+      }
+    }
 
     const status =
     exception instanceof HttpException
@@ -32,6 +46,9 @@ catch(exception: any, host: ArgumentsHost) {
         break;
     case HttpStatus.NOT_FOUND:
         customMessage = 'The requested resource was not found.';
+        break;
+    case HttpStatus.CONFLICT:
+        customMessage = exception.message || 'Conflict. The resource already exists.';
         break;
     case HttpStatus.UNPROCESSABLE_ENTITY:
         customMessage =

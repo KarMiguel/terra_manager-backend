@@ -1,10 +1,11 @@
 // src/modules/auth/auth.controller.ts
-import { Controller, Post, Body, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, BadRequestException, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/guards/public.decorator';
 import { ApiBody, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginDto } from './dto/LoginDto.dto';
+import { LogContext } from '../../common/utils/log-helper';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -64,11 +65,22 @@ export class AuthController {
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Dados inválidos ou email já cadastrado' 
+    description: 'Dados inválidos' 
+  })
+  @ApiResponse({ 
+    status: 409, 
+    description: 'Conflito - Email ou CPF já está cadastrado' 
   })
   async register(
-    @Body() body: CreateUserDto) {
-    return this.authService.register(body);
+    @Body() body: CreateUserDto,
+    @Req() req,
+  ) {
+    const logContext: LogContext = {
+      emailUsuario: body.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.authService.register(body, logContext);
   }
 
   @Public()

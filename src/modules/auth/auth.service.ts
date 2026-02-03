@@ -3,19 +3,25 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
-import { Usuario } from '@prisma/client';
+import { Usuario, PrismaClient } from '@prisma/client';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Role } from 'src/common/guards/roles.enum';
 import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
+import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class AuthService {
+  private logHelper: LogHelper;
+
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
-  ) { }
+    private readonly prisma: PrismaClient,
+  ) {
+    this.logHelper = new LogHelper(prisma);
+  }
 
   async validateUser(email: string, password: string): Promise<Usuario | null> {
     const user = await this.userService.findByEmail(email);
@@ -49,32 +55,58 @@ export class AuthService {
   }
 
 
-  async register(data: CreateUserDto): Promise<UserModel> {
+  async register(data: CreateUserDto, logContext?: LogContext): Promise<UserModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      throw new ConflictException('Email já está cadastrado');
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const user = await this.userService.create({
-      nome: data.nome,
-      email: data.email,
-      password: hashedPassword,
-      role: data.role || Role.USER,
-      cpf: data.cpf || null,
-      telefone: data.telefone || null,
-      ativo: true,
-    });
+    try {
+      const user = await this.userService.create({
+        nome: data.nome,
+        email: data.email,
+        password: hashedPassword,
+        role: data.role || Role.USER,
+        cpf: data.cpf || null,
+        telefone: data.telefone || null,
+        ativo: true,
+      });
 
-    return {
-      id: user.id,
-      email: user.email,
-      nome: user.nome,
-      role: user.role,
-      cpf: user.cpf,
-      telefone: user.telefone
-    };
+      // Registra log da operação CREATE
+      if (logContext) {
+        this.logHelper.createLog(
+          TipoOperacaoEnum.CREATE,
+          'usuario',
+          logContext,
+          {
+            idRegistro: user.id,
+            dadosNovos: { ...user, password: '[HIDDEN]' },
+            descricao: `Criação de usuário ID ${user.id}`,
+          },
+        ).catch(err => console.error('Erro ao registrar log:', err));
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        nome: user.nome,
+        role: user.role,
+        cpf: user.cpf,
+        telefone: user.telefone
+      };
+    } catch (error: any) {
+      // Captura erros de unique constraint do Prisma (email, cpf)
+      if (error.code === 'P2002') {
+        const target = error.meta?.target as string[] | undefined;
+        const field = target?.includes('email') ? 'email' : 
+                     target?.includes('cpf') ? 'CPF' : 
+                     target ? target.join(', ') : 'campo único';
+        throw new ConflictException(`Já existe um usuário com o ${field} informado.`);
+      }
+      throw error;
+    }
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {

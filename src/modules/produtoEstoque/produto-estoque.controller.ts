@@ -7,6 +7,7 @@ import { ProdutoEstoqueService } from './produto-estoque.service';
 import { CreateProdutoEstoqueDto } from './dto/create-produto-estoque.dto';
 import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
+import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Produto Estoque') 
 @Controller('produto-estoque')
@@ -34,8 +35,14 @@ export class ProdutoEstoqueController extends CrudController<Fazenda, ProdutoEst
     description: 'Não autorizado - Token JWT inválido ou ausente' 
   })
   async create(@Body() createProdutoEstoqueDto: CreateProdutoEstoqueDto, @Req() req) {
-    const createdBy = req.user?.email; 
-    return this.produtoEstoqueService.createProdutoEstoque(createProdutoEstoqueDto, createdBy);
+    const createdBy = req.user?.email;
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: createdBy,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.produtoEstoqueService.createProdutoEstoque(createProdutoEstoqueDto, createdBy, logContext);
   }
   
   @Patch(':id/aumentar-quantidade')

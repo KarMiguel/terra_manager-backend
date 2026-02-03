@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Patch,
   UseGuards,
   Type,
   Req,
@@ -15,6 +16,7 @@ import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ApiBody, ApiQuery, ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { LogContext } from './common/utils/log-helper';
 
 @UseGuards(JwtAuthGuard)
 @Injectable()
@@ -56,6 +58,10 @@ export abstract class CrudController<T extends object, R extends object = T> {
     status: 404, 
     description: 'Registro não encontrado' 
   })
+  @ApiResponse({ 
+    status: 409, 
+    description: 'Conflito - Campo único já está em uso por outro registro' 
+  })
   @ApiBearerAuth('access-token')
   async update(
     @Param('id') id: string,
@@ -63,14 +69,20 @@ export abstract class CrudController<T extends object, R extends object = T> {
     @Req() req,
   ): Promise<R> {
     const modifiedBy = req.user?.email || 'unknown';
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: req.user?.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
     
     // Se o serviço tiver um método update específico, use-o
     if (typeof this.service.update === 'function') {
-      return this.service.update(+id, body, modifiedBy);
+      return this.service.update(+id, body, modifiedBy, logContext);
     }
     
     // Caso contrário, use o método genérico do CrudService
-    return this.service.update(+id, body, modifiedBy);
+    return this.service.update(+id, body, modifiedBy, logContext);
   }
   
   // @Get()
@@ -206,8 +218,84 @@ export abstract class CrudController<T extends object, R extends object = T> {
     description: 'Registro não encontrado' 
   })
   @ApiBearerAuth('access-token')
-  async delete(@Param('id') id: string): Promise<R> {
-    return this.service.delete(+id);
+  async delete(@Param('id') id: string, @Req() req): Promise<R> {
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: req.user?.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.service.delete(+id, logContext);
+  }
+
+  @Patch(':id/desativar')
+  @ApiOperation({ 
+    summary: 'Desativa um registro',
+    description: 'Desativa um registro (marca como inativo) sem excluí-lo do sistema. A operação será registrada nos logs.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID do registro a ser desativado',
+    type: Number,
+    example: 1
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Registro desativado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Registro não encontrado' 
+  })
+  @ApiBearerAuth('access-token')
+  async deactivate(@Param('id') id: string, @Req() req): Promise<R> {
+    const modifiedBy = req.user?.email || 'unknown';
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: req.user?.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.service.deactivate(+id, modifiedBy, logContext);
+  }
+
+  @Patch(':id/ativar')
+  @ApiOperation({ 
+    summary: 'Ativa um registro',
+    description: 'Ativa um registro previamente desativado. A operação será registrada nos logs.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID do registro a ser ativado',
+    type: Number,
+    example: 1
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Registro ativado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Registro não encontrado' 
+  })
+  @ApiBearerAuth('access-token')
+  async activate(@Param('id') id: string, @Req() req): Promise<R> {
+    const modifiedBy = req.user?.email || 'unknown';
+    const logContext: LogContext = {
+      idUsuario: req.user?.id,
+      emailUsuario: req.user?.email,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    };
+    return this.service.activate(+id, modifiedBy, logContext);
   }
   
   // @Get('list/user')

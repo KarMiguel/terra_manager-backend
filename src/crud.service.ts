@@ -1,16 +1,22 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { calculatePagination } from "./common/utils/calculatePagination";
 import { CrudServiceOptions, Paginate } from "./common/utils/types";
 import { plainToInstance } from "class-transformer";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { LogHelper, LogContext, TipoOperacaoEnum } from "./common/utils/log-helper";
 
 @Injectable()
 export abstract class CrudService<T extends object, R extends object = T> {
+  protected logHelper: LogHelper;
+
   constructor(
     protected readonly prisma: PrismaClient,
     private readonly modelName: keyof PrismaClient,
-    private readonly responseClass: new () => R, 
-  ) {}
+    private readonly responseClass: new () => R,
+    @Optional() logHelper?: LogHelper,
+  ) {
+    this.logHelper = logHelper || new LogHelper(prisma);
+  }
 
   private get repository() {
     return this.prisma[this.modelName] as any;
@@ -65,7 +71,12 @@ export abstract class CrudService<T extends object, R extends object = T> {
   //   }
   // }
 
-  async update(id: number, data: any, modifiedBy: string): Promise<R> {
+  async update(
+    id: number, 
+    data: any, 
+    modifiedBy: string,
+    logContext?: LogContext,
+  ): Promise<R> {
     try {
       // Verifica se o registro existe
       const existingRecord = await this.prisma[String(this.modelName)].findUnique({
@@ -97,13 +108,42 @@ export abstract class CrudService<T extends object, R extends object = T> {
         data: dataToUpdate,
       });
 
+      // Registra log da operação
+      if (logContext) {
+        this.logHelper.createLog(
+          TipoOperacaoEnum.UPDATE,
+          String(this.modelName),
+          logContext,
+          {
+            idRegistro: id,
+            dadosAnteriores: existingRecord,
+            dadosNovos: updatedEntity,
+            descricao: `Atualização de registro ${id} na tabela ${String(this.modelName)}`,
+          },
+        ).catch(err => console.error('Erro ao registrar log:', err));
+      }
+
       return plainToInstance(this.responseClass, updatedEntity, {
         excludeExtraneousValues: true,
       });
-    } catch (error) {
-      if (error.message.includes('não encontrado')) {
-        throw new Error(`Erro ao atualizar ${String(this.modelName)}: ${error.message}`);
+    } catch (error: any) {
+      // Captura erros de unique constraint do Prisma
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const target = error.meta?.target as string[] | undefined;
+        const field = target ? target.join(', ') : 'campo único';
+        throw new ConflictException(
+          `Já existe um registro com o(s) valor(es) informado(s) para ${field}.`
+        );
       }
+      
+      if (error.message.includes('não encontrado')) {
+        throw new NotFoundException(`Registro com ID ${id} não encontrado`);
+      }
+      
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      
       throw new Error(`Erro ao atualizar ${String(this.modelName)}: ${error.message}`);
     }
   }
@@ -145,14 +185,133 @@ export abstract class CrudService<T extends object, R extends object = T> {
   }
   
 
-  async delete(id: number): Promise<R> {
+  async delete(
+    id: number,
+    logContext?: LogContext,
+  ): Promise<R> {
     try {
+      // Busca o registro antes de deletar para o log
+      const recordToDelete = await this.repository.findUnique({
+        where: { id },
+      });
+
       const deletedEntity = await this.repository.delete({
         where: { id },
       });
+
+      // Registra log da operação
+      if (logContext && recordToDelete) {
+        this.logHelper.createLog(
+          TipoOperacaoEnum.DELETE,
+          String(this.modelName),
+          logContext,
+          {
+            idRegistro: id,
+            dadosAnteriores: recordToDelete,
+            descricao: `Exclusão de registro ${id} na tabela ${String(this.modelName)}`,
+          },
+        ).catch(err => console.error('Erro ao registrar log:', err));
+      }
+
       return this.mapToResponse(deletedEntity);
     } catch (error) {
       throw new BadRequestException('Item não encontrado ou já deletado');
+    }
+  }
+
+  async deactivate(
+    id: number,
+    modifiedBy: string,
+    logContext?: LogContext,
+  ): Promise<R> {
+    try {
+      // Verifica se o registro existe
+      const existingRecord = await this.prisma[String(this.modelName)].findUnique({
+        where: { id },
+      });
+
+      if (!existingRecord) {
+        throw new Error(`Registro com ID ${id} não encontrado`);
+      }
+
+      // Atualiza o campo ativo
+      const updatedEntity = await this.prisma[String(this.modelName)].update({
+        where: { id },
+        data: {
+          ativo: false,
+          modifiedBy,
+          dateModified: new Date(),
+        },
+      });
+
+      // Registra log da operação
+      if (logContext) {
+        this.logHelper.createLog(
+          TipoOperacaoEnum.DEACTIVATE,
+          String(this.modelName),
+          logContext,
+          {
+            idRegistro: id,
+            dadosAnteriores: existingRecord,
+            dadosNovos: updatedEntity,
+            descricao: `Desativação de registro ${id} na tabela ${String(this.modelName)}`,
+          },
+        ).catch(err => console.error('Erro ao registrar log:', err));
+      }
+
+      return plainToInstance(this.responseClass, updatedEntity, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      throw new Error(`Erro ao desativar ${String(this.modelName)}: ${error.message}`);
+    }
+  }
+
+  async activate(
+    id: number,
+    modifiedBy: string,
+    logContext?: LogContext,
+  ): Promise<R> {
+    try {
+      // Verifica se o registro existe
+      const existingRecord = await this.prisma[String(this.modelName)].findUnique({
+        where: { id },
+      });
+
+      if (!existingRecord) {
+        throw new Error(`Registro com ID ${id} não encontrado`);
+      }
+
+      // Atualiza o campo ativo
+      const updatedEntity = await this.prisma[String(this.modelName)].update({
+        where: { id },
+        data: {
+          ativo: true,
+          modifiedBy,
+          dateModified: new Date(),
+        },
+      });
+
+      // Registra log da operação
+      if (logContext) {
+        this.logHelper.createLog(
+          TipoOperacaoEnum.ACTIVATE,
+          String(this.modelName),
+          logContext,
+          {
+            idRegistro: id,
+            dadosAnteriores: existingRecord,
+            dadosNovos: updatedEntity,
+            descricao: `Ativação de registro ${id} na tabela ${String(this.modelName)}`,
+          },
+        ).catch(err => console.error('Erro ao registrar log:', err));
+      }
+
+      return plainToInstance(this.responseClass, updatedEntity, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      throw new Error(`Erro ao ativar ${String(this.modelName)}: ${error.message}`);
     }
   }
 

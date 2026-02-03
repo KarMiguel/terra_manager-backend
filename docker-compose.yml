@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terra_manager_api
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECURITY=${JWT_SECURITY}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-720000}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - API_CLIMA_URL=${API_CLIMA_URL}
+      - API_CLIMA_KEY=${API_CLIMA_KEY}
+      - API_COTACAO_URL=${API_COTACAO_URL}
+      - API_COTACAO_TOKEN=${API_COTACAO_TOKEN}
+      - API_NEWS_URL=${API_NEWS_URL}
+      - API_NEWS_KEY=${API_NEWS_KEY}
+      - API_SOIL_URL=${API_SOIL_URL}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - terra_manager_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:16-alpine
+    container_name: terra_manager_db
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-terra_manager}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - terra_manager_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  terra_manager_network:
+    driver: bridge
