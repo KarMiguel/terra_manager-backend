@@ -4,7 +4,9 @@ import { AppModule } from '../src/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
-import express from 'express';
+import { LoggingInterceptor } from '../src/common/interceptors/logging.interceptor';
+import { PrismaClient } from '@prisma/client';
+import * as express from 'express';
 
 let cachedApp: express.Express;
 
@@ -31,6 +33,10 @@ async function createApp(): Promise<express.Express> {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
+  
+  // Registrar o interceptor de logging globalmente
+  const prisma = app.get(PrismaClient);
+  app.useGlobalInterceptors(new LoggingInterceptor(prisma));
 
   // Configuração do Swagger
   const config = new DocumentBuilder()

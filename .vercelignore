@@ -16,3 +16,4 @@ Dockerfile
 Dockerfile.dev
 .dockerignore
 DOCKER.md
+scripts
