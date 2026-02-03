@@ -5,7 +5,6 @@ import { Public } from '../../common/guards/public.decorator';
 import { ApiBody, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginDto } from './dto/LoginDto.dto';
-import { LogContext } from '../../common/utils/log-helper';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -73,14 +72,8 @@ export class AuthController {
   })
   async register(
     @Body() body: CreateUserDto,
-    @Req() req,
   ) {
-    const logContext: LogContext = {
-      emailUsuario: body.email,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-    return this.authService.register(body, logContext);
+    return this.authService.register(body);
   }
 
   @Public()

@@ -3,20 +3,14 @@ import { calculatePagination } from "./common/utils/calculatePagination";
 import { CrudServiceOptions, Paginate } from "./common/utils/types";
 import { plainToInstance } from "class-transformer";
 import { PrismaClient, Prisma } from "@prisma/client";
-import { LogHelper, LogContext, TipoOperacaoEnum } from "./common/utils/log-helper";
 
 @Injectable()
 export abstract class CrudService<T extends object, R extends object = T> {
-  protected logHelper: LogHelper;
-
   constructor(
     protected readonly prisma: PrismaClient,
     private readonly modelName: keyof PrismaClient,
     private readonly responseClass: new () => R,
-    @Optional() logHelper?: LogHelper,
-  ) {
-    this.logHelper = logHelper || new LogHelper(prisma);
-  }
+  ) {}
 
   private get repository() {
     return this.prisma[this.modelName] as any;
@@ -75,7 +69,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
     id: number, 
     data: any, 
     modifiedBy: string,
-    logContext?: LogContext,
   ): Promise<R> {
     try {
       // Verifica se o registro existe
@@ -107,21 +100,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
         where: { id },
         data: dataToUpdate,
       });
-
-      // Registra log da operação
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.UPDATE,
-          String(this.modelName),
-          logContext,
-          {
-            idRegistro: id,
-            dadosAnteriores: existingRecord,
-            dadosNovos: updatedEntity,
-            descricao: `Atualização de registro ${id} na tabela ${String(this.modelName)}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
 
       return plainToInstance(this.responseClass, updatedEntity, {
         excludeExtraneousValues: true,
@@ -187,7 +165,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
 
   async delete(
     id: number,
-    logContext?: LogContext,
   ): Promise<R> {
     try {
       // Busca o registro antes de deletar para o log
@@ -199,20 +176,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
         where: { id },
       });
 
-      // Registra log da operação
-      if (logContext && recordToDelete) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.DELETE,
-          String(this.modelName),
-          logContext,
-          {
-            idRegistro: id,
-            dadosAnteriores: recordToDelete,
-            descricao: `Exclusão de registro ${id} na tabela ${String(this.modelName)}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
-
       return this.mapToResponse(deletedEntity);
     } catch (error) {
       throw new BadRequestException('Item não encontrado ou já deletado');
@@ -222,7 +185,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
   async deactivate(
     id: number,
     modifiedBy: string,
-    logContext?: LogContext,
   ): Promise<R> {
     try {
       // Verifica se o registro existe
@@ -244,21 +206,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
         },
       });
 
-      // Registra log da operação
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.DEACTIVATE,
-          String(this.modelName),
-          logContext,
-          {
-            idRegistro: id,
-            dadosAnteriores: existingRecord,
-            dadosNovos: updatedEntity,
-            descricao: `Desativação de registro ${id} na tabela ${String(this.modelName)}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
-
       return plainToInstance(this.responseClass, updatedEntity, {
         excludeExtraneousValues: true,
       });
@@ -270,7 +217,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
   async activate(
     id: number,
     modifiedBy: string,
-    logContext?: LogContext,
   ): Promise<R> {
     try {
       // Verifica se o registro existe
@@ -291,21 +237,6 @@ export abstract class CrudService<T extends object, R extends object = T> {
           dateModified: new Date(),
         },
       });
-
-      // Registra log da operação
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.ACTIVATE,
-          String(this.modelName),
-          logContext,
-          {
-            idRegistro: id,
-            dadosAnteriores: existingRecord,
-            dadosNovos: updatedEntity,
-            descricao: `Ativação de registro ${id} na tabela ${String(this.modelName)}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
 
       return plainToInstance(this.responseClass, updatedEntity, {
         excludeExtraneousValues: true,

@@ -6,22 +6,17 @@ import { Paginate } from 'src/common/utils/types';
 import { CrudService } from 'src/crud.service';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
 import { FornecedorModel } from './interface/fornecedor.interface';
-import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class FornecedorService extends CrudService<Fornecedor, FornecedorModel> {
-  protected logHelper: LogHelper;
-
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'fornecedor', FornecedorModel);
-    this.logHelper = new LogHelper(prisma);
   }
 
   async createFornecedor(
     createFornecedorDto: CreateFornecedorDto,
     userId: number,
     createdBy: string,
-    logContext?: LogContext,
   ): Promise<FornecedorModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar um Fornecedor .');
@@ -45,20 +40,6 @@ export class FornecedorService extends CrudService<Fornecedor, FornecedorModel> 
           createdBy,
         },
       });
-
-      // Registra log da operação CREATE
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.CREATE,
-          'fornecedor',
-          logContext,
-          {
-            idRegistro: createdFornecedor.id,
-            dadosNovos: createdFornecedor,
-            descricao: `Criação de fornecedor ID ${createdFornecedor.id}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
 
       return plainToInstance(FornecedorModel, createdFornecedor, {
         excludeExtraneousValues: true, 

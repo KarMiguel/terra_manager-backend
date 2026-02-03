@@ -9,24 +9,19 @@ import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
 import { AdubacaoResponseModel, AnaliseSoloModel, CalagemModel, CalagemResponseModel, NutrienteComparacaoResponseModel } from './interface/analise-solo.interface';
 import { CultivarService } from '../cultivar/cultivar.service';
 import { CalculosUtil } from './util/calculos.util';
-import { LogContext, LogHelper, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloModel> {
-  protected logHelper: LogHelper;
-
   constructor(protected readonly prisma: PrismaClient,
     private readonly cultivarService: CultivarService,
   ) {
-super(prisma, 'analiseSolo', AnaliseSoloModel);
-    this.logHelper = new LogHelper(prisma);
+    super(prisma, 'analiseSolo', AnaliseSoloModel);
   }
 
   async createAnaliseSolo(
     createAnaliseSoloDto: CreateAnaliseSoloDto,
     userId: number,
     createdBy: string,
-    logContext?: LogContext,
   ): Promise<AnaliseSoloModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma análise de solo.');
@@ -48,20 +43,6 @@ super(prisma, 'analiseSolo', AnaliseSoloModel);
         createdBy,
       },
     });
-
-    // Registra log da operação CREATE
-    if (logContext) {
-      this.logHelper.createLog(
-        TipoOperacaoEnum.CREATE,
-        'analiseSolo',
-        logContext,
-        {
-          idRegistro: createdAnaliseSolo.id,
-          dadosNovos: createdAnaliseSolo,
-          descricao: `Criação de análise de solo ID ${createdAnaliseSolo.id}`,
-        },
-      ).catch(err => console.error('Erro ao registrar log:', err));
-    }
 
     return plainToInstance(AnaliseSoloModel, createdAnaliseSolo, {
       excludeExtraneousValues: true, 

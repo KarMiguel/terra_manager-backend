@@ -6,22 +6,17 @@ import { CreateProdutoEstoqueDto } from './dto/create-produto-estoque.dto';
 import { plainToInstance } from 'class-transformer';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
 import { CrudServiceOptions, Paginate } from 'src/common/utils/types';
-import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueModel> {
-  protected logHelper: LogHelper;
-
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'produtosEstoque', ProdutoEstoqueModel);
-    this.logHelper = new LogHelper(prisma);
   }
 
   
   async createProdutoEstoque(
     data: CreateProdutoEstoqueDto,
     createdBy: string,
-    logContext?: LogContext,
   ): Promise<ProdutoEstoqueModel> {
     const createdProduto = await this.prisma.produtosEstoque.create({
       data: {
@@ -29,20 +24,6 @@ export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueMo
         createdBy,
       },
     });
-
-    // Registra log da operação CREATE
-    if (logContext) {
-      this.logHelper.createLog(
-        TipoOperacaoEnum.CREATE,
-        'produtosEstoque',
-        logContext,
-        {
-          idRegistro: createdProduto.id,
-          dadosNovos: createdProduto,
-          descricao: `Criação de produto no estoque ID ${createdProduto.id}`,
-        },
-      ).catch(err => console.error('Erro ao registrar log:', err));
-    }
 
     return plainToInstance(ProdutoEstoqueModel, createdProduto, {
       excludeExtraneousValues: true, 

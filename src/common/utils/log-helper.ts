@@ -55,12 +55,26 @@ export class LogHelper {
           : options.dadosNovos;
       }
 
-      await this.prisma.log.create({
+      console.log('[LogHelper] Tentando salvar log:', {
+        tipoOperacao,
+        tabela,
+        idRegistro: logData.idRegistro,
+        emailUsuario: logData.emailUsuario,
+      });
+
+      // Usa o modelo Log do Prisma (o modelo é Log mas a tabela é "log")
+      const created = await (this.prisma as any).log.create({
         data: logData,
       });
+
+      console.log('[LogHelper] Log salvo com sucesso, ID:', created.id);
     } catch (error) {
       // Não lança erro para não interromper a operação principal
-      console.error('Erro ao criar log:', error);
+      console.error('[LogHelper] Erro ao criar log:', error);
+      console.error('[LogHelper] Detalhes do erro:', error.message);
+      if (error.stack) {
+        console.error('[LogHelper] Stack trace:', error.stack);
+      }
     }
   }
 }

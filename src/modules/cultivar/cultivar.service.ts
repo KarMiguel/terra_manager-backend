@@ -7,22 +7,17 @@ import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
 import { TipoPlantaEnum } from './enum/cultivar.enum';
-import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class CultivarService extends CrudService<Cultivar, CultivarModel> {
-  protected logHelper: LogHelper;
-
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'cultivar', CultivarModel);
-    this.logHelper = new LogHelper(prisma);
   }
 
   async CreateCultivar(
     createCultivarDto: CreateCultivarDto,
     userId: number,
     createdBy: string,
-    logContext?: LogContext,
   ): Promise<CultivarModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma cultivar.');
@@ -42,20 +37,6 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
         }
       });
       idPraga = createdPraga.id;
-
-      // Registra log da criação da praga
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.CREATE,
-          'praga',
-          logContext,
-          {
-            idRegistro: createdPraga.id,
-            dadosNovos: createdPraga,
-            descricao: `Criação de praga ID ${createdPraga.id} (via criação de cultivar)`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
     }
   
     const dataToCreate: any = {
@@ -91,20 +72,6 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
       }
     });
 
-    // Registra log da operação CREATE
-    if (logContext) {
-      this.logHelper.createLog(
-        TipoOperacaoEnum.CREATE,
-        'cultivar',
-        logContext,
-        {
-          idRegistro: createdCultivar.id,
-          dadosNovos: createdCultivar,
-          descricao: `Criação de cultivar ID ${createdCultivar.id}`,
-        },
-      ).catch(err => console.error('Erro ao registrar log:', err));
-    }
-  
     return plainToInstance(CultivarModel, createdCultivar, {
       excludeExtraneousValues: true,
     });

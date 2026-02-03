@@ -6,7 +6,6 @@ import { CrudController } from 'src/crud.controller';
 import { Cultivar } from '@prisma/client';
 import { CreateCultivarDto } from './dto/create-cultivar.dto';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';
-import { LogContext } from 'src/common/utils/log-helper';
 
 
 @ApiTags('Cultivar') 
@@ -42,14 +41,7 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
       throw new Error('ID ou email do usuário não encontrado no token.');
     }
 
-    const logContext: LogContext = {
-      idUsuario: userId,
-      emailUsuario: createdBy,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-
-    return this.cultivarService.CreateCultivar(createCultivarDto, userId, createdBy, logContext);
+    return this.cultivarService.CreateCultivar(createCultivarDto, userId, createdBy);
   }
 
   @Get('lista')

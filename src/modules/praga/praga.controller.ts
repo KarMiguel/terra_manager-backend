@@ -5,7 +5,6 @@ import { CrudController } from 'src/crud.controller';
 import { PragaModel } from './interface/praga.interface';
 import { PragaService } from './praga.service';
 import { CreatePragaDto } from './dto/create-praga.dto';
-import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Praga') 
 @Controller('praga')
@@ -39,14 +38,7 @@ export class PragaController extends CrudController<Praga, PragaModel> {
       throw new Error('Email do usuário não encontrado no token.');
     }
 
-    const logContext: LogContext = {
-      idUsuario: req.user?.id,
-      emailUsuario: createdBy,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-
-    return this.pragaService.createPraga(createPragaDto, createdBy, logContext);
+    return this.pragaService.createPraga(createPragaDto, createdBy);
   }
 
 

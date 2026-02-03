@@ -16,7 +16,6 @@ import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ApiBody, ApiQuery, ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { LogContext } from './common/utils/log-helper';
 
 @UseGuards(JwtAuthGuard)
 @Injectable()
@@ -69,20 +68,7 @@ export abstract class CrudController<T extends object, R extends object = T> {
     @Req() req,
   ): Promise<R> {
     const modifiedBy = req.user?.email || 'unknown';
-    const logContext: LogContext = {
-      idUsuario: req.user?.id,
-      emailUsuario: req.user?.email,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-    
-    // Se o serviço tiver um método update específico, use-o
-    if (typeof this.service.update === 'function') {
-      return this.service.update(+id, body, modifiedBy, logContext);
-    }
-    
-    // Caso contrário, use o método genérico do CrudService
-    return this.service.update(+id, body, modifiedBy, logContext);
+    return this.service.update(+id, body, modifiedBy);
   }
   
   // @Get()
@@ -218,14 +204,8 @@ export abstract class CrudController<T extends object, R extends object = T> {
     description: 'Registro não encontrado' 
   })
   @ApiBearerAuth('access-token')
-  async delete(@Param('id') id: string, @Req() req): Promise<R> {
-    const logContext: LogContext = {
-      idUsuario: req.user?.id,
-      emailUsuario: req.user?.email,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-    return this.service.delete(+id, logContext);
+  async delete(@Param('id') id: string): Promise<R> {
+    return this.service.delete(+id);
   }
 
   @Patch(':id/desativar')
@@ -254,13 +234,7 @@ export abstract class CrudController<T extends object, R extends object = T> {
   @ApiBearerAuth('access-token')
   async deactivate(@Param('id') id: string, @Req() req): Promise<R> {
     const modifiedBy = req.user?.email || 'unknown';
-    const logContext: LogContext = {
-      idUsuario: req.user?.id,
-      emailUsuario: req.user?.email,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-    return this.service.deactivate(+id, modifiedBy, logContext);
+    return this.service.deactivate(+id, modifiedBy);
   }
 
   @Patch(':id/ativar')
@@ -289,13 +263,7 @@ export abstract class CrudController<T extends object, R extends object = T> {
   @ApiBearerAuth('access-token')
   async activate(@Param('id') id: string, @Req() req): Promise<R> {
     const modifiedBy = req.user?.email || 'unknown';
-    const logContext: LogContext = {
-      idUsuario: req.user?.id,
-      emailUsuario: req.user?.email,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-    return this.service.activate(+id, modifiedBy, logContext);
+    return this.service.activate(+id, modifiedBy);
   }
   
   // @Get('list/user')

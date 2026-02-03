@@ -11,6 +11,7 @@ import { PragaModule } from './modules/praga/praga.module';
 import { PlantioModule } from './modules/plantio/plantio.module';
 import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
 import { LogModule } from './modules/log/log.module';
+import { LoggingInterceptorModule } from './common/interceptors/logging.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LogModule } from './modules/log/log.module';
       isGlobal: true, 
       envFilePath: '.env',
     }),
+    LoggingInterceptorModule,
     AuthModule,
     UserModule,
     DashboardModule,

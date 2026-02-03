@@ -6,22 +6,17 @@ import { CreateFazendaDto } from './dto/create-fazenda.dto';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
 import { Paginate } from 'src/common/utils/types';
 import { plainToInstance } from 'class-transformer';
-import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class FazendaService extends CrudService<Fazenda, FazendaModel> {
-  protected logHelper: LogHelper;
-
   constructor(protected readonly prisma: PrismaClient) {
     super(prisma, 'fazenda', FazendaModel);
-    this.logHelper = new LogHelper(prisma);
   }
 
   async createFazenda(
     createFazendaDto: CreateFazendaDto,
     userId: number,
     createdBy: string,
-    logContext?: LogContext,
   ): Promise<FazendaModel> {
     if (!userId) {
       throw new BadRequestException('O ID do usuário é obrigatório para criar uma fazenda.');
@@ -45,20 +40,6 @@ export class FazendaService extends CrudService<Fazenda, FazendaModel> {
           createdBy,
         },
       });
-
-      // Registra log da operação CREATE
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.CREATE,
-          'fazenda',
-          logContext,
-          {
-            idRegistro: createdFazenda.id,
-            dadosNovos: createdFazenda,
-            descricao: `Criação de fazenda ID ${createdFazenda.id}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
 
       return plainToInstance(FazendaModel, createdFazenda, {
         excludeExtraneousValues: true, 

@@ -7,7 +7,6 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
 import { AdubacaoResponseModel, AnaliseSoloModel, CalagemResponseModel, NutrienteComparacaoResponseModel } from './interface/analise-solo.interface';
-import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Análise de Solo') 
 @Controller('analise-solo')
@@ -43,14 +42,7 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
       throw new BadRequestException('ID ou email do usuário não encontrado no token.');
     }
 
-    const logContext: LogContext = {
-      idUsuario: userId,
-      emailUsuario: createdBy,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-
-    return this.analiseSoloService.createAnaliseSolo(createAnaliseSoloDto, userId, createdBy, logContext);
+    return this.analiseSoloService.createAnaliseSolo(createAnaliseSoloDto, userId, createdBy);
   }
 
   @Get('lista')

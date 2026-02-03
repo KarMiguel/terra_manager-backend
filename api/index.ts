@@ -1,12 +1,20 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import { AppModule } from '../src/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import express from 'express';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+let cachedApp: express.Express;
+
+async function createApp(): Promise<express.Express> {
+  if (cachedApp) {
+    return cachedApp;
+  }
+
+  const expressApp = express();
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
   app.enableCors({
     origin: '*',
@@ -67,7 +75,7 @@ async function bootstrap() {
         description: 'Digite o token JWT obtido no endpoint /auth/login',
         in: 'header',
       },
-      'access-token', 
+      'access-token',
     )
     .addTag('Auth', 'Endpoints de autenticação e autorização')
     .addTag('Dashboard', 'Dados climáticos, cotações, notícias e informações gerais')
@@ -79,14 +87,21 @@ async function bootstrap() {
     .addTag('Fornecedor', 'Gerenciamento de fornecedores')
     .addTag('Produto Estoque', 'Gerenciamento de estoque de produtos')
     .addTag('User', 'Gerenciamento de usuários')
+    .addTag('Log', 'Registro de operações do sistema')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {
     swaggerOptions: {
-      persistAuthorization: true, // Manter o token inserido entre requisições
+      persistAuthorization: true,
     },
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.init();
+  cachedApp = expressApp;
+  return expressApp;
 }
-bootstrap();
+
+export default async function handler(req: express.Request, res: express.Response) {
+  const app = await createApp();
+  return app(req, res);
+}

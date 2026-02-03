@@ -5,7 +5,6 @@ import { FazendaService } from './fazenda.service';
 import { Fazenda } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { CreateFazendaDto } from './dto/create-fazenda.dto';
-import { LogContext } from 'src/common/utils/log-helper';
 
 @ApiTags('Fazenda') 
 @Controller('fazenda')
@@ -44,14 +43,7 @@ export class FazendaController extends CrudController<Fazenda, FazendaModel> {
       throw new Error('ID ou email do usuário não encontrado no token.');
     }
 
-    const logContext: LogContext = {
-      idUsuario: userId,
-      emailUsuario: createdBy,
-      ipAddress: req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-      userAgent: req.headers['user-agent'],
-    };
-
-    return this.fazendaService.createFazenda(createFazendaDto, userId, createdBy, logContext);
+    return this.fazendaService.createFazenda(createFazendaDto, userId, createdBy);
   }
 
   @Get('lista')

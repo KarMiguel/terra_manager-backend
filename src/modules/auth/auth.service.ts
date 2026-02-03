@@ -3,25 +3,19 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
-import { Usuario, PrismaClient } from '@prisma/client';
+import { Usuario } from '@prisma/client';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Role } from 'src/common/guards/roles.enum';
 import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
-import { LogHelper, LogContext, TipoOperacaoEnum } from 'src/common/utils/log-helper';
 
 @Injectable()
 export class AuthService {
-  private logHelper: LogHelper;
-
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
-    private readonly prisma: PrismaClient,
-  ) {
-    this.logHelper = new LogHelper(prisma);
-  }
+  ) {}
 
   async validateUser(email: string, password: string): Promise<Usuario | null> {
     const user = await this.userService.findByEmail(email);
@@ -55,7 +49,7 @@ export class AuthService {
   }
 
 
-  async register(data: CreateUserDto, logContext?: LogContext): Promise<UserModel> {
+  async register(data: CreateUserDto): Promise<UserModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
       throw new ConflictException('Email já está cadastrado');
@@ -73,20 +67,6 @@ export class AuthService {
         telefone: data.telefone || null,
         ativo: true,
       });
-
-      // Registra log da operação CREATE
-      if (logContext) {
-        this.logHelper.createLog(
-          TipoOperacaoEnum.CREATE,
-          'usuario',
-          logContext,
-          {
-            idRegistro: user.id,
-            dadosNovos: { ...user, password: '[HIDDEN]' },
-            descricao: `Criação de usuário ID ${user.id}`,
-          },
-        ).catch(err => console.error('Erro ao registrar log:', err));
-      }
 
       return {
         id: user.id,
