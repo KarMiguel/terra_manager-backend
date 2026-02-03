@@ -25,17 +25,59 @@ async function bootstrap() {
 
   // Configuração do Swagger
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('API documentation for the application')
+    .setTitle('Terra Manager API')
+    .setDescription(`
+      API completa para gerenciamento agrícola e análise de solo.
+      
+      ## Funcionalidades Principais:
+      
+      - **Autenticação**: Sistema de login, registro e recuperação de senha
+      - **Dashboard**: Dados climáticos, cotações de commodities, notícias e informações sobre solo e culturas
+      - **Fazendas**: Gerenciamento de fazendas e propriedades rurais
+      - **Plantios**: Controle de plantios por fazenda e tipo de planta
+      - **Análise de Solo**: Análises de solo com cálculos de calagem e adubação
+      - **Cultivares**: Gerenciamento de cultivares com exigências nutricionais
+      - **Pragas**: Cadastro e gerenciamento de pragas
+      - **Fornecedores**: Controle de fornecedores
+      - **Produto Estoque**: Gerenciamento de estoque de produtos por fazenda
+      - **Usuários**: Gerenciamento de usuários do sistema
+      
+      ## Autenticação:
+      
+      A maioria dos endpoints requer autenticação via JWT Bearer Token. 
+      Use o endpoint \`/auth/login\` para obter o token e depois clique no botão "Authorize" 
+      no topo desta página para adicionar o token nas requisições.
+      
+      ## Paginação:
+      
+      Endpoints que retornam listas suportam paginação através dos parâmetros:
+      - \`page\`: Número da página (padrão: 1)
+      - \`pageSize\`: Itens por página (padrão: 10)
+      - \`options\`: Filtros em formato JSON (opcional)
+    `)
     .setVersion('1.0')
+    .setContact('Terra Manager', '', '')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Digite o token JWT obtido no endpoint /auth/login',
+        in: 'header',
       },
       'access-token', 
     )
+    .addTag('Auth', 'Endpoints de autenticação e autorização')
+    .addTag('Dashboard', 'Dados climáticos, cotações, notícias e informações gerais')
+    .addTag('Fazenda', 'Gerenciamento de fazendas')
+    .addTag('Plantio', 'Gerenciamento de plantios')
+    .addTag('Análise de Solo', 'Análises de solo e cálculos de calagem/adubação')
+    .addTag('Cultivar', 'Gerenciamento de cultivares')
+    .addTag('Praga', 'Gerenciamento de pragas')
+    .addTag('Fornecedor', 'Gerenciamento de fornecedores')
+    .addTag('Produto Estoque', 'Gerenciamento de estoque de produtos')
+    .addTag('User', 'Gerenciamento de usuários')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {

@@ -5,7 +5,7 @@ import { CultivarModel } from './interface/cultivar.interface';
 import { CrudController } from 'src/crud.controller';
 import { Cultivar } from '@prisma/client';
 import { CreateCultivarDto } from './dto/create-cultivar.dto';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 
 @ApiTags('Cultivar') 
@@ -17,7 +17,22 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
   }
   
   @Post()
-  @ApiOperation({ summary: 'Cria uma nova cultivar' })
+  @ApiOperation({ 
+    summary: 'Cria uma nova cultivar',
+    description: 'Cria um novo registro de cultivar com suas características e exigências nutricionais. A cultivar será associada ao usuário autenticado.'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Cultivar criada com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Dados inválidos ou usuário não autenticado' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
   async create(@Body() createCultivarDto: CreateCultivarDto, @Req() req): Promise<any> {
     const userId = req.user.id;
     const createdBy = req.user.email; 
@@ -30,12 +45,16 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
   }
 
   @Get('lista')
-  @ApiOperation({ summary: 'Lista todos os cultivares do usuário logado com contagem' })
+  @ApiOperation({ 
+    summary: 'Lista todos os cultivares do usuário logado',
+    description: 'Retorna uma lista paginada de todos os cultivares criados pelo usuário autenticado, com opção de filtros.'
+  })
   @ApiQuery({
     name: 'options',
     required: false,
-    description: 'Opções de filtro em formato JSON (opcional)',
+    description: 'Opções de filtro em formato JSON (opcional). Exemplo: {"tipoPlanta": "SOJA"}',
     type: String,
+    example: '{"tipoPlanta": "SOJA"}'
   })
   @ApiQuery({
     name: 'page',
@@ -50,6 +69,21 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
     description: 'Tamanho da página (opcional, padrão: 10)',
     type: Number,
     example: 10,
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de cultivares retornada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'array', items: { type: 'object' } },
+        count: { type: 'number', description: 'Total de cultivares encontrados' }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Parâmetros inválidos ou usuário não autenticado' 
   })
   async listByUser(
     @Req() req,
@@ -97,7 +131,26 @@ export class CultivarController extends CrudController<Cultivar, CultivarModel> 
   }
   
   @Get('check-cultivars')
-  @ApiOperation({ summary: 'Retorna quais cultivares o usuário possui pelo Tipo de Planta' })
+  @ApiOperation({ 
+    summary: 'Verifica quais tipos de planta o usuário possui cultivares',
+    description: 'Retorna um objeto indicando quais tipos de planta (SOJA, MILHO, ALGODAO, etc.) o usuário possui cultivares cadastradas.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Verificação retornada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        SOJA: { type: 'boolean', description: 'Usuário possui cultivares de soja' },
+        MILHO: { type: 'boolean', description: 'Usuário possui cultivares de milho' },
+        ALGODAO: { type: 'boolean', description: 'Usuário possui cultivares de algodão' }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Usuário não autenticado' 
+  })
   async checkUserCultivars(@Req() req): Promise<Record<string, boolean>> {
     const userId = req.user?.id;
   

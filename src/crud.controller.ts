@@ -14,7 +14,7 @@ import {
 import { CrudService } from './crud.service';
 import { Paginate } from '../src/common/utils/types';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { ApiBody, ApiQuery } from '@nestjs/swagger';
+import { ApiBody, ApiQuery, ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @UseGuards(JwtAuthGuard)
 @Injectable()
@@ -29,11 +29,34 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
 
   @Put(':id')
+  @ApiOperation({ 
+    summary: 'Atualiza um registro existente',
+    description: 'Atualiza um registro pelo ID. O usuário autenticado será registrado como modificador do registro.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID do registro a ser atualizado',
+    type: Number,
+    example: 1
+  })
   @ApiBody({
     description: 'Dados para atualização do registro',
     required: true,
     type: Object,
   })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Registro atualizado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Registro não encontrado' 
+  })
+  @ApiBearerAuth('access-token')
   async update(
     @Param('id') id: string,
     @Body() body: any,
@@ -64,12 +87,45 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
   
   @Get()
+  @ApiOperation({ 
+    summary: 'Lista todos os registros com paginação e filtros',
+    description: 'Retorna uma lista paginada de registros com opção de filtros. O parâmetro "options" aceita um JSON com condições de filtro.'
+  })
   @ApiQuery({
     name: 'options',
     required: false,
-    description: 'Opções de filtro em formato JSON',
+    description: 'Opções de filtro em formato JSON. Exemplo: {"nome": "valor", "status": "ativo"}',
     type: String,
+    example: '{"nome": "exemplo"}'
   })
+  @ApiQuery({
+    name: 'paginate',
+    required: false,
+    description: 'Objeto com page e pageSize para paginação',
+    type: Object,
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de registros retornada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { type: 'object' }
+        },
+        count: {
+          type: 'number',
+          description: 'Total de registros encontrados'
+        }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiBearerAuth('access-token')
   async listCountAll(
     @Query('options') options?: string,
     @Query('paginate') paginate?: Paginate,
@@ -90,6 +146,29 @@ export abstract class CrudController<T extends object, R extends object = T> {
   // }
 
   @Get(':id')
+  @ApiOperation({ 
+    summary: 'Busca um registro pelo ID',
+    description: 'Retorna um único registro baseado no ID fornecido'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID do registro a ser buscado',
+    type: Number,
+    example: 1
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Registro encontrado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Registro não encontrado' 
+  })
+  @ApiBearerAuth('access-token')
   async findOne(@Param('id') id: string): Promise<R | null> {
     if (!id) {
       throw new Error('O parâmetro "id" é obrigatório.');
@@ -104,6 +183,29 @@ export abstract class CrudController<T extends object, R extends object = T> {
   }
   
   @Delete(':id')
+  @ApiOperation({ 
+    summary: 'Deleta um registro pelo ID',
+    description: 'Remove permanentemente um registro do sistema'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID do registro a ser deletado',
+    type: Number,
+    example: 1
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Registro deletado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Registro não encontrado' 
+  })
+  @ApiBearerAuth('access-token')
   async delete(@Param('id') id: string): Promise<R> {
     return this.service.delete(+id);
   }

@@ -3,7 +3,7 @@ import { CrudController } from 'src/crud.controller';
 import { FazendaModel } from './interface/fazenda.interface';
 import { FazendaService } from './fazenda.service';
 import { Fazenda } from '@prisma/client';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { CreateFazendaDto } from './dto/create-fazenda.dto';
 
 @ApiTags('Fazenda') 
@@ -15,7 +15,22 @@ export class FazendaController extends CrudController<Fazenda, FazendaModel> {
   }
   
   @Post()
-  @ApiOperation({ summary: 'Cria uma nova fazenda' })
+  @ApiOperation({ 
+    summary: 'Cria uma nova fazenda',
+    description: 'Cria um novo registro de fazenda associado ao usuário autenticado. A fazenda representa uma propriedade rural onde serão realizados os plantios.'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Fazenda criada com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Dados inválidos ou usuário não autenticado' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Não autorizado - Token JWT inválido ou ausente' 
+  })
   async create(@Body() createFazendaDto: CreateFazendaDto, @Req() req): Promise<any> {
     const userId = req.user.id;
     const createdBy = req.user.email; 
@@ -28,12 +43,16 @@ export class FazendaController extends CrudController<Fazenda, FazendaModel> {
   }
 
   @Get('lista')
-  @ApiOperation({ summary: 'Lista todas as fazendas do usuário logado com contagem' })
+  @ApiOperation({ 
+    summary: 'Lista todas as fazendas do usuário logado',
+    description: 'Retorna uma lista paginada de todas as fazendas do usuário autenticado, com opção de filtros.'
+  })
   @ApiQuery({
     name: 'options',
     required: false,
-    description: 'Opções de filtro em formato JSON (opcional)',
+    description: 'Opções de filtro em formato JSON (opcional). Exemplo: {"nome": "Fazenda Exemplo"}',
     type: String,
+    example: '{"nome": "Fazenda Exemplo"}'
   })
   @ApiQuery({
     name: 'page',
@@ -48,6 +67,21 @@ export class FazendaController extends CrudController<Fazenda, FazendaModel> {
     description: 'Tamanho da página (opcional, padrão: 10)',
     type: Number,
     example: 10,
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de fazendas retornada com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'array', items: { type: 'object' } },
+        count: { type: 'number', description: 'Total de fazendas encontradas' }
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Parâmetros inválidos ou usuário não autenticado' 
   })
   async listByUser(
     @Req() req,
