@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, StatusPagamentoEnum } from '@prisma/client';
 import * as puppeteer from 'puppeteer';
+import { PlanoService } from '../plano/plano.service';
 import { wrapHtml } from './templates/base';
 import { buildPlantiosBody, PlantiosTemplateData } from './templates/plantios.html';
 import { buildEstoqueBody, EstoqueTemplateData } from './templates/estoque.html';
 import { buildAnalisesSoloBody, AnalisesSoloTemplateData } from './templates/analises-solo.html';
-import { buildResumoContadorBody, ResumoContadorTemplateData } from './templates/resumo-contador.html';
+import { buildResumoRelatorioBody, ResumoRelatorioTemplateData } from './templates/resumo.html';
 
 @Injectable()
 export class RelatorioService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly planoService: PlanoService,
+  ) {}
 
   private async generatePdf(html: string): Promise<Buffer> {
     const browser = await puppeteer.launch({
@@ -300,7 +304,7 @@ export class RelatorioService {
     return this.generatePdf(html);
   }
 
-  async gerarRelatorioResumoContador(
+  async gerarRelatorioResumo(
     idUsuario: number,
     ano?: number,
     mes?: number,
@@ -319,7 +323,22 @@ export class RelatorioService {
       ? new Date(anoRef, mes, 0, 23, 59, 59)
       : new Date(anoRef, 11, 31, 23, 59, 59);
 
-    const [fazendas, plantios, usuarioPlanos, fornecedores] = await Promise.all([
+    const idsFazendas = await this.prisma.fazenda
+      .findMany({
+        where: { idUsuario, ativo: true },
+        select: { id: true },
+      })
+      .then((rows) => rows.map((r) => r.id));
+
+    const [
+      fazendas,
+      plantios,
+      usuarioPlanos,
+      fornecedores,
+      itensEstoque,
+      analisesSoloList,
+      statusPlano,
+    ] = await Promise.all([
       this.prisma.fazenda.findMany({
         where: { idUsuario, ativo: true },
         select: { id: true, nome: true, areaTotal: true, municipio: true, uf: true },
@@ -330,7 +349,7 @@ export class RelatorioService {
           ativo: true,
           dataPlantio: { gte: inicio, lte: fim },
         },
-        include: { cultivar: { select: { tipoPlanta: true, nomePopular: true } } },
+        include: { cultivar: { select: { id: true, tipoPlanta: true, nomePopular: true } } },
       }),
       this.prisma.usuarioPlano.findMany({
         where: { idUsuario, ativo: true, dataCanceladoEm: null },
@@ -348,40 +367,110 @@ export class RelatorioService {
         where: { idUsuario, ativo: true },
         select: { razaoSocial: true, cnpj: true, cidade: true },
       }),
+      idsFazendas.length > 0
+        ? this.prisma.produtosEstoque.findMany({
+            where: { idFazenda: { in: idsFazendas }, ativo: true },
+            select: {
+              quantidade: true,
+              valorUnitario: true,
+              dataValidade: true,
+            },
+          })
+        : Promise.resolve([]),
+      this.prisma.analiseSolo.findMany({
+        where: { idUsuario, ativo: true },
+        select: { dateCreated: true, areaTotal: true },
+        orderBy: { dateCreated: 'desc' },
+      }),
+      this.planoService.getStatusPlanoUsuario(idUsuario),
     ]);
 
     const areaTotal = fazendas.reduce((s, f) => s + (f.areaTotal ?? 0), 0);
     const porCultura: Record<string, number> = {};
+    const cultivarIds = new Set<number>();
     for (const p of plantios) {
       const t = p.cultivar.tipoPlanta;
       porCultura[t] = (porCultura[t] ?? 0) + 1;
+      cultivarIds.add(p.cultivar.id);
     }
     const totalPago = usuarioPlanos.flatMap((up) => up.pagamentos).reduce((s, p) => s + (p.valor ?? 0), 0);
 
-    const filtros = `Período: ${mes ? `${String(mes).padStart(2, '0')}/${anoRef}` : `Ano ${anoRef}`}`;
+    const hoje = new Date();
+    let valorTotalEstoque = 0;
+    let itensProximoVencimento = 0;
+    let itensVencidos = 0;
+    for (const i of itensEstoque) {
+      const valor = i.quantidade * i.valorUnitario;
+      valorTotalEstoque += valor;
+      if (i.dataValidade) {
+        const d = new Date(i.dataValidade);
+        if (d < hoje) itensVencidos += 1;
+        else if ((d.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24) <= 90) itensProximoVencimento += 1;
+      }
+    }
+
+    const ultimaAnalise = analisesSoloList[0]?.dateCreated ?? null;
+    const areaCobertaHa = analisesSoloList.reduce((s, a) => s + (a.areaTotal ?? 0), 0);
+
+    const periodoLabel = mes ? `${String(mes).padStart(2, '0')}/${anoRef}` : `Ano ${anoRef}`;
+    const filtros = `Período: ${periodoLabel}`;
 
     const destaques: string[] = [];
-    destaques.push(`${fazendas.length} fazenda(s) cadastrada(s), área total ${areaTotal.toLocaleString('pt-BR')} ha.`);
-    destaques.push(`${plantios.length} plantio(s) no período.`);
+    destaques.push(`${fazendas.length} fazenda(s), área total ${areaTotal.toLocaleString('pt-BR')} ha.`);
+    destaques.push(`${plantios.length} plantio(s) no período; ${cultivarIds.size} cultivar(es) em uso.`);
+    destaques.push(`${fornecedores.length} fornecedor(es); ${itensEstoque.length} itens em estoque (R$ ${valorTotalEstoque.toFixed(2)}).`);
+    destaques.push(`${analisesSoloList.length} análise(s) de solo; área coberta ${areaCobertaHa.toLocaleString('pt-BR')} ha.`);
     if (totalPago > 0) destaques.push(`Total pago ao sistema no período: R$ ${totalPago.toFixed(2)}.`);
-    destaques.push(`${fornecedores.length} fornecedor(es) cadastrado(s).`);
+    if (statusPlano) destaques.push(`Plano atual: ${statusPlano.nomePlano} (${statusPlano.planoValido ? 'válido' : 'atenção'}).`);
+
     const pontosAtencao: string[] = [];
     if (fazendas.length === 0) pontosAtencao.push('Nenhuma fazenda cadastrada.');
-    if (fornecedores.length === 0) pontosAtencao.push('Nenhum fornecedor cadastrado — útil para rastreabilidade e compras.');
+    if (fornecedores.length === 0) pontosAtencao.push('Nenhum fornecedor cadastrado.');
+    if (statusPlano && !statusPlano.planoValido && statusPlano.mensagem)
+      pontosAtencao.push(`Plano: ${statusPlano.mensagem}`);
+    if (itensVencidos > 0) pontosAtencao.push(`${itensVencidos} item(ns) de estoque vencido(s).`);
+    if (itensProximoVencimento > 0) pontosAtencao.push(`${itensProximoVencimento} item(ns) de estoque próximos a vencer (90 dias).`);
+    if (analisesSoloList.length === 0) pontosAtencao.push('Nenhuma análise de solo cadastrada.');
 
-    const templateData: ResumoContadorTemplateData = {
-      fazendas,
-      areaTotal,
-      totalPlantios: plantios.length,
-      totalPago,
-      totalFornecedores: fornecedores.length,
+    const templateData: ResumoRelatorioTemplateData = {
+      periodoLabel,
+      plano: statusPlano
+        ? {
+            tipoPlano: statusPlano.tipoPlano,
+            nomePlano: statusPlano.nomePlano,
+            dataInicioPlano: statusPlano.dataInicioPlano,
+            dataFimPlano: statusPlano.dataFimPlano,
+            planoValido: statusPlano.planoValido,
+            mensagem: statusPlano.mensagem,
+          }
+        : null,
+      resumo: {
+        totalFazendas: fazendas.length,
+        areaTotalHa: areaTotal,
+        totalPlantiosPeriodo: plantios.length,
+        totalFornecedores: fornecedores.length,
+        totalCultivaresUsados: cultivarIds.size,
+        totalPagoSistemaPeriodo: totalPago,
+      },
+      estoque: {
+        totalItens: itensEstoque.length,
+        valorTotal: valorTotalEstoque,
+        itensProximoVencimento,
+        itensVencidos,
+      },
+      analisesSolo: {
+        totalAnalises: analisesSoloList.length,
+        ultimaAnaliseData: ultimaAnalise,
+        areaCobertaHa,
+      },
       porCultura,
+      fazendas,
       fornecedores,
       destaques,
       pontosAtencao,
     };
-    const body = buildResumoContadorBody(templateData);
-    const html = wrapHtml('Resumo para o contador / gestão', nomeUsuario, body, filtros);
+    const body = buildResumoRelatorioBody(templateData);
+    const html = wrapHtml('Resumo geral do sistema', nomeUsuario, body, filtros);
     return this.generatePdf(html);
   }
 }

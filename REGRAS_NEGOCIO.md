@@ -1102,12 +1102,12 @@ O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML fic
 - **RN-REL-017**: Inclui resumo: quantidade de análises, área coberta (soma de areaTotal), última análise (dias atrás), médias dos indicadores (pH, N, P, K, CTC, V%, MO) quando houver dados.
 - **RN-REL-018**: Pontos de atenção: pH médio fora da faixa ideal (5,5–6,5); última análise há mais de 365 dias.
 
-### 15.5. Relatório: Resumo para o contador / gestão
-- **RN-REL-020**: `GET /relatorio/resumo-contador`. Parâmetros de query opcionais: **ano** (número), **mes** (número 1–12).
-- **RN-REL-021**: Período: se **mes** informado, intervalo do mês no ano (ano padrão = ano atual); senão, ano inteiro. Dados de plantios e pagamentos são filtrados por esse período.
-- **RN-REL-022**: Dados: fazendas do usuário (ativas), plantios no período, assinaturas ativas com pagamentos APROVADOS no período, fornecedores do usuário (ativos).
-- **RN-REL-023**: Inclui destaques: quantidade de fazendas e área total; plantios no período; total pago ao sistema no período; quantidade de fornecedores.
-- **RN-REL-024**: Pontos de atenção: nenhuma fazenda cadastrada; nenhum fornecedor cadastrado.
+### 15.5. Relatório: Resumo geral do sistema para o cliente
+- **RN-REL-020**: `GET /relatorio/resumo`. Parâmetros de query opcionais: **ano** (número), **mes** (número 1–12). Gera PDF com **resumo de tudo relevante do sistema** para o cliente.
+- **RN-REL-021**: Período: se **mes** informado, intervalo do mês no ano (ano padrão = ano atual); senão, ano inteiro. Dados de plantios e pagamentos ao sistema são filtrados por esse período.
+- **RN-REL-022**: Conteúdo do relatório: **plano atual** (tipo, nome, vigência, status válido/atenção, mensagem); **resumo do sistema** (fazendas, área total, plantios no período, fornecedores, cultivares em uso, total pago ao sistema no período); **resumo de estoque** (total de itens, valor total estimado, itens próximos a vencer em 90 dias, itens vencidos); **resumo de análises de solo** (total de análises, última análise, área coberta); **destaques** e **pontos de atenção**; tabelas de fazendas, plantios por cultura e fornecedores.
+- **RN-REL-023**: Dados considerados: fazendas do usuário (ativas), plantios no período (com cultivar), assinaturas ativas e pagamentos APROVADOS no período, fornecedores (ativos), itens de estoque das fazendas do usuário (ativos), análises de solo do usuário (ativas), status do plano via `getStatusPlanoUsuario`.
+- **RN-REL-024**: Pontos de atenção: nenhuma fazenda cadastrada; nenhum fornecedor cadastrado; plano inválido ou mensagem; itens de estoque vencidos ou próximos a vencer; nenhuma análise de solo cadastrada.
 
 ---
 

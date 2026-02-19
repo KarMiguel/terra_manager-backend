@@ -86,29 +86,29 @@ export class RelatorioController {
     res.send(buffer);
   }
 
-  @Get('resumo-contador')
+  @Get('resumo')
   @ApiOperation({
-    summary: 'Relatório: Resumo para o contador / gestão',
-    description: 'Gera PDF com resumão: fazendas, área, plantios por cultura, pagamentos ao sistema, fornecedores. Filtros: ano, mes.',
+    summary: 'Relatório: Resumo geral do sistema para o cliente',
+    description: 'Gera PDF com resumo de tudo relevante: plano atual, fazendas, área, plantios, estoque, análises de solo, fornecedores, pagamentos ao sistema. Filtros: ano, mes.',
   })
   @ApiQuery({ name: 'ano', required: false, type: Number })
   @ApiQuery({ name: 'mes', required: false, type: Number, description: 'Mês (1-12)' })
   @ApiResponse({ status: 200, description: 'PDF do relatório' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async relatorioResumoContador(
+  async relatorioResumo(
     @Req() req: { user?: { id: number } },
     @Res() res: Response,
     @Query('ano') ano?: string,
     @Query('mes') mes?: string,
   ) {
     if (!req.user?.id) throw new UnauthorizedException('Token obrigatório.');
-    const buffer = await this.relatorioService.gerarRelatorioResumoContador(
+    const buffer = await this.relatorioService.gerarRelatorioResumo(
       req.user.id,
       ano ? parseInt(ano, 10) : undefined,
       mes ? parseInt(mes, 10) : undefined,
     );
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="relatorio-resumo-contador.pdf"');
+    res.setHeader('Content-Disposition', 'attachment; filename="relatorio-resumo.pdf"');
     res.send(buffer);
   }
 }
