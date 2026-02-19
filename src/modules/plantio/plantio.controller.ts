@@ -10,6 +10,9 @@ import { PlantioService } from './plantio.service';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
 import { Plantio } from '@prisma/client';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { PlanoGuard } from 'src/common/guards/plano.guard';
+import { RequerPlanoExato } from 'src/common/guards/plano.decorator';
+import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
 
 @ApiTags('Plantio')
 @Controller('plantio')
@@ -175,10 +178,12 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   }
 
   @Get('fazenda/:idFazenda/custo-safra')
+  @UseGuards(PlanoGuard)
+  @RequerPlanoExato(TipoPlanoEnum.PREMIUM)
   @ApiOperation({
-    summary: 'Custo por safra',
+    summary: 'Custo por safra (somente plano Premium)',
     description:
-      'Retorna custo total da safra (soma dos custos dos plantios da fazenda no ano), área total (ha), custo por ha da safra, quantidade de plantios e resumo por tipo de operação (tipoEtapa, custoTotal, quantidade). Safra = ano civil da data de plantio (RN-CUS-002 a RN-CUS-005). A fazenda deve pertencer ao usuário.',
+      '**Requer plano: Premium.** Retorna custo total da safra (soma dos custos dos plantios da fazenda no ano), área total (ha), custo por ha da safra, quantidade de plantios e resumo por tipo de operação (tipoEtapa, custoTotal, quantidade). Safra = ano civil da data de plantio (RN-CUS-002 a RN-CUS-005). A fazenda deve pertencer ao usuário.',
   })
   @ApiParam({ name: 'idFazenda', description: 'ID da fazenda', type: Number, example: 1 })
   @ApiQuery({ name: 'ano', required: true, description: 'Ano da safra (ex: 2025). Deve ser entre 2000 e 2100.', type: Number, example: 2025 })
@@ -203,6 +208,7 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   })
   @ApiResponse({ status: 400, description: 'Ano inválido ou usuário não autenticado' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
   async custoPorSafra(
     @Param('idFazenda', ParseIntPipe) idFazenda: number,

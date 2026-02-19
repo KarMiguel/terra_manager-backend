@@ -1287,6 +1287,44 @@ Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **
 - **PagamentoPlano**: não possui campo `identificadorPagamento`; registra valor, status, forma de pagamento, data de vencimento (quando vinculado a cobrança).
 - **Cobranca**: codigoCobranca (único), valor, dataVencimento, formaPagamento, status; vinculada a UsuarioPlano e opcionalmente a PagamentoPlano quando paga.
 
+### 15.13. Controle de acesso por plano (validação de módulos e endpoints)
+
+O **tipo de plano** do usuário (`tipoPlano`: BASICO, PRO, PREMIUM) é incluído no **token JWT** no login (payload `tipoPlano`). O guard **PlanoGuard** e os decorators **@RequerPlanoMinimo('PRO')** e **@RequerPlanoExato('PREMIUM')** aplicam a validação por rota. Resposta **403 Forbidden** quando o plano não atende ao requisito.
+
+#### Plano Básico
+- **Não possui** acesso aos módulos e endpoints exclusivos de Pro e Premium.
+- Possui acesso a: Auth, Usuário (perfil), Fazenda, Fornecedor, Cultivar, Plantio (CRUD básico, listagem por fazenda, tipo-planta, **exceto** custo-safra), Análise de Solo, Produto Estoque, Praga, Dashboard **clima** e **notícias** (endpoints públicos ou básicos).
+
+#### Plano Pro (mínimo Pro = Pro ou Premium)
+- Possui **tudo do plano Básico** e mais:
+  - **Operação do plantio**: `POST/GET/PUT/DELETE /operacao-plantio`, `GET /operacao-plantio/plantio/:idPlantio`.
+  - **Aplicação**: `POST/GET/PUT/DELETE /aplicacao`, `GET /aplicacao/operacao/:idOperacaoPlantio`.
+  - **Dashboard**: `GET /dashboard/cotacao-bolsa`, `GET /dashboard/dados-solo`, `GET /dashboard/dados-cultura`.
+- **Não possui**: Mapa, Talhão, Zona de manejo, Relatório (PDF), endpoint Custo por safra.
+
+#### Plano Premium (exato Premium)
+- Possui **todos os acessos dos planos Básico e Pro** e mais (somente Premium):
+  - **Mapa**: `GET /mapa/fazenda/:idFazenda`.
+  - **Talhão**: `POST/GET/PUT/DELETE /talhao`, `GET /talhao/fazenda/:idFazenda`, `GET /talhao/fazenda/:idFazenda/resumo`, `GET /talhao/fazenda/:idFazenda/mapa`.
+  - **Zona de manejo**: `POST/GET/PUT/DELETE /zona-manejo`, `GET /zona-manejo/fazenda/:idFazenda`, `GET /zona-manejo/fazenda/:idFazenda/mapa`.
+  - **Relatório**: `GET /relatorio/plantios`, `GET /relatorio/estoque`, `GET /relatorio/analises-solo`, `GET /relatorio/resumo`.
+  - **Custo por safra**: `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY`.
+
+#### Resumo técnico (onde a validação é aplicada)
+| Recurso | Decorator / Guard | Quem acessa |
+|---------|-------------------|-------------|
+| Operação do plantio (todo o controller) | @RequerPlanoMinimo('PRO') | Pro, Premium |
+| Aplicação (todo o controller) | @RequerPlanoMinimo('PRO') | Pro, Premium |
+| Dashboard: cotacao-bolsa, dados-solo, dados-cultura | @RequerPlanoMinimo('PRO') | Pro, Premium |
+| Mapa (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Talhão (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Zona de manejo (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Relatório (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Plantio: custo-safra (apenas esse endpoint) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+
+- **RN-PLN-027**: Requisição a rota que exige plano superior ao do usuário retorna **403 Forbidden** com mensagem explicando que o recurso exige plano X ou Premium (ou apenas Premium).
+- **RN-PLN-028**: Se o token não tiver `tipoPlano` (ex.: token antigo), o usuário é tratado como **BASICO** para fins de validação de plano.
+
 ---
 
 ## 16. Relatórios (PDF)

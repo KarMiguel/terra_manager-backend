@@ -1,14 +1,14 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum } from 'class-validator';
 import { FormaPagamentoEnum } from '@prisma/client';
 
 /**
- * Request para gerar cobrança (boleto, PIX ou cartão de crédito).
- * A data de vencimento é calculada automaticamente (ex.: 3 dias a partir de hoje).
+ * Request para gerar cobrança: apenas escolher forma de pagamento e gerar.
+ * O valor da cobrança será o valor do plano da assinatura vigente. Data de vencimento calculada automaticamente (ex.: 3 dias).
  */
 export class GerarCobrancaRequestDto {
   @ApiProperty({
-    description: 'Forma de pagamento. Valores aceitos: PIX | BOLETO | CARTAO_CREDITO (use exatamente um deles).',
+    description: 'Forma de pagamento. Selecione: PIX | BOLETO | CARTAO_CREDITO. O valor será o do plano.',
     enum: FormaPagamentoEnum,
     enumName: 'FormaPagamentoEnum',
     example: FormaPagamentoEnum.PIX,
@@ -17,15 +17,6 @@ export class GerarCobrancaRequestDto {
     message: 'formaPagamento deve ser um dos valores: PIX, BOLETO, CARTAO_CREDITO',
   })
   formaPagamento: FormaPagamentoEnum;
-
-  @ApiPropertyOptional({
-    description: 'Valor da cobrança. Se omitido, usa o valor anual do plano da assinatura vigente.',
-    example: 299.9,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  valor?: number;
 }
 
 export class GerarCobrancaResponseDto {

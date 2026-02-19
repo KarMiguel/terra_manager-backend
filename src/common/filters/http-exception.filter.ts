@@ -42,7 +42,10 @@ catch(exception: any, host: ArgumentsHost) {
         customMessage = 'Unauthorized. Please login to access this resource.';
         break;
     case HttpStatus.FORBIDDEN:
-        customMessage = 'Access denied. You do not have permission.';
+        customMessage =
+          exception instanceof HttpException && typeof exception.getResponse() === 'object' && (exception.getResponse() as any)?.message
+            ? (Array.isArray((exception.getResponse() as any).message) ? (exception.getResponse() as any).message[0] : (exception.getResponse() as any).message)
+            : 'Acesso negado. Este recurso exige um plano específico para acessar.';
         break;
     case HttpStatus.NOT_FOUND:
         customMessage = 'The requested resource was not found.';

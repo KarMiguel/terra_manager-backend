@@ -2,11 +2,15 @@ import { Controller, Get, Query, Req, Res, UnauthorizedException, UseGuards } fr
 import { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PlanoGuard } from '../../common/guards/plano.guard';
+import { RequerPlanoExato } from '../../common/guards/plano.decorator';
+import { TipoPlanoEnum } from '../../common/guards/plano.constants';
 import { RelatorioService } from './relatorio.service';
 
 @ApiTags('Relatório')
 @Controller('relatorio')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PlanoGuard)
+@RequerPlanoExato(TipoPlanoEnum.PREMIUM)
 @ApiBearerAuth('access-token')
 export class RelatorioController {
   constructor(private readonly relatorioService: RelatorioService) {}
@@ -14,12 +18,13 @@ export class RelatorioController {
   @Get('plantios')
   @ApiOperation({
     summary: 'Relatório: Meus plantios por safra/cultura',
-    description: 'Gera PDF com plantios agrupados por fazenda, cultura e status. Filtros: ano, idFazenda.',
+    description: '**Requer plano: Premium.** Gera PDF com plantios agrupados por fazenda, cultura e status. Filtros: ano, idFazenda.',
   })
   @ApiQuery({ name: 'ano', required: false, type: Number, description: 'Ano (ex.: 2025)' })
   @ApiQuery({ name: 'idFazenda', required: false, type: Number, description: 'ID da fazenda' })
   @ApiResponse({ status: 200, description: 'PDF do relatório' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   async relatorioPlantios(
     @Req() req: { user?: { id: number } },
     @Res() res: Response,
@@ -40,12 +45,13 @@ export class RelatorioController {
   @Get('estoque')
   @ApiOperation({
     summary: 'Relatório: Meu estoque por fazenda',
-    description: 'Gera PDF com produtos em estoque por fazenda (quantidade, valor, validade, status). Filtros: idFazenda, categoria.',
+    description: '**Requer plano: Premium.** Gera PDF com produtos em estoque por fazenda (quantidade, valor, validade, status). Filtros: idFazenda, categoria.',
   })
   @ApiQuery({ name: 'idFazenda', required: false, type: Number })
   @ApiQuery({ name: 'categoria', required: false, type: String, description: 'Categoria (ex.: DEFENSIVOS, FERTILIZANTES)' })
   @ApiResponse({ status: 200, description: 'PDF do relatório' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   async relatorioEstoque(
     @Req() req: { user?: { id: number } },
     @Res() res: Response,
@@ -66,11 +72,12 @@ export class RelatorioController {
   @Get('analises-solo')
   @ApiOperation({
     summary: 'Relatório: Minhas análises de solo',
-    description: 'Gera PDF com análises de solo (pH, N, P, K, CTC, etc.). Filtro: ano.',
+    description: '**Requer plano: Premium.** Gera PDF com análises de solo (pH, N, P, K, CTC, etc.). Filtro: ano.',
   })
   @ApiQuery({ name: 'ano', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'PDF do relatório' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   async relatorioAnalisesSolo(
     @Req() req: { user?: { id: number } },
     @Res() res: Response,
@@ -89,12 +96,13 @@ export class RelatorioController {
   @Get('resumo')
   @ApiOperation({
     summary: 'Relatório: Resumo geral do sistema para o cliente',
-    description: 'Gera PDF com resumo de tudo relevante: plano atual, fazendas, área, plantios, estoque, análises de solo, fornecedores, pagamentos ao sistema. Filtros: ano, mes.',
+    description: '**Requer plano: Premium.** Gera PDF com resumo de tudo relevante: plano atual, fazendas, área, plantios, estoque, análises de solo, fornecedores, pagamentos ao sistema. Filtros: ano, mes.',
   })
   @ApiQuery({ name: 'ano', required: false, type: Number })
   @ApiQuery({ name: 'mes', required: false, type: Number, description: 'Mês (1-12)' })
   @ApiResponse({ status: 200, description: 'PDF do relatório' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   async relatorioResumo(
     @Req() req: { user?: { id: number } },
     @Res() res: Response,

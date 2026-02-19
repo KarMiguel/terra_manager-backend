@@ -1,9 +1,9 @@
-import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, ParseEnumPipe, ParseIntPipe, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { FormaPagamentoEnum } from '@prisma/client';
 import { PlanoService } from './plano.service';
 import { Public } from '../../common/guards/public.decorator';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { CancelarPlanoRequestDto } from './dto/cancelar-plano.dto';
-import { GerarCobrancaRequestDto } from './dto/gerar-cobranca.dto';
 import { RegistrarPagamentoRequestDto } from './dto/registrar-pagamento.dto';
 import { CreatePlanoDto } from './dto/create-plano.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -102,17 +102,23 @@ export class PlanoController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Gerar cobrança (PIX, boleto ou cartão) - Somente simulação',
+    summary: 'Gerar cobrança — escolher forma de pagamento',
     description:
-      'Gera uma cobrança na assinatura vigente com código de identificação conforme a forma de pagamento (simulação, sem gateway real). Use o codigoCobranca retornado em POST /plano/me/pagamento para simular o pagamento.',
+      'Escolher forma de pagamento (select) via parâmetro e gerar. O valor da cobrança será o valor do plano da assinatura vigente (simulação, sem gateway real). Use o codigoCobranca retornado em POST /plano/me/pagamento para simular o pagamento.',
+  })
+  @ApiQuery({
+    name: 'formaPagamento',
+    required: true,
+    enum: FormaPagamentoEnum,
+    description: 'Forma de pagamento. Selecione: PIX | BOLETO | CARTAO_CREDITO.',
   })
   @ApiResponse({ status: 201, description: 'Cobrança gerada com código de identificação' })
   @ApiResponse({ status: 400, description: 'Nenhuma assinatura ativa' })
   async gerarCobranca(
     @Req() req: { user: { id: number; email?: string } },
-    @Body() body: GerarCobrancaRequestDto,
+    @Query('formaPagamento', new ParseEnumPipe(FormaPagamentoEnum)) formaPagamento: FormaPagamentoEnum,
   ) {
-    return this.planoService.gerarCobranca(req.user.id, body, req.user.email);
+    return this.planoService.gerarCobranca(req.user.id, { formaPagamento }, req.user.email);
   }
 
   @Post('me/pagamento')

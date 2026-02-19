@@ -382,7 +382,7 @@ export class PlanoService {
       );
     }
 
-    const valor = body.valor ?? assinatura.plano.valorPlano;
+    const valor = assinatura.plano.valorPlano;
     // Data de vencimento calculada: 3 dias a partir de hoje (fim do dia).
     const dataVencimento = new Date();
     dataVencimento.setDate(dataVencimento.getDate() + 3);

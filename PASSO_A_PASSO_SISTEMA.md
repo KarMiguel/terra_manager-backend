@@ -333,10 +333,24 @@ Ao registrar operações, o **status do plantio** é atualizado automaticamente:
 
 ---
 
+## Controle de acesso por plano
+
+O token JWT inclui **tipoPlano** (BASICO, PRO, PREMIUM). Alguns módulos e endpoints exigem plano **Pro** ou **Premium**; se o usuário não tiver o plano exigido, a API retorna **403 Forbidden**.
+
+| Plano   | O que tem além do Básico |
+|---------|---------------------------|
+| **Básico** | Auth, usuário, fazenda, cultivar, fornecedor, plantio (CRUD básico, listagem), análise de solo, estoque, praga. Dashboard: clima e notícias (públicos). |
+| **Pro** | Tudo do Básico + **Operação do plantio**, **Aplicação**, **Dashboard**: cotação bolsa, dados solo, dados cultura. |
+| **Premium** | Tudo do Pro + **Mapa**, **Talhão**, **Zona de manejo**, **Relatório** (PDF), **Custo por safra** (`GET /plantio/fazenda/:id/custo-safra`). |
+
+Detalhes e RN: **REGRAS_NEGOCIO.md** §15.13.
+
+---
+
 ## Observações
 
 - **Token:** Após o login, use `Authorization: Bearer <accessToken>` em todos os endpoints protegidos (exceto registro, login, listar planos e vincular plano, que são públicos onde indicado).
-- **Plano:** O usuário precisa de assinatura ativa e pagamento aprovado no período para o plano ser considerado válido (impacta login e uso).
+- **Plano:** O usuário precisa de assinatura ativa e pagamento aprovado no período para o plano ser considerado válido (impacta login e uso). O **tipoPlano** no token define quais módulos/endpoints estão liberados (403 se plano insuficiente).
 - **IDs:** Após cada criação, use o `id` retornado nos próximos passos (ex.: idFazenda ao criar talhão, idPlantio ao criar operação).
 - **Swagger:** Em `http://localhost:3000/api-docs` é possível testar todos os endpoints e ver exemplos de body/query.
 

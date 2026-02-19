@@ -3,6 +3,9 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam, ApiResponse }
 import { AnaliseSolo } from '@prisma/client';
 import { CrudController } from 'src/crud.controller';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { PlanoGuard } from 'src/common/guards/plano.guard';
+import { RequerPlanoMinimo } from 'src/common/guards/plano.decorator';
+import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
 
 import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
@@ -155,79 +158,68 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
   }
 
   @Get('calagem/:idPlantio')
-  @ApiOperation({ 
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @RequerPlanoMinimo(TipoPlanoEnum.PRO)
+  @ApiOperation({
     summary: 'Calcula a necessidade de calagem',
-    description: 'Calcula a quantidade de calcário (em t/ha) necessária para corrigir a acidez do solo baseado na análise de solo e nas exigências da cultivar do plantio.'
+    description: '**Requer plano: Pro ou Premium.** Calcula a quantidade de calcário (em t/ha) necessária para corrigir a acidez do solo baseado na análise de solo e nas exigências da cultivar do plantio.',
   })
-  @ApiParam({ 
-    name: 'idPlantio', 
-    description: 'ID do plantio',
-    type: Number,
-    example: 1
-  })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiParam({ name: 'idPlantio', description: 'ID do plantio', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
     description: 'Cálculo de calagem retornado com sucesso',
     schema: {
       type: 'object',
       properties: {
         quantidadeCalagem: { type: 'number', description: 'Quantidade de calcário em t/ha' },
-        observacoes: { type: 'string' }
-      }
-    }
+        observacoes: { type: 'string' },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Plantio não encontrado ou sem análise de solo associada' 
-  })
+  @ApiResponse({ status: 400, description: 'Plantio não encontrado ou sem análise de solo associada' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Pro ou Premium. Seu plano atual não possui permissão.' })
   async calculaCalagem(@Param('idPlantio') idPlantio: string): Promise<CalagemResponseModel> {
     return this.analiseSoloService.calculaCalagem(+idPlantio);
   }
 
   @Get('adubacao/:idPlantio')
-  @ApiOperation({ 
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @RequerPlanoMinimo(TipoPlanoEnum.PRO)
+  @ApiOperation({
     summary: 'Calcula a necessidade de adubação NPK',
-    description: 'Calcula as quantidades de nitrogênio (N), fósforo (P) e potássio (K) necessárias para o plantio, baseado na análise de solo e nas exigências da cultivar.'
+    description: '**Requer plano: Pro ou Premium.** Calcula as quantidades de nitrogênio (N), fósforo (P) e potássio (K) necessárias para o plantio, baseado na análise de solo e nas exigências da cultivar.',
   })
-  @ApiParam({ 
-    name: 'idPlantio', 
-    description: 'ID do plantio',
-    type: Number,
-    example: 1
-  })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiParam({ name: 'idPlantio', description: 'ID do plantio', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
     description: 'Cálculo de adubação retornado com sucesso',
     schema: {
       type: 'object',
       properties: {
         nitrogenio: { type: 'number', description: 'Quantidade de N em kg/ha' },
         fosforo: { type: 'number', description: 'Quantidade de P2O5 em kg/ha' },
-        potassio: { type: 'number', description: 'Quantidade de K2O em kg/ha' }
-      }
-    }
+        potassio: { type: 'number', description: 'Quantidade de K2O em kg/ha' },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Plantio não encontrado ou sem análise de solo associada' 
-  })
+  @ApiResponse({ status: 400, description: 'Plantio não encontrado ou sem análise de solo associada' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Pro ou Premium. Seu plano atual não possui permissão.' })
   async calculaAdubacao(@Param('idPlantio') idPlantio: string): Promise<AdubacaoResponseModel> {
     return this.analiseSoloService.calculoAdubacao(+idPlantio);
   }
 
   @Get('comparativo-nutrientes/:idPlantio')
-  @ApiOperation({ 
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @RequerPlanoMinimo(TipoPlanoEnum.PRO)
+  @ApiOperation({
     summary: 'Compara exigências da cultivar com análise de solo',
-    description: 'Retorna uma comparação detalhada entre as exigências nutricionais da cultivar do plantio e os valores encontrados na análise de solo, indicando deficiências ou excessos.'
+    description: '**Requer plano: Pro ou Premium.** Retorna uma comparação detalhada entre as exigências nutricionais da cultivar do plantio e os valores encontrados na análise de solo, indicando deficiências ou excessos.',
   })
-  @ApiParam({ 
-    name: 'idPlantio', 
-    description: 'ID do plantio',
-    type: Number,
-    example: 1
-  })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiParam({ name: 'idPlantio', description: 'ID do plantio', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
     description: 'Comparativo de nutrientes retornado com sucesso',
     schema: {
       type: 'object',
@@ -241,17 +233,16 @@ export class AnaliseSoloController extends CrudController<AnaliseSolo, AnaliseSo
               exigencia: { type: 'number' },
               disponivel: { type: 'number' },
               diferenca: { type: 'number' },
-              status: { type: 'string', enum: ['deficiente', 'adequado', 'excesso'] }
-            }
-          }
-        }
-      }
-    }
+              status: { type: 'string', enum: ['deficiente', 'adequado', 'excesso'] },
+            },
+          },
+        },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Plantio não encontrado ou sem análise de solo associada' 
-  })
+  @ApiResponse({ status: 400, description: 'Plantio não encontrado ou sem análise de solo associada' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Pro ou Premium. Seu plano atual não possui permissão.' })
   async comparativo(@Param('idPlantio') idPlantio: string): Promise<any> {
     return this.analiseSoloService.comparativoNutrientes(+idPlantio);
   }

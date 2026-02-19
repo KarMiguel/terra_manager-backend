@@ -2,6 +2,9 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req, UseGuards
 import { CrudController } from 'src/crud.controller';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { PlanoGuard } from 'src/common/guards/plano.guard';
+import { RequerPlanoExato } from 'src/common/guards/plano.decorator';
+import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
 import { TalhaoService, TalhaoMapaResponse } from './talhao.service';
 import { Talhao } from '@prisma/client';
 import { TalhaoModel } from './interface/talhao.interface';
@@ -10,7 +13,8 @@ import { plainToInstance } from 'class-transformer';
 
 @ApiTags('Talhão')
 @Controller('talhao')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PlanoGuard)
+@RequerPlanoExato(TipoPlanoEnum.PREMIUM)
 @ApiBearerAuth('access-token')
 export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
   constructor(private readonly talhaoService: TalhaoService) {
@@ -20,11 +24,12 @@ export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
   @Post()
   @ApiOperation({
     summary: 'Cria um novo talhão',
-    description: 'Cadastra uma parcela de terra (talhão) em uma fazenda. Área em hectares (areaHa). A fazenda deve pertencer ao usuário logado. Base para custo, rotação e mapa (ver REGRAS_NEGOCIO.md §7.4).',
+    description: '**Requer plano: Premium.** Cadastra uma parcela de terra (talhão) em uma fazenda. Área em hectares (areaHa). A fazenda deve pertencer ao usuário logado. Base para custo, rotação e mapa (ver REGRAS_NEGOCIO.md §7.4).',
   })
   @ApiResponse({ status: 201, description: 'Talhão criado com sucesso. Retorna o objeto talhão com id, idFazenda, nome, areaHa, observacao, ativo.' })
   @ApiResponse({ status: 400, description: 'Dados inválidos ou fazenda não pertence ao usuário' })
-  @ApiResponse({ status: 401, description: 'Não autorizado — token JWT ausente ou inválido' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
   async create(@Body() dto: CreateTalhaoDto, @Req() req): Promise<TalhaoModel> {
     const idUsuario = req.user?.id;
@@ -35,14 +40,15 @@ export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
   @Get('fazenda/:idFazenda')
   @ApiOperation({
     summary: 'Lista talhões por fazenda',
-    description: 'Retorna talhões ativos da fazenda (ordenados por nome). A fazenda deve pertencer ao usuário. Suporta paginação (page, pageSize).',
+    description: '**Requer plano: Premium.** Retorna talhões ativos da fazenda (ordenados por nome). A fazenda deve pertencer ao usuário. Suporta paginação (page, pageSize).',
   })
   @ApiParam({ name: 'idFazenda', description: 'ID da fazenda', type: Number, example: 1 })
   @ApiQuery({ name: 'page', required: false, description: 'Número da página', type: Number, example: 1 })
   @ApiQuery({ name: 'pageSize', required: false, description: 'Itens por página', type: Number, example: 50 })
   @ApiResponse({ status: 200, description: 'Objeto com data (array de talhões) e count (total)' })
   @ApiResponse({ status: 400, description: 'Fazenda não pertence ao usuário' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
   async listarPorFazenda(
     @Param('idFazenda', ParseIntPipe) idFazenda: number,
@@ -60,7 +66,7 @@ export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
   @Get('fazenda/:idFazenda/mapa')
   @ApiOperation({
     summary: 'GeoJSON mapa dos talhões',
-    description: 'Retorna GeoJSON FeatureCollection com os talhões que possuem geometria (Polygon/MultiPolygon). Para desenhar o mapa da fazenda.',
+    description: '**Requer plano: Premium.** Retorna GeoJSON FeatureCollection com os talhões que possuem geometria (Polygon/MultiPolygon). Para desenhar o mapa da fazenda.',
   })
   @ApiParam({ name: 'idFazenda', description: 'ID da fazenda', type: Number, example: 1 })
   @ApiResponse({
@@ -85,7 +91,8 @@ export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
     },
   })
   @ApiResponse({ status: 400, description: 'Fazenda não pertence ao usuário' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado. Faça login.' })
+  @ApiResponse({ status: 403, description: 'Este recurso exige plano Premium. Seu plano atual não possui permissão.' })
   @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
   async mapaPorFazenda(
     @Param('idFazenda', ParseIntPipe) idFazenda: number,
