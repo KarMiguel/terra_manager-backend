@@ -9,7 +9,6 @@ import { Role } from 'src/common/guards/roles.enum';
 import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
 import { PlanoService } from '../plano/plano.service';
-import { TipoPeriodicidadeEnum } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -118,12 +117,7 @@ export class AuthService {
         plano: { connect: { id: planoId } },
       });
 
-      await this.planoService.criarUsuarioPlano(
-        user.id,
-        planoId,
-        TipoPeriodicidadeEnum.ANUAL,
-        data.email,
-      );
+      await this.planoService.criarUsuarioPlano(user.id, planoId, data.email);
 
       return {
         id: user.id,

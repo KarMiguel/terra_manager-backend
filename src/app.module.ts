@@ -9,6 +9,9 @@ import { FornecedorModule } from './modules/fornecedor/fornecedor.module';
 import { CultivarModule } from './modules/cultivar/cultivar.module';
 import { PragaModule } from './modules/praga/praga.module';
 import { PlantioModule } from './modules/plantio/plantio.module';
+import { TalhaoModule } from './modules/talhao/talhao.module';
+import { OperacaoPlantioModule } from './modules/operacao-plantio/operacao-plantio.module';
+import { AplicacaoModule } from './modules/aplicacao/aplicacao.module';
 import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
 import { LogModule } from './modules/log/log.module';
 import { LoggingInterceptorModule } from './common/interceptors/logging.module';
@@ -33,6 +36,9 @@ import { RelatorioModule } from './modules/relatorio/relatorio.module';
     PragaModule,
     CultivarModule,
     PlantioModule,
+    TalhaoModule,
+    OperacaoPlantioModule,
+    AplicacaoModule,
     AnaliseSoloModule,
     LogModule
   ],

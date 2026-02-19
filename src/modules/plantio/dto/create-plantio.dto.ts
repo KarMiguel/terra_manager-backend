@@ -19,7 +19,12 @@ import {
     @IsInt()
     idFazenda: number;
 
-    @ApiProperty({ description: 'ID da analise solo associada', example: 1 })
+    @ApiPropertyOptional({ description: 'ID do talhão (parcela da fazenda)', example: 1 })
+    @IsOptional()
+    @IsInt()
+    idTalhao?: number;
+
+    @ApiPropertyOptional({ description: 'ID da analise solo associada', example: 1 })
     @IsInt()
     @IsOptional()
     idAnaliseSolo?: number;

@@ -28,35 +28,37 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Terra Manager API')
     .setDescription(`
-      API completa para gerenciamento agrícola e análise de solo.
-      
-      ## Funcionalidades Principais:
-      
-      - **Autenticação**: Sistema de login, registro e recuperação de senha
-      - **Dashboard**: Dados climáticos, cotações de commodities, notícias e informações sobre solo e culturas
-      - **Fazendas**: Gerenciamento de fazendas e propriedades rurais
-      - **Plantios**: Controle de plantios por fazenda e tipo de planta
-      - **Análise de Solo**: Análises de solo com cálculos de calagem e adubação
-      - **Cultivares**: Gerenciamento de cultivares com exigências nutricionais
-      - **Pragas**: Cadastro e gerenciamento de pragas
-      - **Fornecedores**: Controle de fornecedores
-      - **Produto Estoque**: Gerenciamento de estoque de produtos por fazenda
-      - **Usuários**: Gerenciamento de usuários do sistema
-      - **Planos**: Assinaturas, cobrança e pagamento (planos Básico, Pro, Premium)
-      - **Relatório**: Geração de PDFs — plantios, estoque, análises de solo e resumo para o contador
-      
-      ## Autenticação:
-      
-      A maioria dos endpoints requer autenticação via JWT Bearer Token. 
-      Use o endpoint \`/auth/login\` para obter o token e depois clique no botão "Authorize" 
-      no topo desta página para adicionar o token nas requisições.
-      
-      ## Paginação:
-      
-      Endpoints que retornam listas suportam paginação através dos parâmetros:
-      - \`page\`: Número da página (padrão: 1)
-      - \`pageSize\`: Itens por página (padrão: 10)
-      - \`options\`: Filtros em formato JSON (opcional)
+      API para gerenciamento agrícola: fazendas, plantios, talhões, operações do plantio, aplicações (defensivos/fertilizantes), análise de solo, custos por safra e relatórios em PDF.
+
+      ## Funcionalidades principais
+
+      - **Auth**: Login, registro e recuperação de senha (JWT).
+      - **Fazendas**: Cadastro de propriedades rurais.
+      - **Talhões**: Parcelas de terra por fazenda (área em ha). Base para custo, rotação e mapa. Endpoints: \`POST/GET /talhao\`, \`GET /talhao/fazenda/:id\`, \`GET /talhao/fazenda/:id/resumo\`.
+      - **Plantios**: Plantios por fazenda e tipo de planta; opcionalmente vinculados a talhão (\`idTalhao\`). \`GET /plantio/fazenda/:id/custo-safra?ano=YYYY\` retorna custo total da safra, área e resumo por operação.
+      - **Operações do plantio**: Etapas (preparo, semeadura, aplicação defensivo/fertilizante, irrigação, colheita). Custo por ha calculado automaticamente. \`POST /operacao-plantio\`, \`GET /operacao-plantio/plantio/:id\`.
+      - **Aplicações**: Registro de defensivo ou fertilizante por operação; dose por ha e quantidade total (dose × área) calculada. \`POST /aplicacao\`, \`GET /aplicacao/operacao/:id\`.
+      - **Análise de Solo**: Análises com cálculos de calagem e adubação.
+      - **Cultivares**, **Pragas**, **Fornecedores**, **Produto Estoque**: Cadastros auxiliares.
+      - **Planos**: Assinaturas (Básico, Pro, Premium), cobrança e pagamento.
+      - **Relatórios**: PDFs (plantios, estoque, análises de solo, resumo geral).
+      - **Dashboard**: Clima, cotações, notícias, dados de solo e cultura.
+
+      ## Documentação complementar
+
+      - **Regras de negócio**: \`REGRAS_NEGOCIO.md\` — RN por módulo, modelos e relacionamentos.
+      - **Cálculos agronômicos**: \`REFERENCIAS_AGRONOMIA.md\` — Fórmulas e referências (talhão, dose por ha, custo por safra).
+      - **Índice geral**: \`DOCUMENTACAO_SISTEMA.md\` — Visão geral da documentação do projeto.
+
+      ## Autenticação
+
+      A maioria dos endpoints exige JWT. Obtenha o token em \`POST /auth/login\` e use o botão **Authorize** nesta página para enviá-lo no header \`Authorization: Bearer <token>\`.
+
+      ## Paginação e filtros
+
+      - \`page\`: Página (padrão 1).
+      - \`pageSize\`: Itens por página (padrão 10).
+      - \`options\`: JSON com filtros (ex.: \`{"where": {"ativo": true}}\`).
     `)
     .setVersion('1.0')
     .setContact('Terra Manager', '', '')
@@ -69,20 +71,23 @@ async function bootstrap() {
         description: 'Digite o token JWT obtido no endpoint /auth/login',
         in: 'header',
       },
-      'access-token', 
+      'access-token',
     )
-    .addTag('Auth', 'Endpoints de autenticação e autorização')
-    .addTag('Dashboard', 'Dados climáticos, cotações, notícias e informações gerais')
-    .addTag('Fazenda', 'Gerenciamento de fazendas')
-    .addTag('Plantio', 'Gerenciamento de plantios')
-    .addTag('Análise de Solo', 'Análises de solo e cálculos de calagem/adubação')
-    .addTag('Cultivar', 'Gerenciamento de cultivares')
-    .addTag('Praga', 'Gerenciamento de pragas')
-    .addTag('Fornecedor', 'Gerenciamento de fornecedores')
-    .addTag('Produto Estoque', 'Gerenciamento de estoque de produtos')
-    .addTag('User', 'Gerenciamento de usuários')
+    .addTag('Auth', 'Autenticação: login, registro, recuperação de senha')
+    .addTag('Dashboard', 'Clima, cotações, notícias, solo e cultura')
+    .addTag('Fazenda', 'Cadastro de fazendas')
+    .addTag('Talhão', 'Parcelas de terra por fazenda (área por talhão, resumo)')
+    .addTag('Plantio', 'Plantios por fazenda; custo por safra')
+    .addTag('Operação do plantio', 'Etapas do plantio e custo por operação')
+    .addTag('Aplicação', 'Defensivos e fertilizantes (dose por ha, quantidade total)')
+    .addTag('Análise de Solo', 'Análises e cálculos de calagem/adubação')
+    .addTag('Cultivar', 'Cultivares e exigências nutricionais')
+    .addTag('Praga', 'Cadastro de pragas')
+    .addTag('Fornecedor', 'Cadastro de fornecedores')
+    .addTag('Produto Estoque', 'Estoque de produtos por fazenda')
+    .addTag('User', 'Usuários do sistema')
     .addTag('Plano', 'Planos, assinaturas, cobrança e pagamento')
-    .addTag('Relatório', 'Relatórios em PDF (plantios, estoque, análises de solo, resumo contador)')
+    .addTag('Relatório', 'Relatórios em PDF')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {

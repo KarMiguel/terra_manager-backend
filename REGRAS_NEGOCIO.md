@@ -1,6 +1,16 @@
 # Regras de Negócio - Terra Manager API
 
-Este documento descreve todas as regras de negócio implementadas no sistema Terra Manager, organizadas por módulo e feature.
+Este documento descreve todas as **regras de negócio** implementadas no sistema Terra Manager, organizadas por módulo e feature. É a referência para comportamento esperado da API, validações, permissões e modelos de dados.
+
+## Documentação do sistema
+
+| Onde | O que |
+|------|--------|
+| **Swagger (API)** | Documentação interativa dos endpoints: ao subir a API, acesse `http://localhost:3000/api-docs`. Inclui descrições, parâmetros, exemplos e respostas. |
+| **REGRAS_NEGOCIO.md** | Este arquivo: regras (RN-xxx), modelos de entidade, relacionamentos e foreign keys. |
+| **REFERENCIAS_AGRONOMIA.md** | Fórmulas e referências bibliográficas dos cálculos (talhão, dose por ha, custo por safra). |
+| **DOCUMENTACAO_SISTEMA.md** | Índice geral da documentação do projeto. |
+| **IDEIAS_EVOLUCAO.md** | Backlog de evolução e status do que já foi implementado. |
 
 ---
 
@@ -12,7 +22,7 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 4. [Fornecedores](#4-fornecedores)
 5. [Cultivares](#5-cultivares)
 6. [Pragas](#6-pragas)
-7. [Plantios](#7-plantios)
+7. [Plantios](#7-plantios) (incl. 7.4 Talhões, 7.5 Operações do plantio, 7.6 Aplicações, 7.7 Custo por operação e por safra)
 8. [Análise de Solo](#8-análise-de-solo)
 9. [Produto Estoque](#9-produto-estoque)
 10. [Dashboard](#10-dashboard)
@@ -524,6 +534,7 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 **Foreign Keys**:
 - `idCultivar` (Int, Obrigatório): Referência à cultivar plantada
 - `idFazenda` (Int, Obrigatório): Referência à fazenda onde ocorre o plantio
+- `idTalhao` (Int?, Opcional): Referência ao talhão (parcela da fazenda); quando informado, o plantio fica vinculado à parcela
 - `idAnaliseSolo` (Int?, Opcional): Referência à análise de solo vinculada
 
 **Campos de Auditoria**:
@@ -577,12 +588,15 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 **Foreign Keys**:
 - `idCultivar` → `Cultivar.id` (Obrigatório, onDelete: Restrict): Cultivar plantada
 - `idFazenda` → `Fazenda.id` (Obrigatório, onDelete: Restrict): Fazenda do plantio
+- `idTalhao` → `Talhao.id` (Opcional, onDelete: SetNull): Talhão (parcela) da fazenda
 - `idAnaliseSolo` → `AnaliseSolo.id` (Opcional, onDelete: Cascade): Análise de solo vinculada
 
 **Relacionamentos**:
 - `cultivar`: Um plantio usa uma cultivar (N:1)
 - `fazenda`: Um plantio pertence a uma fazenda (N:1)
+- `talhao`: Um plantio pode estar vinculado a um talhão (N:1, Opcional)
 - `analiseSolo`: Um plantio pode ter uma análise de solo (N:1, Opcional)
+- `operacoes`: Um plantio pode ter várias operações/etapas (1:N)
 
 **Regras Específicas**:
 - Cultivar e fazenda são obrigatórias
@@ -683,6 +697,91 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 
 ---
 
+#### 4.7.3.10. Talhao (talhao)
+
+**Descrição**: Parcela de terra da fazenda. Base para custo, rotação e mapa (área por talhão).
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `idFazenda` (Int, Obrigatório): Fazenda à qual o talhão pertence
+- `nome` (String, Obrigatório): Nome do talhão
+- `areaHa` (Float, Obrigatório): Área em hectares
+- `observacao` (String?, Opcional): Observações
+
+**Foreign Keys**:
+- `idFazenda` → `Fazenda.id` (Obrigatório, onDelete: Cascade): Fazenda do talhão
+
+**Relacionamentos**:
+- `fazenda`: Um talhão pertence a uma fazenda (N:1)
+- `plantios`: Um talhão pode ter vários plantios (1:N)
+- `operacoes`: Operações do plantio podem ser vinculadas ao talhão (1:N)
+
+**Regras Específicas**:
+- Área deve ser > 0. Apenas usuário dono da fazenda pode criar/listar talhões.
+- Endpoints: POST/GET /talhao, GET /talhao/fazenda/:idFazenda, GET /talhao/fazenda/:idFazenda/resumo.
+
+---
+
+#### 4.7.3.11. OperacaoPlantio (operacao_plantio)
+
+**Descrição**: Etapa/operação do plantio (preparo, semeadura, aplicação, irrigação, colheita). Rastreabilidade e custo por operação.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `idPlantio` (Int, Obrigatório): Plantio ao qual a operação pertence
+- `idTalhao` (Int?, Opcional): Talhão quando a operação é por parcela
+- `tipoEtapa` (TipoEtapaOperacaoEnum, Obrigatório): PREPARO_SOLO, SEMEADURA, APLICACAO_DEFENSIVO, APLICACAO_FERTILIZANTE, IRRIGACAO, COLHEITA, OUTROS
+- `dataInicio` (Date, Obrigatório), `dataFim` (Date?, Opcional): Período da operação
+- `areaHa` (Float, Obrigatório): Área em que a operação foi feita (ha)
+- `custoTotal` (Float?, Opcional): Custo total (R$)
+- `custoPorHa` (Float?, Opcional): Calculado: custoTotal / areaHa (R$/ha)
+
+**Foreign Keys**:
+- `idPlantio` → `Plantio.id` (Obrigatório, onDelete: Cascade)
+- `idTalhao` → `Talhao.id` (Opcional, onDelete: SetNull)
+
+**Relacionamentos**:
+- `plantio`: Uma operação pertence a um plantio (N:1)
+- `talhao`: Operação pode estar vinculada a um talhão (N:1, Opcional)
+- `aplicacoes`: Uma operação pode ter várias aplicações (1:N)
+
+**Regras Específicas**:
+- areaHa não pode ser maior que a área plantada do plantio. custoPorHa calculado automaticamente quando custoTotal é informado.
+
+---
+
+#### 4.7.3.12. Aplicacao (aplicacao)
+
+**Descrição**: Registro de aplicação de defensivo ou fertilizante em uma operação do plantio. Dose por ha → quantidade total (fórmula agronômica).
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `idOperacaoPlantio` (Int, Obrigatório): Operação em que foi feita a aplicação
+- `idProdutosEstoque` (Int?, Opcional): Produto do estoque (quando vinculado)
+- `tipo` (TipoAplicacaoEnum, Obrigatório): DEFENSIVO ou FERTILIZANTE
+- `nomeProduto` (String?, Opcional): Nome quando não vincula estoque
+- `dosePorHa` (Float, Obrigatório): Dose por hectare
+- `unidadeDose` (UnidadeDoseEnum, Obrigatório): KG_HA, G_HA, ML_HA, L_HA, TON_HA
+- `quantidadeTotal` (Float?, Opcional): Calculado: dosePorHa × areaHa da operação
+- `custoAplicacao` (Float?, Opcional): Custo (R$)
+- `dataAplicacao` (Date, Obrigatório): Data da aplicação
+
+**Foreign Keys**:
+- `idOperacaoPlantio` → `OperacaoPlantio.id` (Obrigatório, onDelete: Cascade)
+- `idProdutosEstoque` → `ProdutosEstoque.id` (Opcional, onDelete: SetNull)
+
+**Relacionamentos**:
+- `operacaoPlantio`: Uma aplicação pertence a uma operação (N:1)
+- `produtoEstoque`: Pode estar vinculada a um produto do estoque (N:1, Opcional)
+
+**Regras Específicas**:
+- quantidadeTotal calculada automaticamente. Conforme bula e receituário agronômico (ver REFERENCIAS_AGRONOMIA.md).
+
+---
+
 ### 4.7.4. Relacionamentos entre Tabelas
 
 #### Hierarquia de Dependências
@@ -692,7 +791,11 @@ Usuario (raiz)
 ├── Fazenda
 │   ├── Plantio
 │   │   ├── Cultivar (referência)
-│   │   └── AnaliseSolo (referência opcional)
+│   │   ├── Talhao (referência opcional)
+│   │   ├── AnaliseSolo (referência opcional)
+│   │   └── OperacaoPlantio (1:N)
+│   │       └── Aplicacao (1:N)
+│   ├── Talhao (1:N)
 │   └── ProdutosEstoque
 │       └── Fornecedor (referência)
 ├── Fornecedor
@@ -746,15 +849,21 @@ Usuario (raiz)
 | AnaliseSolo | idUsuario | Usuario.id | ✅ Sim | Default |
 | Plantio | idCultivar | Cultivar.id | ✅ Sim | Restrict |
 | Plantio | idFazenda | Fazenda.id | ✅ Sim | Restrict |
+| Plantio | idTalhao | Talhao.id | ❌ Não | SetNull |
 | Plantio | idAnaliseSolo | AnaliseSolo.id | ❌ Não | Cascade |
+| Talhao | idFazenda | Fazenda.id | ✅ Sim | Cascade |
+| OperacaoPlantio | idPlantio | Plantio.id | ✅ Sim | Cascade |
+| OperacaoPlantio | idTalhao | Talhao.id | ❌ Não | SetNull |
+| Aplicacao | idOperacaoPlantio | OperacaoPlantio.id | ✅ Sim | Cascade |
+| Aplicacao | idProdutosEstoque | ProdutosEstoque.id | ❌ Não | SetNull |
 | ProdutosEstoque | idFazenda | Fazenda.id | ✅ Sim | Default |
 | ProdutosEstoque | idFornecedor | Fornecedor.id | ✅ Sim | Default |
 | Log | idUsuario | Usuario.id | ❌ Não | SetNull |
 
 ---
 
-**Última atualização**: 2025-01-XX
-**Versão do documento**: 1.1
+**Última atualização**: 2026-02-19
+**Versão do documento**: 1.2
 
 ---
 
@@ -796,6 +905,7 @@ Usuario (raiz)
 ### 7.1. Criação
 - **RN-074**: ID da cultivar (`idCultivar`) é obrigatório.
 - **RN-075**: ID da fazenda (`idFazenda`) é obrigatório.
+- **RN-075b**: ID do talhão (`idTalhao`) é opcional; quando informado, o plantio fica vinculado à parcela (talhão) da fazenda.
 - **RN-076**: Data de plantio é obrigatória e convertida para Date.
 - **RN-077**: Área plantada é obrigatória (em hectares).
 - **RN-078**: Densidade planejada é obrigatória (plantas/ha).
@@ -816,6 +926,36 @@ Usuario (raiz)
 ### 7.3. Consulta por Tipo de Planta
 - **RN-090**: Lista plantios de uma fazenda filtrados por tipo de planta.
 - **RN-091**: Inclui dados completos de análise de solo quando disponível.
+
+### 7.4. Talhões
+- **RN-TAL-001**: Talhão é uma parcela de terra da fazenda; base para custo, rotação e mapa. Campos obrigatórios: `idFazenda`, `nome`, `areaHa` (área em hectares).
+- **RN-TAL-002**: Só é possível criar talhão em fazenda que pertença ao usuário logado (`idUsuario` da fazenda = usuário autenticado). Caso contrário retorna `BadRequestException`.
+- **RN-TAL-003**: Área do talhão (`areaHa`) deve ser maior que zero (validação `Min(0.01)`).
+- **RN-TAL-004**: `GET /talhao/fazenda/:idFazenda`: lista talhões da fazenda (apenas ativos). Exige que a fazenda pertença ao usuário. Suporta paginação (`page`, `pageSize`).
+- **RN-TAL-005**: `GET /talhao/fazenda/:idFazenda/resumo`: retorna área total (ha), quantidade de talhões e lista de talhões com id, nome e área. Usado como base para custo, rotação e mapa.
+- **RN-TAL-006**: Talhões são criados com `ativo = true` por padrão. Ordenação na listagem: por `nome` ascendente.
+
+### 7.5. Operações do plantio (etapas)
+- **RN-OPE-001**: Operação do plantio representa uma etapa do ciclo (preparo, semeadura, aplicação de defensivo/fertilizante, irrigação, colheita, outros). Campos obrigatórios: `idPlantio`, `tipoEtapa`, `dataInicio`, `areaHa`.
+- **RN-OPE-002**: Tipos de etapa (`TipoEtapaOperacaoEnum`): PREPARO_SOLO, SEMEADURA, APLICACAO_DEFENSIVO, APLICACAO_FERTILIZANTE, IRRIGACAO, COLHEITA, OUTROS.
+- **RN-OPE-003**: A área da operação (`areaHa`) não pode ser maior que a área plantada do plantio. Caso contrário retorna `BadRequestException`.
+- **RN-OPE-004**: Custo por hectare é calculado automaticamente: `custoPorHa = custoTotal / areaHa` quando `custoTotal` é informado. Arredondamento em 2 decimais.
+- **RN-OPE-005**: `idTalhao` é opcional; quando informado, a operação fica vinculada ao talhão (rastreabilidade por parcela).
+- **RN-OPE-006**: `GET /operacao-plantio/plantio/:idPlantio`: lista operações do plantio (ativas), ordenadas por `dataInicio` ascendente. Inclui dados do talhão quando houver.
+
+### 7.6. Aplicações (defensivo/fertilizante)
+- **RN-APL-001**: Aplicação registra o uso de defensivo ou fertilizante em uma operação do plantio. Campos obrigatórios: `idOperacaoPlantio`, `tipo` (DEFENSIVO ou FERTILIZANTE), `dosePorHa`, `unidadeDose`, `dataAplicacao`.
+- **RN-APL-002**: A quantidade total é calculada automaticamente: `quantidadeTotal = dosePorHa × areaHa` da operação vinculada (fórmula agronômica: dose por unidade de área × área tratada).
+- **RN-APL-003**: Unidades de dose (`UnidadeDoseEnum`): KG_HA, G_HA, ML_HA, L_HA, TON_HA. Devem estar de acordo com bula/receituário agronômico.
+- **RN-APL-004**: Pode-se vincular a um produto do estoque (`idProdutosEstoque`) ou informar apenas `nomeProduto` quando não houver vínculo com estoque.
+- **RN-APL-005**: `GET /aplicacao/operacao/:idOperacaoPlantio`: lista aplicações da operação (ativas), ordenadas por `dataAplicacao` ascendente. Inclui dados do produto de estoque quando houver.
+
+### 7.7. Custo por operação e por safra
+- **RN-CUS-001**: Custo por operação: cada registro de `OperacaoPlantio` pode ter `custoTotal` (R$) e `custoPorHa` (R$/ha) calculado automaticamente (ver RN-OPE-004).
+- **RN-CUS-002**: Safra é definida pelo **ano civil da data de plantio** (ex.: safra 2025 = plantios com `dataPlantio` no ano 2025). Alinhado a práticas CONAB/EMBRAPA.
+- **RN-CUS-003**: `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY`: retorna custo total da safra, área total (ha), custo por ha da safra, quantidade de plantios e resumo por tipo de operação (tipoEtapa, custoTotal, quantidade de operações). Exige que a fazenda pertença ao usuário.
+- **RN-CUS-004**: O parâmetro `ano` é obrigatório na query e deve ser um ano válido (ex.: 2000–2100). Caso contrário retorna `BadRequestException`.
+- **RN-CUS-005**: O custo total da safra considera a soma de `plantio.custoTotal` dos plantios da fazenda no ano; o resumo por operação considera a soma dos `custoTotal` das operações desses plantios. Custo por ha da safra = custoTotalSafra / areaTotalHa (quando areaTotalHa > 0).
 
 ---
 
@@ -1009,20 +1149,20 @@ Usuario (raiz)
 ## 14. Planos e Assinaturas
 
 ### 14.1. Visão geral e interação plano × usuário
-- **Plano (Plano)**: cadastro do tipo de oferta (nome, tipo, valor anual, dias de vigência, etc.). Tipos: BASICO, PRO, PREMIUM.
-- **UsuarioPlano (assinatura)**: vínculo do usuário com um plano. Cada usuário tem **no máximo uma assinatura ativa** (vigente, não cancelada). Contém `dataInicioPlano`, `dataFimPlano`, `tipoPeriodicidade` (MENSAL, SEMESTRAL, ANUAL).
+- **Plano (Plano)**: cadastro do tipo de oferta (nome, tipo, valor do plano para o período em dias — `valorPlano`, `tempoPlanoDias`). Tipos: BASICO, PRO, PREMIUM.
+- **UsuarioPlano (assinatura)**: vínculo do usuário com um plano. Cada usuário tem **no máximo uma assinatura ativa** (vigente, não cancelada). Contém `dataInicioPlano`, `dataFimPlano` (vigência em dias definida pelo `plano.tempoPlanoDias`).
 - **Usuario.idPlano**: referência ao plano atual do usuário (atualizado ao vincular plano).
-- **PagamentoPlano**: pagamentos registrados na assinatura; o último APROVADO define a cobertura do período (MENSAL +1 mês, SEMESTRAL +6 meses, ANUAL +12 meses).
+- **PagamentoPlano**: pagamentos registrados na assinatura; o último APROVADO define a cobertura do período (data do pagamento + `plano.tempoPlanoDias` dias).
 - **Cobranca**: cobranças geradas na assinatura (PIX, BOLETO, CARTAO_CREDITO); possuem `codigoCobranca`, `dataVencimento`, `valor`, status PENDENTE/PAGO/etc.
 
 ### 14.2. Tipos de Plano (TipoPlanoEnum)
-- **BASICO**, **PRO**, **PREMIUM**: Planos com vigência configurável (ex.: anual).
+- **BASICO**, **PRO**, **PREMIUM**: Planos com vigência em dias (`tempoPlanoDias`) e valor (`valorPlano`) para esse período.
 - **Plano inicial**: o plano **BASICO** é usado como plano inicial no cadastro (quando `idPlano` não é enviado ou é inválido).
 
 ### 14.3. Registro e plano default
 - **RN-PLN-001**: Ao criar conta, o usuário **já é vinculado** a um plano. Se o body enviar `idPlano` (opcional) e o plano existir e estiver ativo, esse plano é usado; senão usa o plano **BASICO**.
 - **RN-PLN-002**: O campo `Usuario.idPlano` é preenchido com o ID do plano vinculado.
-- **RN-PLN-003**: É criado um registro em `UsuarioPlano` com `dataInicioPlano = now()`, `dataFimPlano = now() + tempoPlanoDias` do plano, e `tipoPeriodicidade = ANUAL` para o primeiro vínculo.
+- **RN-PLN-003**: É criado um registro em `UsuarioPlano` com `dataInicioPlano = now()` e `dataFimPlano = now() + tempoPlanoDias` do plano (vigência sempre em dias).
 
 ### 14.4. Vincular plano a usuário
 - **RN-PLN-004**: `POST /plano/usuario/:idUsuario/plano/:idPlano` (público): vincula um plano a um usuário. Parâmetros de path: `idUsuario` e `idPlano`. Não usa body.
@@ -1034,7 +1174,7 @@ Usuario (raiz)
 - **RN-PLN-008**: **Sem plano não loga**: se não houver plano ativo (`getStatusPlanoUsuario` retorna null), o login é bloqueado com `401` e mensagem "Nenhum plano ativo. Contrate um plano para acessar o sistema.".
 - **RN-PLN-009**: **Login permitido mesmo com plano inválido**: se o usuário tiver assinatura mas `planoValido` for false (vencido ou pagamento em atraso), o login **é permitido** e o token é retornado, para que o usuário possa gerar cobrança e registrar pagamento. A resposta inclui `plano.planoValido` e `plano.mensagem` para o front exibir "Regularize o pagamento" e liberar apenas fluxo de pagamento.
 - **RN-PLN-010**: **Prazo do contrato**: o plano é considerado no prazo se `dataFimPlano >= now()`.
-- **RN-PLN-011**: **Cobertura por pagamento**: é necessário último pagamento com `statusPagamento = APROVADO` e vigência pela **periodicidade** — a cobertura vale a partir da data do pagamento: **MENSAL** +1 mês, **SEMESTRAL** +6 meses, **ANUAL** +12 meses. Se passou a data e não há pagamento aprovado cobrindo o período atual, o plano fica inválido (mas o login continua permitido para regularizar).
+- **RN-PLN-011**: **Cobertura por pagamento**: é necessário último pagamento com `statusPagamento = APROVADO` e vigência por **tempoPlanoDias** (dias) do plano — a cobertura vale a partir da data do pagamento: data do pagamento + `plano.tempoPlanoDias` dias. Se passou a data e não há pagamento aprovado cobrindo o período atual, o plano fica inválido (mas o login continua permitido para regularizar).
 - **RN-PLN-012**: A resposta do login inclui o objeto `plano`: `planoValido`, `tipoPlano`, `nomePlano`, `dataFimPlano`, `dataInicioPlano`, `pagamentoAprovado`, e opcionalmente `mensagem`.
 
 ### 14.6. Endpoints de planos (catálogo e status)
@@ -1046,7 +1186,7 @@ Usuario (raiz)
 - **RN-PLN-016**: `POST /plano/me/assinatura/cancelar` (autenticado): cancela a assinatura ativa do usuário. Registra `dataCanceladoEm`, `motivoCancelamento` (opcional), desativa renovação e assinatura (`ativo = false`). Requer token.
 
 ### 14.8. Gerar cobrança
-- **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. Body: **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO) e **valor** (opcional; se omitido, usa o valor anual do plano). **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
+- **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. Body: **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO) e **valor** (opcional; se omitido, usa o valor do plano, que é sempre para o período em dias — `plano.valorPlano`). **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
 - **RN-PLN-018**: Retorna `codigoCobranca` (ex.: PIX-YYYYMMDDHHmmss-XXX), que deve ser usado em **POST /plano/me/pagamento** (query) para simular o pagamento.
 - **RN-PLN-019**: **Não gera cobrança se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual (data atual ≤ data de vencimento do plano), retorna 400: "Você já pagou. Só poderá gerar nova cobrança quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
 
@@ -1058,14 +1198,14 @@ Usuario (raiz)
 - **RN-PLN-024**: **Só aceita a última cobrança**: se o codigoCobranca informado não for o da **última** cobrança PENDENTE da assinatura (código antigo), retorna 400: "Código de cobrança antigo. Gere uma nova cobrança em POST /plano/me/cobranca e use o último código retornado."
 - **RN-PLN-025**: **Não registra pagamento se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual, retorna 400: "Você já pagou. Só poderá pagar novamente quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
 
-### 14.10. Periodicidade e enums
-- **TipoPeriodicidadeEnum**: MENSAL, SEMESTRAL, ANUAL. Define a cobertura após um pagamento aprovado: +1 mês, +6 meses, +12 meses.
+### 14.10. Vigência e enums
+- **Vigência em dias**: a cobertura após um pagamento aprovado é sempre **tempoPlanoDias** do plano (ex.: 365 dias). Não há enum de periodicidade; o valor do plano (`valorPlano`) é para esse período em dias.
 - **StatusPagamentoEnum**: CANCELADO, APROVADO, REPROVADO, PROCESSANDO.
 - **StatusCobrancaEnum**: PENDENTE, PAGO, CANCELADO, VENCIDO.
 - **FormaPagamentoEnum**: PIX, BOLETO, CARTAO_CREDITO.
 
 ### 14.11. Seed de planos
-- **RN-PLN-026**: O seed `npm run seed:plano` cria/atualiza os planos: Básico (R$ 299,90/ano), Pro (R$ 599,90/ano), Premium (R$ 999,90/ano). Deve ser executado antes do primeiro registro ou quando os planos forem alterados.
+- **RN-PLN-026**: O seed `npm run seed:plano` cria/atualiza os planos (Básico, Pro, Premium) com `valorPlano` (R$) e `tempoPlanoDias` (ex.: 180, 365, 730). Deve ser executado antes do primeiro registro ou quando os planos forem alterados.
 
 ### 14.12. Modelos e campos (resumo)
 - **UsuarioPlano**: não possui campo `valorPago`; valor do pagamento fica em **PagamentoPlano**.
@@ -1123,4 +1263,4 @@ O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML fic
 ---
 
 **Última atualização**: 2026-02-19
-**Versão do documento**: 1.1
+**Versão do documento**: 1.2

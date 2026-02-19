@@ -151,4 +151,82 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
 
     return { data, count: data.length };
   }
+
+  /**
+   * Custo por safra: soma dos custos dos plantios da fazenda no ano (gestão financeira real).
+   * Safra definida pelo ano da data de plantio (conforme CONAB/EMBRAPA).
+   * Custo por ha = custo total / área total.
+   */
+  async custoPorSafra(
+    idFazenda: number,
+    ano: number,
+    idUsuario: number,
+  ): Promise<{
+    ano: number;
+    idFazenda: number;
+    custoTotalSafra: number;
+    areaTotalHa: number;
+    custoPorHaSafra: number;
+    quantidadePlantios: number;
+    resumoPorOperacao: { tipoEtapa: string; custoTotal: number; quantidade: number }[];
+  }> {
+    const fazenda = await this.prisma.fazenda.findUnique({
+      where: { id: idFazenda },
+      select: { idUsuario: true },
+    });
+    if (!fazenda) {
+      throw new NotFoundException(`Fazenda com ID ${idFazenda} não encontrada.`);
+    }
+    if (fazenda.idUsuario !== idUsuario) {
+      throw new BadRequestException('O usuário não tem permissão para acessar esta fazenda.');
+    }
+    const inicioAno = new Date(ano, 0, 1);
+    const fimAno = new Date(ano, 11, 31, 23, 59, 59);
+    const plantios = await this.prisma.plantio.findMany({
+      where: {
+        idFazenda,
+        ativo: true,
+        dataPlantio: { gte: inicioAno, lte: fimAno },
+      },
+      select: {
+        id: true,
+        areaPlantada: true,
+        custoTotal: true,
+        operacoes: {
+          where: { ativo: true },
+          select: { tipoEtapa: true, custoTotal: true },
+        },
+      },
+    });
+    let custoTotalSafra = 0;
+    let areaTotalHa = 0;
+    const custoPorOperacao: Record<string, { custoTotal: number; quantidade: number }> = {};
+    for (const p of plantios) {
+      areaTotalHa += p.areaPlantada;
+      const custoPlantio = p.custoTotal ?? 0;
+      custoTotalSafra += custoPlantio;
+      for (const op of p.operacoes) {
+        const key = op.tipoEtapa;
+        if (!custoPorOperacao[key]) custoPorOperacao[key] = { custoTotal: 0, quantidade: 0 };
+        custoPorOperacao[key].custoTotal += op.custoTotal ?? 0;
+        custoPorOperacao[key].quantidade += 1;
+      }
+    }
+    const custoPorHaSafra =
+      areaTotalHa > 0 ? Math.round((custoTotalSafra / areaTotalHa) * 100) / 100 : 0;
+    const resumoPorOperacao = Object.entries(custoPorOperacao).map(([tipoEtapa, v]) => ({
+      tipoEtapa,
+      custoTotal: Math.round(v.custoTotal * 100) / 100,
+      quantidade: v.quantidade,
+    }));
+    return {
+      ano,
+      idFazenda,
+      custoTotalSafra: Math.round(custoTotalSafra * 100) / 100,
+      areaTotalHa: Math.round(areaTotalHa * 100) / 100,
+      custoPorHaSafra,
+      quantidadePlantios: plantios.length,
+      resumoPorOperacao,
+    };
+  }
 }

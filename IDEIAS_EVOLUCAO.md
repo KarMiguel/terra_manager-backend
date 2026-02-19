@@ -4,6 +4,18 @@ Documento de ideias em nível de sistema para ampliar e melhorar o Terra Manager
 
 ---
 
+## Status do que já foi feito (atualizado)
+
+| Ideia (prioridade) | Status | O que existe no sistema |
+|--------------------|--------|--------------------------|
+| **Talhões + área por talhão** | ✅ Feito | Modelo `Talhao` (nome, areaHa por fazenda). Endpoints: `POST/GET /talhao`, `GET /talhao/fazenda/:id`, `GET /talhao/fazenda/:id/resumo` (área total e por talhão). Plantio com `idTalhao` opcional. |
+| **Operações/etapas do plantio + aplicações** | ✅ Feito | `OperacaoPlantio` (preparo, semeadura, aplicação defensivo/fertilizante, irrigação, colheita, etc.) com custo por operação. `Aplicacao` (defensivo/fertilizante) com dose/ha → quantidade total calculada. Endpoints: `POST /operacao-plantio`, `GET /operacao-plantio/plantio/:id`, `POST /aplicacao`, `GET /aplicacao/operacao/:id`. |
+| **Custo por operação e por safra** | ✅ Feito | Custo por operação: `custoTotal` e `custoPorHa` (calculado) em cada operação. Custo por safra: `GET /plantio/fazenda/:id/custo-safra?ano=YYYY` (custo total, área, R$/ha, resumo por tipo de operação). Safra = ano da data de plantio. |
+
+O restante do documento continua válido como backlog de evolução. **O que cada plano não tem** está na **§6** (BASICO, PRO, PREMIUM).
+
+---
+
 ## 1. Gestão
 
 
@@ -46,7 +58,12 @@ Documento de ideias em nível de sistema para ampliar e melhorar o Terra Manager
 
 ### 3.3. Pragas e doenças
 - **Cadastro**: além de “praga”, incluir doenças (fungos, vírus, bactérias); sintomas; épocas de risco.
-- **Ocorrência no campo**: registrar ocorrência em talhão/plantio (data, intensidade, foto); vincular a 
+- **Ocorrência no campo**: registrar ocorrência em talhão/plantio (data, intensidade, foto); vincular a praga/doença.
+- **Benefício**: alertas e histórico para manejo integrado.
+
+---
+
+## 4. Sistema e produto
 
 ### 4.2. Permissões e multi-usuário
 - **Perfis**: dono, gerente, operador, consultor (só leitura em algumas fazendas).
@@ -59,24 +76,60 @@ Documento de ideias em nível de sistema para ampliar e melhorar o Terra Manager
 - **Benefício**: nada importante “esquecido”.
 
 ### 4.4. Integrações
+
 ### 4.5. Planos e funcionalidades por assinatura
-- **BASICO**: fazendas, plantios, estoque, relatórios atuais.
-- **PRO**: + talhões, custos, operações detalhadas, mais relatórios.
-- **PREMIUM**: + mapa, zonas de manejo, integração clima, aplicativo, multi-usuário avançado.
-- **Benefício**: produto escalável; receita por valor entregue.
+- **Benefício**: produto escalável; receita por valor entregue. Cada plano desbloqueia módulos e features conforme tabelas abaixo.
 
 ---
 
-## 5. Priorização sugerida (por impacto x esforço)
+## 6. Planos — o que NÃO tem em cada plano
 
-| Prioridade | Ideia                               | Motivo |
-|-----------|--------------------------------------|--------|
-| Alta      | Talhões + área por talhão            | Base para custo, rotação e mapa |
-| Alta      | Operações/etapas do plantio + aplicações | Rastreabilidade e gestão do dia a dia |
-| Alta      | Custo por operação e por safra        | Gestão financeira real |
-| Média     | Planejamento de safra (cenários)      | Decisão antes de plantar |
-| Média     | Pragas/doenças + ocorrência no campo | Agronomia e alertas |
-| Média     | Recomendações por talhão/cultura      | Aproveitar análise de solo |
-| Média     | Clima (API ou estação)                | Alertas e irrigação |
-| Baixa     | Mapa (shape/GeoJSON)                  | Diferencial, mais complexo |
-| Baixa     | App mobile / PWA                      | Uso no campo, maior desenvolvimento |
+Cada plano inclui tudo que está nos planos anteriores. Abaixo: **apenas o que cada um NÃO tem**. *(Hoje o sistema ainda não aplica restrição por plano nos endpoints; esta seção serve como definição para implementação futura.)*
+
+---
+
+### BASICO — não tem
+
+- Talhão (cadastro, área por talhão, resumo)
+- Operação do plantio (etapas, custo por operação)
+- Aplicação (defensivo/fertilizante, dose × área)
+- Custo por safra (endpoint e relatório)
+- Planejamento de safra, rotação, recomendações por talhão
+- Pragas/doenças + ocorrência no campo, clima (API)
+- Mapa (shape/GeoJSON), zonas de manejo
+- Integração clima, aplicativo, multi-usuário avançado
+- Notificações, integrações externas, mão de obra, irrigação
+
+---
+
+### PRO — não tem
+
+- Mapa (shape/GeoJSON), zonas de manejo
+- Integração clima (estação/API na propriedade), aplicativo mobile
+- Multi-usuário avançado (perfis, permissão por fazenda)
+- Notificações (lembretes por e-mail/push)
+- Integrações externas (contabilidade, mercado)
+- Mão de obra e equipe (funcionários, alocação em atividades)
+- Irrigação (cadastro de sistemas, registro de uso)
+- Suporte prioritário
+
+---
+
+### PREMIUM — não tem
+
+- Nada: inclui todas as funcionalidades previstas para o produto.
+
+---
+
+## 7. Priorização sugerida (por impacto x esforço)
+
+| Prioridade | Ideia                               | Motivo | Status |
+|-----------|--------------------------------------|--------|--------|
+| Alta      | Talhões + área por talhão            | Base para custo, rotação e mapa | ✅ Feito |
+| Alta      | Operações/etapas do plantio + aplicações | Rastreabilidade e gestão do dia a dia | ✅ Feito |
+| Alta      | Custo por operação e por safra        | Gestão financeira real | ✅ Feito |
+| Média     | Planejamento de safra (cenários)      | Decisão antes de plantar | Pendente |
+| Média     | Pragas/doenças + ocorrência no campo | Agronomia e alertas | Pendente |
+| Média     | Recomendações por talhão/cultura      | Aproveitar análise de solo | Pendente |
+| Média     | Clima (API ou estação)                | Alertas e irrigação | Pendente |
+| Baixa     | Mapa (shape/GeoJSON)                  | Diferencial, mais complexo | Pendente |

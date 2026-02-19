@@ -45,6 +45,20 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Documentação do sistema
+
+O projeto possui documentação estruturada em vários arquivos. O **índice geral** está em **[DOCUMENTACAO_SISTEMA.md](./DOCUMENTACAO_SISTEMA.md)**.
+
+| Documento | Conteúdo |
+|-----------|----------|
+| **[DOCUMENTACAO_SISTEMA.md](./DOCUMENTACAO_SISTEMA.md)** | Índice de toda a documentação |
+| **[REGRAS_NEGOCIO.md](./REGRAS_NEGOCIO.md)** | Regras de negócio (RN), modelos de entidade, FKs |
+| **[REFERENCIAS_AGRONOMIA.md](./REFERENCIAS_AGRONOMIA.md)** | Fórmulas e referências dos cálculos agronômicos |
+| **[IDEIAS_EVOLUCAO.md](./IDEIAS_EVOLUCAO.md)** | Backlog e status das funcionalidades |
+| **Swagger (/api-docs)** | Documentação interativa da API (endpoints, parâmetros, exemplos) |
+
+---
+
 ## Documentação Swagger
 
 ### Acessar a Documentação
@@ -145,9 +159,26 @@ Cada módulo possui seu próprio controller que estende `CrudController` e adici
 
 **4. PlantioController** (`src/modules/plantio/plantio.controller.ts`)
 - Herda CRUD + endpoints específicos:
-  - `POST /plantio` - Criar plantio
+  - `POST /plantio` - Criar plantio (opcional: idTalhao)
   - `GET /plantio/fazenda/:idFazenda?options={}&page={}&pageSize={}` - Listar por fazenda
   - `GET /plantio/fazenda/:idFazenda/tipo-planta/:tipoPlanta` - Filtrar por tipo de planta
+  - `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY` - Custo por safra (área, custo total, R$/ha, resumo por operação)
+
+**4b. TalhaoController** (`src/modules/talhao/talhao.controller.ts`)
+- `POST /talhao` - Criar talhão (idFazenda, nome, areaHa)
+- `GET /talhao/fazenda/:idFazenda` - Listar talhões da fazenda
+- `GET /talhao/fazenda/:idFazenda/resumo` - Resumo (área total e por talhão)
+- Herda: PUT /talhao/:id, GET /talhao, GET /talhao/:id, DELETE /talhao/:id
+
+**4c. OperacaoPlantioController** (`src/modules/operacao-plantio/operacao-plantio.controller.ts`)
+- `POST /operacao-plantio` - Registrar operação/etapa (tipoEtapa, dataInicio, areaHa, custoTotal; custoPorHa calculado)
+- `GET /operacao-plantio/plantio/:idPlantio` - Listar operações do plantio
+- Herda: PUT, GET, GET/:id, DELETE
+
+**4d. AplicacaoController** (`src/modules/aplicacao/aplicacao.controller.ts`)
+- `POST /aplicacao` - Registrar aplicação defensivo/fertilizante (dosePorHa; quantidadeTotal = dosePorHa × área)
+- `GET /aplicacao/operacao/:idOperacaoPlantio` - Listar aplicações da operação
+- Herda: PUT, GET, GET/:id, DELETE
 
 **5. CultivarController** (`src/modules/cultivar/cultivar.controller.ts`)
 - Herda CRUD + endpoints específicos:
@@ -253,13 +284,30 @@ Cada módulo possui seu próprio controller que estende `CrudController` e adici
 - `GET /analise-solo/comparativo-nutrientes/:idPlantio` - Comparativo de nutrientes
 
 #### 4. **Plantio** (Protegido - JWT)
-- `POST /plantio` - Criar plantio
+- `POST /plantio` - Criar plantio (opcional: idTalhao)
 - `GET /plantio` - Listar todos os plantios
 - `GET /plantio/:id` - Buscar plantio por ID
 - `GET /plantio/fazenda/:idFazenda` - Listar plantios por fazenda
 - `GET /plantio/fazenda/:idFazenda/tipo-planta/:tipoPlanta` - Filtrar por tipo de planta
+- `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY` - Custo por safra
 - `PUT /plantio/:id` - Atualizar plantio
 - `DELETE /plantio/:id` - Deletar plantio
+
+#### 4b. **Talhão** (Protegido - JWT)
+- `POST /talhao` - Criar talhão
+- `GET /talhao/fazenda/:idFazenda` - Listar talhões da fazenda
+- `GET /talhao/fazenda/:idFazenda/resumo` - Resumo área por talhão
+- CRUD: GET /talhao, GET /talhao/:id, PUT /talhao/:id, DELETE /talhao/:id
+
+#### 4c. **Operação do plantio** (Protegido - JWT)
+- `POST /operacao-plantio` - Registrar operação/etapa
+- `GET /operacao-plantio/plantio/:idPlantio` - Listar operações do plantio
+- CRUD: GET, GET/:id, PUT/:id, DELETE/:id
+
+#### 4d. **Aplicação** (Protegido - JWT)
+- `POST /aplicacao` - Registrar aplicação defensivo/fertilizante
+- `GET /aplicacao/operacao/:idOperacaoPlantio` - Listar aplicações da operação
+- CRUD: GET, GET/:id, PUT/:id, DELETE/:id
 
 #### 5. **Cultivar** (Protegido - JWT)
 - `POST /cultivar` - Criar cultivar

@@ -150,4 +150,56 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   ): Promise<{ data: PlantioModel[]; count: number }> {
     return this.plantioService.listarPorFazendaTipoPlanta(idFazenda, tipoPlanta);
   }
+
+  @Get('fazenda/:idFazenda/custo-safra')
+  @ApiOperation({
+    summary: 'Custo por safra',
+    description:
+      'Retorna custo total da safra (soma dos custos dos plantios da fazenda no ano), área total (ha), custo por ha da safra, quantidade de plantios e resumo por tipo de operação (tipoEtapa, custoTotal, quantidade). Safra = ano civil da data de plantio (RN-CUS-002 a RN-CUS-005). A fazenda deve pertencer ao usuário.',
+  })
+  @ApiParam({ name: 'idFazenda', description: 'ID da fazenda', type: Number, example: 1 })
+  @ApiQuery({ name: 'ano', required: true, description: 'Ano da safra (ex: 2025). Deve ser entre 2000 e 2100.', type: Number, example: 2025 })
+  @ApiResponse({
+    status: 200,
+    description: 'Resumo de custo por safra',
+    schema: {
+      type: 'object',
+      properties: {
+        ano: { type: 'number', example: 2025 },
+        idFazenda: { type: 'number' },
+        custoTotalSafra: { type: 'number', description: 'Soma dos custos (R$)' },
+        areaTotalHa: { type: 'number', description: 'Soma das áreas plantadas (ha)' },
+        custoPorHaSafra: { type: 'number', description: 'custoTotalSafra / areaTotalHa (R$/ha)' },
+        quantidadePlantios: { type: 'number' },
+        resumoPorOperacao: {
+          type: 'array',
+          items: { type: 'object', properties: { tipoEtapa: { type: 'string' }, custoTotal: { type: 'number' }, quantidade: { type: 'number' } } },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Ano inválido ou usuário não autenticado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
+  async custoPorSafra(
+    @Param('idFazenda', ParseIntPipe) idFazenda: number,
+    @Query('ano') ano: string,
+    @Req() req?: any,
+  ): Promise<{
+    ano: number;
+    idFazenda: number;
+    custoTotalSafra: number;
+    areaTotalHa: number;
+    custoPorHaSafra: number;
+    quantidadePlantios: number;
+    resumoPorOperacao: { tipoEtapa: string; custoTotal: number; quantidade: number }[];
+  }> {
+    const idUsuario = req.user?.id;
+    if (!idUsuario) throw new BadRequestException('Usuário não autenticado.');
+    const anoNum = parseInt(ano, 10);
+    if (isNaN(anoNum) || anoNum < 2000 || anoNum > 2100) {
+      throw new BadRequestException('Parâmetro "ano" deve ser um ano válido (ex: 2025).');
+    }
+    return this.plantioService.custoPorSafra(idFazenda, anoNum, idUsuario);
+  }
 }

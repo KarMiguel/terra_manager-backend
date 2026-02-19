@@ -3,9 +3,30 @@ import { PrismaClient, TipoPlanoEnum } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const planos = [
-  { nome: 'Plano Básico', tipoPlano: TipoPlanoEnum.BASICO, tempoPlanoDias: 365, valorPlanoAnual: 299.9, descricao: 'Recursos essenciais para gestão da propriedade rural.', ativo: true },
-  { nome: 'Plano Pro', tipoPlano: TipoPlanoEnum.PRO, tempoPlanoDias: 365, valorPlanoAnual: 599.9, descricao: 'Recursos avançados, relatórios e integrações.', ativo: true },
-  { nome: 'Plano Premium', tipoPlano: TipoPlanoEnum.PREMIUM, tempoPlanoDias: 365, valorPlanoAnual: 999.9, descricao: 'Acesso completo, suporte prioritário e todas as funcionalidades.', ativo: true },
+  { 
+    nome: 'Plano Básico',
+    tipoPlano: TipoPlanoEnum.BASICO,
+    tempoPlanoDias: 180,
+    valorPlano: 197.90,
+    descricao: 'Recursos essenciais para gestão da propriedade rural.',
+    ativo: true,
+  },
+  {
+    nome: 'Plano Pro',
+    tipoPlano: TipoPlanoEnum.PRO,
+    tempoPlanoDias: 365,
+    valorPlano: 599.9,
+    descricao: 'Recursos avançados, relatórios e integrações.',
+    ativo: true,
+  },
+  {
+    nome: 'Plano Premium',
+    tipoPlano: TipoPlanoEnum.PREMIUM,
+    tempoPlanoDias: 730,
+    valorPlano: 999.9,
+    descricao: 'Acesso completo, suporte prioritário e todas as funcionalidades.',
+    ativo: true,
+  },
 ];
 
 async function main() {

@@ -19,12 +19,12 @@ export class CreatePlanoDto {
   tipoPlano: TipoPlanoEnum;
 
   @ApiProperty({
-    description: 'Valor anual do plano (R$).',
+    description: 'Valor do plano para o período em dias (tempoPlanoDias). R$.',
     example: 299.9,
   })
   @IsNumber()
   @Min(0)
-  valorPlanoAnual: number;
+  valorPlano: number;
 
   @ApiPropertyOptional({
     description: 'Duração do plano em dias (ex.: 365 para anual).',

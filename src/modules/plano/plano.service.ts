@@ -4,7 +4,6 @@ import {
   Plano,
   TipoPlanoEnum,
   StatusPagamentoEnum,
-  TipoPeriodicidadeEnum,
   FormaPagamentoEnum,
   StatusCobrancaEnum,
 } from '@prisma/client';
@@ -56,13 +55,13 @@ function gerarCodigoCobranca(formaPagamento: FormaPagamentoEnum): string {
   const ts = timestampCodigo();
   switch (formaPagamento) {
     case FormaPagamentoEnum.PIX:
-      return `PIX-${ts}-${randomAlfanumerico(8)}`;
+      return `PIX-${ts}-${randomAlfanumerico(20)}`;
     case FormaPagamentoEnum.BOLETO:
       return `BOL-${ts}-${randomNumerico(10)}`;
     case FormaPagamentoEnum.CARTAO_CREDITO:
-      return `CC-${ts}-${randomAlfanumerico(6)}`;
+      return `CC-${ts}-${randomAlfanumerico(8)}`;
     default:
-      return `OUT-${ts}-${randomAlfanumerico(6)}`;
+      return `OUT-${ts}-${randomAlfanumerico(25)}`;
   }
 }
 
@@ -83,7 +82,7 @@ export class PlanoService {
   async findAllAtivos(): Promise<Plano[]> {
     return this.prisma.plano.findMany({
       where: { ativo: true },
-      orderBy: { valorPlanoAnual: 'asc' },
+      orderBy: { valorPlano: 'asc' },
     });
   }
 
@@ -107,7 +106,7 @@ export class PlanoService {
       data: {
         nome: dto.nome,
         tipoPlano: dto.tipoPlano,
-        valorPlanoAnual: dto.valorPlanoAnual,
+        valorPlano: dto.valorPlano,
         tempoPlanoDias: dto.tempoPlanoDias ?? undefined,
         descricao: dto.descricao ?? undefined,
         ativo: dto.ativo ?? true,
@@ -129,8 +128,7 @@ export class PlanoService {
 
   /**
    * Retorna o status do plano atual do usuário (assinatura ativa, não cancelada).
-   * Para plano pago: exige último pagamento APROVADO e vigência pela periodicidade
-   * (MENSAL = +1 mês, SEMESTRAL = +6 meses, ANUAL = +12 meses a partir da data do pagamento).
+   * Para plano pago: exige último pagamento APROVADO e vigência por tempoPlanoDias (dias de cobertura).
    * Se passou a data de vencer e não há pagamento aprovado no período, plano inválido (não pode logar).
    */
   async getStatusPlanoUsuario(idUsuario: number): Promise<StatusPlanoUsuario | null> {
@@ -155,17 +153,12 @@ export class PlanoService {
     const ultimoPagamentoAprovado = usuarioPlano.pagamentos.find(
       (p) => p.statusPagamento === StatusPagamentoEnum.APROVADO,
     );
-    const mesesPorPeriodicidade: Record<string, number> = {
-      MENSAL: 1,
-      SEMESTRAL: 6,
-      ANUAL: 12,
-    };
-    const meses = mesesPorPeriodicidade[usuarioPlano.tipoPeriodicidade] ?? 12;
+    const diasCobertura = usuarioPlano.plano.tempoPlanoDias ?? 365;
     const dataReferenciaPagamento = ultimoPagamentoAprovado
       ? new Date(ultimoPagamentoAprovado.dataPagamento)
       : new Date(usuarioPlano.dataInicioPlano);
     const dataLimiteCobertura = new Date(dataReferenciaPagamento);
-    dataLimiteCobertura.setMonth(dataLimiteCobertura.getMonth() + meses);
+    dataLimiteCobertura.setDate(dataLimiteCobertura.getDate() + diasCobertura);
     const pagamentoNoPeriodo = !!ultimoPagamentoAprovado && now <= dataLimiteCobertura;
     const planoValido = prazoContratoValido && pagamentoNoPeriodo;
 
@@ -175,7 +168,7 @@ export class PlanoService {
     } else if (!ultimoPagamentoAprovado) {
       mensagem = 'Nenhum pagamento aprovado. Regularize para acessar.';
     } else if (now > dataLimiteCobertura) {
-      mensagem = `Pagamento em atraso (período ${usuarioPlano.tipoPeriodicidade}). Regularize para acessar.`;
+      mensagem = `Pagamento em atraso (período de ${diasCobertura} dias). Regularize para acessar.`;
     }
 
     return {
@@ -196,7 +189,6 @@ export class PlanoService {
   async criarUsuarioPlano(
     idUsuario: number,
     idPlano: number,
-    tipoPeriodicidade: TipoPeriodicidadeEnum,
     createdBy?: string,
   ): Promise<void> {
     const plano = await this.findById(idPlano);
@@ -218,7 +210,6 @@ export class PlanoService {
         idUsuario,
         idPlano,
         dataFimPlano: dataFim,
-        tipoPeriodicidade,
         createdBy: createdBy ?? null,
       },
     });
@@ -252,15 +243,10 @@ export class PlanoService {
     );
     if (!ultimoPagamentoAprovado) return { jaPagouNoPeriodo: false };
 
-    const mesesPorPeriodicidade: Record<string, number> = {
-      MENSAL: 1,
-      SEMESTRAL: 6,
-      ANUAL: 12,
-    };
-    const meses = mesesPorPeriodicidade[usuarioPlano.tipoPeriodicidade] ?? 12;
+    const diasCobertura = usuarioPlano.plano.tempoPlanoDias ?? 365;
     const dataReferencia = new Date(ultimoPagamentoAprovado.dataPagamento);
     const dataLimiteCobertura = new Date(dataReferencia);
-    dataLimiteCobertura.setMonth(dataLimiteCobertura.getMonth() + meses);
+    dataLimiteCobertura.setDate(dataLimiteCobertura.getDate() + diasCobertura);
 
     const jaPagouNoPeriodo = now <= dataLimiteCobertura;
     return {
@@ -357,7 +343,7 @@ export class PlanoService {
       data: { idPlano },
     });
 
-    await this.criarUsuarioPlano(idUsuario, idPlano, TipoPeriodicidadeEnum.ANUAL, createdBy);
+    await this.criarUsuarioPlano(idUsuario, idPlano, createdBy);
 
     const novaAssinatura = await this.getAssinaturaAtiva(idUsuario);
     if (!novaAssinatura) {
@@ -396,7 +382,7 @@ export class PlanoService {
       );
     }
 
-    const valor = body.valor ?? assinatura.plano.valorPlanoAnual;
+    const valor = body.valor ?? assinatura.plano.valorPlano;
     // Data de vencimento calculada: 3 dias a partir de hoje (fim do dia).
     const dataVencimento = new Date();
     dataVencimento.setDate(dataVencimento.getDate() + 3);
@@ -471,7 +457,7 @@ export class PlanoService {
       );
     }
 
-    const valorPlano = assinatura.plano.valorPlanoAnual;
+    const valorPlano = assinatura.plano.valorPlano;
     const TOLERANCIA_VALOR = 0.01;
 
     let idCobranca: number | undefined;

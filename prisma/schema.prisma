@@ -99,6 +99,23 @@ enum TipoOperacaoEnum {
   READ // Leitura de registro
 }
 
+// Etapas do plantio conforme boas práticas (preparo → semeadura → aplicações → colheita)
+enum TipoEtapaOperacaoEnum {
+  PREPARO_SOLO
+  SEMEADURA
+  APLICACAO_DEFENSIVO
+  APLICACAO_FERTILIZANTE
+  IRRIGACAO
+  COLHEITA
+  OUTROS
+}
+
+// Tipo de aplicação (defensivo ou fertilizante) para dose por ha e rastreabilidade
+enum TipoAplicacaoEnum {
+  DEFENSIVO
+  FERTILIZANTE
+}
+
 enum TipoPlanoEnum {
   BASICO
   PRO
@@ -118,12 +135,6 @@ enum FormaPagamentoEnum {
   BOLETO
 }
 
-enum TipoPeriodicidadeEnum {
-  MENSAL
-  SEMESTRAL
-  ANUAL
-}
-
 enum StatusCobrancaEnum {
   PENDENTE
   PAGO
@@ -136,7 +147,7 @@ model Plano {
   nome                 String    
   tempoPlanoDias       Int?      @map("tempo_plano_dias")
   tipoPlano            TipoPlanoEnum @map("tipo_plano")
-  valorPlanoAnual      Float     @map("valor_plano_anual")
+  valorPlano           Float     @map("valor_plano") // valor para o período em dias (tempoPlanoDias)
   descricao            String?
   ativo                Boolean   @default(true)
   createdBy            String?   @map("created_by") @db.VarChar(255)
@@ -156,7 +167,6 @@ model UsuarioPlano {
   idUsuario            Int       @map("id_usuario")
   dataInicioPlano      DateTime  @default(now()) @map("data_inicio_plano") @db.Timestamp(0)
   dataFimPlano         DateTime  @map("data_fim_plano") @db.Timestamp(0)
-  tipoPeriodicidade    TipoPeriodicidadeEnum @map("tipo_periodicidade")
   dataCanceladoEm      DateTime? @map("cancelado_em") @db.Timestamp(0)
   motivoCancelamento   String?   @map("motivo_cancelamento") @db.VarChar(255)
   renovacaoAutomatica  Boolean   @default(true) @map("renovacao_automatica")
@@ -264,8 +274,29 @@ model Fazenda {
   usuario         Usuario           @relation(fields: [idUsuario], references: [id])
   produtosEstoque ProdutosEstoque[]
   plantios        Plantio[]
+  talhoes         Talhao[]
 
   @@map("fazenda")
+}
+
+// Talhão: parcela de terra da fazenda (base para custo, rotação e mapa)
+model Talhao {
+  id          Int      @id @default(autoincrement())
+  idFazenda   Int      @map("id_fazenda")
+  nome        String   @db.VarChar(255)
+  areaHa      Float    @map("area_ha") // área em hectares (cadastro ou cálculo)
+  observacao  String?  @db.VarChar(500)
+  ativo       Boolean  @default(true)
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  dateCreated DateTime @default(now()) @map("date_created")
+  dateModified DateTime @updatedAt @map("date_modified")
+  modifiedBy  String?  @map("modified_by") @db.VarChar(255)
+
+  fazenda   Fazenda   @relation(fields: [idFazenda], references: [id], onDelete: Cascade)
+  plantios  Plantio[]
+  operacoes OperacaoPlantio[]
+
+  @@map("talhao")
 }
 
 model ProdutosEstoque {
@@ -289,6 +320,7 @@ model ProdutosEstoque {
 
   fazenda    Fazenda    @relation(fields: [idFazenda], references: [id])
   fornecedor Fornecedor @relation(fields: [idFornecedor], references: [id])
+  aplicacoes Aplicacao[]
 
   @@map("produtos_estoque")
 }
@@ -406,10 +438,11 @@ model AnaliseSolo {
 }
 
 model Plantio {
-  id            Int  @id @default(autoincrement())
-  idCultivar    Int  @map("id_cultivar")
-  idFazenda     Int  @map("id_fazenda")
-  idAnaliseSolo Int? @map("id_analise_solo")
+  id            Int   @id @default(autoincrement())
+  idCultivar    Int   @map("id_cultivar")
+  idFazenda     Int   @map("id_fazenda")
+  idTalhao      Int?  @map("id_talhao") // opcional: plantio pode ser por talhão
+  idAnaliseSolo Int?  @map("id_analise_solo")
 
   dataPlantio          DateTime  @map("data_plantio")
   dataEmergencia       DateTime? @map("data_emergencia")
@@ -467,9 +500,61 @@ model Plantio {
 
   cultivar    Cultivar     @relation(fields: [idCultivar], references: [id], onDelete: Restrict)
   fazenda     Fazenda      @relation(fields: [idFazenda], references: [id], onDelete: Restrict)
+  talhao      Talhao?      @relation(fields: [idTalhao], references: [id], onDelete: SetNull)
   analiseSolo AnaliseSolo? @relation(fields: [idAnaliseSolo], references: [id], onDelete: Cascade)
+  operacoes   OperacaoPlantio[]
 
   @@map("plantio")
+}
+
+// Operação/etapa do plantio (rastreabilidade e custo por operação)
+model OperacaoPlantio {
+  id           Int                   @id @default(autoincrement())
+  idPlantio    Int                   @map("id_plantio")
+  idTalhao     Int?                  @map("id_talhao") // quando a operação é por talhão
+  tipoEtapa    TipoEtapaOperacaoEnum @map("tipo_etapa")
+  dataInicio   DateTime              @map("data_inicio") @db.Date
+  dataFim      DateTime?             @map("data_fim") @db.Date
+  areaHa       Float                 @map("area_ha") // área em que a operação foi feita (ha)
+  custoTotal   Float?                @map("custo_total") // R$
+  custoPorHa   Float?                @map("custo_por_ha") // R$/ha = custoTotal / areaHa
+  observacao   String?               @db.VarChar(500)
+  ativo        Boolean               @default(true)
+  createdBy    String?               @map("created_by") @db.VarChar(255)
+  dateCreated  DateTime              @default(now()) @map("date_created")
+  dateModified DateTime              @updatedAt @map("date_modified")
+  modifiedBy   String?               @map("modified_by") @db.VarChar(255)
+
+  plantio    Plantio    @relation(fields: [idPlantio], references: [id], onDelete: Cascade)
+  talhao     Talhao?    @relation(fields: [idTalhao], references: [id], onDelete: SetNull)
+  aplicacoes Aplicacao[]
+
+  @@map("operacao_plantio")
+}
+
+// Aplicação de defensivo ou fertilizante (dose por ha → quantidade total)
+model Aplicacao {
+  id                    Int              @id @default(autoincrement())
+  idOperacaoPlantio     Int              @map("id_operacao_plantio")
+  idProdutosEstoque     Int?             @map("id_produtos_estoque")
+  tipo                  TipoAplicacaoEnum
+  nomeProduto           String?          @map("nome_produto") @db.VarChar(255) // quando não vincula estoque
+  dosePorHa             Float            @map("dose_por_ha") // dose em unidade por hectare
+  unidadeDose           UnidadeDoseEnum  @map("unidade_dose")
+  quantidadeTotal       Float?           @map("quantidade_total") // dosePorHa * areaHa (cálculo agronômico)
+  custoAplicacao        Float?           @map("custo_aplicacao") // R$
+  dataAplicacao         DateTime         @map("data_aplicacao") @db.Date
+  observacao            String?          @db.VarChar(500)
+  ativo                 Boolean          @default(true)
+  createdBy             String?          @map("created_by") @db.VarChar(255)
+  dateCreated           DateTime         @default(now()) @map("date_created")
+  dateModified          DateTime         @updatedAt @map("date_modified")
+  modifiedBy            String?          @map("modified_by") @db.VarChar(255)
+
+  operacaoPlantio OperacaoPlantio @relation(fields: [idOperacaoPlantio], references: [id], onDelete: Cascade)
+  produtoEstoque  ProdutosEstoque? @relation(fields: [idProdutosEstoque], references: [id], onDelete: SetNull)
+
+  @@map("aplicacao")
 }
 
 model Log {
