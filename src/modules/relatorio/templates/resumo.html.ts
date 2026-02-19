@@ -15,10 +15,15 @@ export interface ResumoRelatorioTemplateData {
   resumo: {
     totalFazendas: number;
     areaTotalHa: number;
+    totalTalhoes: number;
+    totalZonasManejo: number;
     totalPlantiosPeriodo: number;
     totalFornecedores: number;
     totalCultivaresUsados: number;
     totalPagoSistemaPeriodo: number;
+    /** Custo total da safra (ano do período) agregado das fazendas do usuário. */
+    custoSafraAnoAtual: number;
+    anoReferenciaSafra: number;
   };
   /** Resumo de estoque (todas as fazendas do cliente). */
   estoque: {
@@ -34,6 +39,13 @@ export interface ResumoRelatorioTemplateData {
     areaCobertaHa: number;
   };
   porCultura: Record<string, number>;
+  /** Zonas de manejo por fazenda (para seção no relatório). */
+  zonasManejo: Array<{
+    nomeFazenda: string;
+    nome: string;
+    tipo: string | null;
+    nomeTalhao: string | null;
+  }>;
   fazendas: Array<{
     nome: string;
     municipio: string | null;
@@ -58,6 +70,7 @@ export function buildResumoRelatorioBody(data: ResumoRelatorioTemplateData): str
     estoque,
     analisesSolo,
     porCultura,
+    zonasManejo,
     fazendas,
     fornecedores,
     destaques,
@@ -82,10 +95,14 @@ export function buildResumoRelatorioBody(data: ResumoRelatorioTemplateData): str
       <table class="indicator-grid" style="width:100%;"><tr>
         <td><strong>Fazendas</strong><br>${resumo.totalFazendas}</td>
         <td><strong>Área total</strong><br>${resumo.areaTotalHa.toLocaleString('pt-BR')} ha</td>
+        <td><strong>Talhões</strong><br>${resumo.totalTalhoes}</td>
+        <td><strong>Zonas de manejo</strong><br>${resumo.totalZonasManejo}</td>
         <td><strong>Plantios no período</strong><br>${resumo.totalPlantiosPeriodo}</td>
         <td><strong>Fornecedores</strong><br>${resumo.totalFornecedores}</td>
+      </tr><tr>
         <td><strong>Cultivares em uso</strong><br>${resumo.totalCultivaresUsados}</td>
-        <td><strong>Pago ao sistema (período)</strong><br>R$ ${resumo.totalPagoSistemaPeriodo.toFixed(2)}</td>
+        <td><strong>Custo safra ${resumo.anoReferenciaSafra}</strong><br>R$ ${resumo.custoSafraAnoAtual.toFixed(2)}</td>
+        <td colspan="4"><strong>Pago ao sistema (período)</strong><br>R$ ${resumo.totalPagoSistemaPeriodo.toFixed(2)}</td>
       </tr></table>
     </div>`;
 
@@ -130,6 +147,11 @@ export function buildResumoRelatorioBody(data: ResumoRelatorioTemplateData): str
     .map(([c, q]) => `<tr><td>${c}</td><td>${q}</td></tr>`)
     .join('');
 
+  const tabelaZonasManejo =
+    zonasManejo.length > 0
+      ? `<h3 style="margin-top:20px;color:#2d5a27;">Zonas de manejo</h3><p style="margin:0 0 8px 0;color:#555;font-size:0.95em;">Listagem das zonas de manejo por fazenda (fertilidade, irrigação, produtividade, etc.).</p><table><thead><tr><th>Fazenda</th><th>Zona</th><th>Tipo</th><th>Talhão</th></tr></thead><tbody>${zonasManejo.map((z) => `<tr><td>${z.nomeFazenda}</td><td>${z.nome}</td><td>${z.tipo ?? '—'}</td><td>${z.nomeTalhao ?? '—'}</td></tr>`).join('')}</tbody></table>`
+      : '';
+
   const tabelaFazendas =
     fazendas.length > 0
       ? `<h3 style="margin-top:20px;color:#2d5a27;">Fazendas</h3><table><thead><tr><th>Nome</th><th>Município/UF</th><th>Área (ha)</th></tr></thead><tbody>${fazendas.map((f) => `<tr><td>${f.nome}</td><td>${f.municipio ?? '—'}/${f.uf ?? '—'}</td><td>${f.areaTotal?.toLocaleString('pt-BR') ?? '—'}</td></tr>`).join('')}</tbody></table>`
@@ -158,7 +180,10 @@ export function buildResumoRelatorioBody(data: ResumoRelatorioTemplateData): str
       <tbody>
         <tr class="totais"><td>Quantidade de fazendas</td><td>${resumo.totalFazendas}</td></tr>
         <tr class="totais"><td>Área total (ha)</td><td>${resumo.areaTotalHa.toLocaleString('pt-BR')}</td></tr>
+        <tr class="totais"><td>Talhões cadastrados</td><td>${resumo.totalTalhoes}</td></tr>
+        <tr class="totais"><td>Zonas de manejo</td><td>${resumo.totalZonasManejo}</td></tr>
         <tr class="totais"><td>Plantios no período</td><td>${resumo.totalPlantiosPeriodo}</td></tr>
+        <tr class="totais"><td>Custo total safra ${resumo.anoReferenciaSafra}</td><td>R$ ${resumo.custoSafraAnoAtual.toFixed(2)}</td></tr>
         <tr class="totais"><td>Total pago ao sistema no período</td><td>R$ ${resumo.totalPagoSistemaPeriodo.toFixed(2)}</td></tr>
         <tr class="totais"><td>Fornecedores cadastrados</td><td>${resumo.totalFornecedores}</td></tr>
         <tr class="totais"><td>Itens em estoque</td><td>${estoque.totalItens} (valor R$ ${estoque.valorTotal.toFixed(2)})</td></tr>
@@ -167,6 +192,7 @@ export function buildResumoRelatorioBody(data: ResumoRelatorioTemplateData): str
     </table>
     ${tabelaCultura}
     ${tabelaFazendas}
+    ${tabelaZonasManejo}
     ${tabelaFornecedores}
   `;
 }

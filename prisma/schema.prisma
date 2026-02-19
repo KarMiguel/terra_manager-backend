@@ -16,7 +16,6 @@ datasource db {
 enum ROLE {
   ADMIN
   USER
-  MODERATOR
 }
 
 enum CategoriaEstoqueEnum {
@@ -275,6 +274,7 @@ model Fazenda {
   produtosEstoque ProdutosEstoque[]
   plantios        Plantio[]
   talhoes         Talhao[]
+  zonasManejo     ZonaManejo[]
 
   @@map("fazenda")
 }
@@ -285,6 +285,7 @@ model Talhao {
   idFazenda   Int      @map("id_fazenda")
   nome        String   @db.VarChar(255)
   areaHa      Float    @map("area_ha") // área em hectares (cadastro ou cálculo)
+  geometria   Json?    // GeoJSON Geometry (Polygon, MultiPolygon) para mapa
   observacao  String?  @db.VarChar(500)
   ativo       Boolean  @default(true)
   createdBy   String?  @map("created_by") @db.VarChar(255)
@@ -292,11 +293,34 @@ model Talhao {
   dateModified DateTime @updatedAt @map("date_modified")
   modifiedBy  String?  @map("modified_by") @db.VarChar(255)
 
-  fazenda   Fazenda   @relation(fields: [idFazenda], references: [id], onDelete: Cascade)
-  plantios  Plantio[]
-  operacoes OperacaoPlantio[]
+  fazenda      Fazenda       @relation(fields: [idFazenda], references: [id], onDelete: Cascade)
+  plantios     Plantio[]
+  operacoes    OperacaoPlantio[]
+  zonasManejo  ZonaManejo[]
 
   @@map("talhao")
+}
+
+// Zona de manejo: área com critério de manejo (fertilidade, irrigação, produtividade etc.)
+model ZonaManejo {
+  id          Int      @id @default(autoincrement())
+  idFazenda   Int      @map("id_fazenda")
+  idTalhao    Int?     @map("id_talhao") // opcional: zona pode ser da fazenda inteira ou de um talhão
+  nome        String   @db.VarChar(255)
+  descricao   String?  @db.VarChar(500)
+  tipo        String?  @db.VarChar(100) // ex: fertilidade, irrigacao, produtividade, solo
+  geometria   Json     // GeoJSON Geometry (Polygon, MultiPolygon)
+  cor         String?  @db.VarChar(7) // hex para exibição no mapa (ex: #4CAF50)
+  ativo       Boolean  @default(true)
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  dateCreated DateTime @default(now()) @map("date_created")
+  dateModified DateTime @updatedAt @map("date_modified")
+  modifiedBy  String?  @map("modified_by") @db.VarChar(255)
+
+  fazenda Fazenda @relation(fields: [idFazenda], references: [id], onDelete: Cascade)
+  talhao  Talhao? @relation(fields: [idTalhao], references: [id], onDelete: SetNull)
+
+  @@map("zona_manejo")
 }
 
 model ProdutosEstoque {
@@ -411,6 +435,7 @@ model AnaliseSolo {
   id        Int @id @default(autoincrement())
   idUsuario Int @map("id_usuario")
 
+  nomeSolo      String? @map("nome_solo") @db.VarChar(255)
   ph            Float? @map("ph")
   areaTotal     Float? @map("area_total")
   hAi           Float? @map("h_ai")

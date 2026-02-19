@@ -7,6 +7,16 @@ import { CreateTalhaoDto } from './dto/create-talhao.dto';
 import { Paginate } from 'src/common/utils/types';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
 
+export interface TalhaoMapaFeature {
+  type: 'Feature';
+  geometry: Record<string, unknown>;
+  properties: { id: number; nome: string; areaHa: number };
+}
+export interface TalhaoMapaResponse {
+  type: 'FeatureCollection';
+  features: TalhaoMapaFeature[];
+}
+
 @Injectable()
 export class TalhaoService extends CrudService<Talhao, TalhaoModel> {
   constructor(protected readonly prisma: PrismaClient) {
@@ -33,12 +43,34 @@ export class TalhaoService extends CrudService<Talhao, TalhaoModel> {
         idFazenda: dto.idFazenda,
         nome: dto.nome,
         areaHa: dto.areaHa,
+        geometria: dto.geometria != null ? (dto.geometria as object) : undefined,
         observacao: dto.observacao,
         ativo: dto.ativo ?? true,
         createdBy,
       },
     });
     return plainToInstance(TalhaoModel, created, { excludeExtraneousValues: true });
+  }
+
+  /**
+   * GeoJSON FeatureCollection dos talhões da fazenda (para mapa).
+   * Cada talhão com geometria vira um Feature; talhões sem geometria são omitidos.
+   */
+  async mapaPorFazenda(idFazenda: number, idUsuario: number): Promise<TalhaoMapaResponse> {
+    await this.ensureFazendaBelongsToUser(idFazenda, idUsuario);
+    const talhoes = await this.prisma.talhao.findMany({
+      where: { idFazenda, ativo: true },
+      select: { id: true, nome: true, areaHa: true, geometria: true },
+      orderBy: { nome: 'asc' },
+    });
+    const features = talhoes
+      .filter((t) => t.geometria && typeof t.geometria === 'object')
+      .map((t) => ({
+        type: 'Feature' as const,
+        geometry: t.geometria as Record<string, unknown>,
+        properties: { id: t.id, nome: t.nome, areaHa: t.areaHa },
+      }));
+    return { type: 'FeatureCollection', features };
   }
 
   async listarPorFazenda(

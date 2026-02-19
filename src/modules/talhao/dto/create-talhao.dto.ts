@@ -1,6 +1,7 @@
-import { IsInt, IsNumber, IsOptional, IsString, IsBoolean, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, IsBoolean, Min, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/** GeoJSON Geometry (Polygon ou MultiPolygon). Ex.: { "type": "Polygon", "coordinates": [[[lng,lat],...]] } */
 export class CreateTalhaoDto {
   @ApiProperty({ description: 'ID da fazenda', example: 1 })
   @IsInt()
@@ -14,6 +15,14 @@ export class CreateTalhaoDto {
   @IsNumber()
   @Min(0.01, { message: 'Área deve ser maior que zero' })
   areaHa: number;
+
+  @ApiPropertyOptional({
+    description: 'Geometria GeoJSON (Polygon ou MultiPolygon) para exibição no mapa',
+    example: { type: 'Polygon', coordinates: [[[-48.5, -15.8], [-48.4, -15.8], [-48.4, -15.7], [-48.5, -15.7], [-48.5, -15.8]]] },
+  })
+  @IsOptional()
+  @IsObject()
+  geometria?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: 'Observação', example: 'Área irrigada' })
   @IsOptional()

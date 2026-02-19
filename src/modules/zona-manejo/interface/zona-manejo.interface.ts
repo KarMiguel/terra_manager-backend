@@ -1,7 +1,6 @@
 import { Expose } from 'class-transformer';
 
-/** GeoJSON Geometry (Polygon, MultiPolygon) quando presente */
-export class TalhaoModel {
+export class ZonaManejoModel {
   @Expose()
   id: number;
 
@@ -9,16 +8,22 @@ export class TalhaoModel {
   idFazenda: number;
 
   @Expose()
+  idTalhao?: number;
+
+  @Expose()
   nome: string;
 
   @Expose()
-  areaHa: number;
+  descricao?: string;
 
   @Expose()
-  geometria?: Record<string, unknown>;
+  tipo?: string;
 
   @Expose()
-  observacao?: string;
+  geometria: Record<string, unknown>;
+
+  @Expose()
+  cor?: string;
 
   @Expose()
   ativo: boolean;

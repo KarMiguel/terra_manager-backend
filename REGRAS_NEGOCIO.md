@@ -22,15 +22,16 @@ Este documento descreve todas as **regras de negócio** implementadas no sistema
 4. [Fornecedores](#4-fornecedores)
 5. [Cultivares](#5-cultivares)
 6. [Pragas](#6-pragas)
-7. [Plantios](#7-plantios) (incl. 7.4 Talhões, 7.5 Operações do plantio, 7.6 Aplicações, 7.7 Custo por operação e por safra)
-8. [Análise de Solo](#8-análise-de-solo)
-9. [Produto Estoque](#9-produto-estoque)
-10. [Dashboard](#10-dashboard)
-11. [Sistema de Logs](#11-sistema-de-logs)
-12. [Regras Gerais CRUD](#12-regras-gerais-crud)
-13. [Modelo Entidade Relacionamento](#13-modelo-entidade-relacionamento)
-14. [Planos e Assinaturas](#14-planos-e-assinaturas)
-15. [Relatórios (PDF)](#15-relatórios-pdf)
+7. [Plantios](#7-plantios) (incl. 7.4 Talhões, 7.5 Operações, 7.6 Aplicações, 7.7 Custo por safra)
+8. [Mapa (GeoJSON) e Zonas de manejo](#8-mapa-geojson-e-zonas-de-manejo)
+9. [Análise de Solo](#9-análise-de-solo)
+10. [Produto Estoque](#10-produto-estoque)
+11. [Dashboard](#11-dashboard)
+12. [Sistema de Logs](#12-sistema-de-logs)
+13. [Regras Gerais CRUD](#13-regras-gerais-crud)
+14. [Modelo Entidade Relacionamento](#14-modelo-entidade-relacionamento)
+15. [Planos e Assinaturas](#15-planos-e-assinaturas)
+16. [Relatórios (PDF)](#16-relatórios-pdf)
 
 ---
 
@@ -66,7 +67,7 @@ Este documento descreve todas as **regras de negócio** implementadas no sistema
 - **RN-022**: Após reset bem-sucedido, o token e data de expiração são removidos.
 
 ### 1.4. Autorização por Roles
-- **RN-023**: Existem três roles: `ADMIN`, `USER`, `MODERATOR`.
+- **RN-023**: Existem três roles: `ADMIN`, `USER`.
 - **RN-024**: Rotas protegidas requerem autenticação via JWT Bearer Token.
 - **RN-025**: Rotas públicas usam o decorator `@Public()`.
 - **RN-026**: O `RolesGuard` verifica se o usuário possui a role necessária.
@@ -187,7 +188,6 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 #### ROLE
 - **ADMIN**: Administrador do sistema (acesso total)
 - **USER**: Usuário comum (acesso padrão)
-- **MODERATOR**: Moderador (acesso intermediário)
 
 #### CategoriaEstoqueEnum
 - **DEFENSIVOS**: Produtos defensivos agrícolas
@@ -324,6 +324,8 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 - `usuario`: Uma fazenda pertence a um usuário (N:1)
 - `produtosEstoque`: Uma fazenda pode ter múltiplos produtos em estoque (1:N)
 - `plantios`: Uma fazenda pode ter múltiplos plantios (1:N)
+- `talhoes`: Uma fazenda pode ter múltiplos talhões (1:N)
+- `zonasManejo`: Uma fazenda pode ter múltiplas zonas de manejo (1:N)
 
 **Regras Específicas**:
 - CNPJ deve ser único quando informado
@@ -699,7 +701,7 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 
 #### 4.7.3.10. Talhao (talhao)
 
-**Descrição**: Parcela de terra da fazenda. Base para custo, rotação e mapa (área por talhão).
+**Descrição**: Parcela de terra da fazenda. Base para custo, rotação e mapa (área por talhão). Pode possuir geometria GeoJSON para exibição no mapa.
 
 **Campos de Auditoria Padrão**: ✅ Todos
 
@@ -707,6 +709,7 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 - `idFazenda` (Int, Obrigatório): Fazenda à qual o talhão pertence
 - `nome` (String, Obrigatório): Nome do talhão
 - `areaHa` (Float, Obrigatório): Área em hectares
+- `geometria` (Json?, Opcional): GeoJSON Geometry (Polygon ou MultiPolygon) para mapa; coordenadas [longitude, latitude] (WGS84)
 - `observacao` (String?, Opcional): Observações
 
 **Foreign Keys**:
@@ -716,10 +719,12 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 - `fazenda`: Um talhão pertence a uma fazenda (N:1)
 - `plantios`: Um talhão pode ter vários plantios (1:N)
 - `operacoes`: Operações do plantio podem ser vinculadas ao talhão (1:N)
+- `zonasManejo`: Zonas de manejo podem ser vinculadas ao talhão (1:N, opcional na zona)
 
 **Regras Específicas**:
 - Área deve ser > 0. Apenas usuário dono da fazenda pode criar/listar talhões.
-- Endpoints: POST/GET /talhao, GET /talhao/fazenda/:idFazenda, GET /talhao/fazenda/:idFazenda/resumo.
+- Endpoints: POST/GET /talhao, GET /talhao/fazenda/:idFazenda, GET /talhao/fazenda/:idFazenda/resumo, GET /talhao/fazenda/:idFazenda/mapa (GeoJSON FeatureCollection dos talhões com geometria).
+- Geometria opcional na criação e atualização; formato GeoJSON Polygon ou MultiPolygon.
 
 ---
 
@@ -782,6 +787,34 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 
 ---
 
+#### 4.7.3.13. ZonaManejo (zona_manejo)
+
+**Descrição**: Zona de manejo: área com critério de manejo (fertilidade, irrigação, produtividade, solo, etc.) com geometria GeoJSON para exibição no mapa.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `idFazenda` (Int, Obrigatório): Fazenda à qual a zona pertence
+- `idTalhao` (Int?, Opcional): Talhão quando a zona é de uma parcela específica; quando null, a zona é da fazenda inteira
+- `nome` (String, Obrigatório): Nome da zona
+- `descricao` (String?, Opcional): Descrição
+- `tipo` (String?, Opcional): Critério/tipo (ex.: fertilidade, irrigacao, produtividade, solo)
+- `geometria` (Json, Obrigatório): GeoJSON Geometry (Polygon ou MultiPolygon)
+- `cor` (String?, Opcional): Cor em hex (ex.: #4CAF50) para exibição no mapa
+
+**Foreign Keys**:
+- `idFazenda` → `Fazenda.id` (Obrigatório, onDelete: Cascade)
+- `idTalhao` → `Talhao.id` (Opcional, onDelete: SetNull)
+
+**Relacionamentos**:
+- `fazenda`: Uma zona pertence a uma fazenda (N:1)
+- `talhao`: Uma zona pode estar vinculada a um talhão (N:1, Opcional)
+
+**Regras Específicas**:
+- Apenas dono da fazenda pode criar/listar/atualizar/excluir zonas. Se idTalhao informado, o talhão deve pertencer à mesma fazenda. Endpoints: POST/GET/PUT/DELETE /zona-manejo, GET /zona-manejo/fazenda/:id, GET /zona-manejo/fazenda/:id/mapa (GeoJSON FeatureCollection).
+
+---
+
 ### 4.7.4. Relacionamentos entre Tabelas
 
 #### Hierarquia de Dependências
@@ -795,7 +828,8 @@ Usuario (raiz)
 │   │   ├── AnaliseSolo (referência opcional)
 │   │   └── OperacaoPlantio (1:N)
 │   │       └── Aplicacao (1:N)
-│   ├── Talhao (1:N)
+│   ├── Talhao (1:N) [com geometria GeoJSON opcional]
+│   ├── ZonaManejo (1:N) [geometria GeoJSON, opcional idTalhao]
 │   └── ProdutosEstoque
 │       └── Fornecedor (referência)
 ├── Fornecedor
@@ -858,12 +892,14 @@ Usuario (raiz)
 | Aplicacao | idProdutosEstoque | ProdutosEstoque.id | ❌ Não | SetNull |
 | ProdutosEstoque | idFazenda | Fazenda.id | ✅ Sim | Default |
 | ProdutosEstoque | idFornecedor | Fornecedor.id | ✅ Sim | Default |
+| ZonaManejo | idFazenda | Fazenda.id | ✅ Sim | Cascade |
+| ZonaManejo | idTalhao | Talhao.id | ❌ Não | SetNull |
 | Log | idUsuario | Usuario.id | ❌ Não | SetNull |
 
 ---
 
 **Última atualização**: 2026-02-19
-**Versão do documento**: 1.2
+**Versão do documento**: 1.3
 
 ---
 
@@ -934,6 +970,8 @@ Usuario (raiz)
 - **RN-TAL-004**: `GET /talhao/fazenda/:idFazenda`: lista talhões da fazenda (apenas ativos). Exige que a fazenda pertença ao usuário. Suporta paginação (`page`, `pageSize`).
 - **RN-TAL-005**: `GET /talhao/fazenda/:idFazenda/resumo`: retorna área total (ha), quantidade de talhões e lista de talhões com id, nome e área. Usado como base para custo, rotação e mapa.
 - **RN-TAL-006**: Talhões são criados com `ativo = true` por padrão. Ordenação na listagem: por `nome` ascendente.
+- **RN-TAL-007**: O talhão pode possuir **geometria** (GeoJSON) opcional para exibição no mapa. Formato: objeto GeoJSON do tipo **Polygon** ou **MultiPolygon** (coordenadas em [longitude, latitude]). Na criação (POST) e na atualização (PUT) o campo `geometria` é opcional; quando informado, deve ser um objeto válido (type + coordinates).
+- **RN-TAL-008**: `GET /talhao/fazenda/:idFazenda/mapa`: retorna **GeoJSON FeatureCollection** apenas dos talhões que possuem geometria. Cada feature contém `type: "Feature"`, `geometry` (objeto GeoJSON) e `properties` (id, nome, areaHa). Talhões sem geometria são omitidos. Exige que a fazenda pertença ao usuário.
 
 ### 7.5. Operações do plantio (etapas)
 - **RN-OPE-001**: Operação do plantio representa uma etapa do ciclo (preparo, semeadura, aplicação de defensivo/fertilizante, irrigação, colheita, outros). Campos obrigatórios: `idPlantio`, `tipoEtapa`, `dataInicio`, `areaHa`.
@@ -959,27 +997,55 @@ Usuario (raiz)
 
 ---
 
-## 8. Análise de Solo
+## 8. Mapa (GeoJSON) e Zonas de manejo
 
-### 8.1. Criação
+Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **zonas de manejo** e o **endpoint de mapa agregado** da fazenda.
+
+### 8.1. Geometria nos talhões (mapa de talhões)
+- **RN-MAP-001**: O talhão pode ter campo opcional **geometria** (Json): objeto GeoJSON do tipo **Polygon** ou **MultiPolygon**. Coordenadas no formato [longitude, latitude] (WGS84). Usado para desenhar o contorno do talhão no mapa.
+- **RN-MAP-002**: Na criação (POST /talhao) e na atualização (PUT /talhao/:id), `geometria` é opcional. Se informado, deve ser um objeto com `type` e `coordinates` válidos.
+- **RN-MAP-003**: `GET /talhao/fazenda/:idFazenda/mapa`: retorna GeoJSON FeatureCollection somente dos talhões que possuem geometria; talhões sem geometria são omitidos. Cada feature tem `geometry` e `properties` (id, nome, areaHa). A fazenda deve pertencer ao usuário.
+
+### 8.2. Zonas de manejo
+- **RN-ZM-001**: **Zona de manejo** é uma área com critério de manejo específico (ex.: fertilidade, irrigação, produtividade, solo). Possui geometria GeoJSON (Polygon ou MultiPolygon) obrigatória, nome, e opcionalmente descrição, tipo, cor (hex) e vínculo a um talhão.
+- **RN-ZM-002**: Campos obrigatórios na criação: `idFazenda`, `nome`, `geometria`. Opcionais: `idTalhao`, `descricao`, `tipo` (ex.: fertilidade, irrigacao, produtividade, solo), `cor` (hex, ex.: #4CAF50), `ativo`.
+- **RN-ZM-003**: Se `idTalhao` for informado, o talhão deve existir e pertencer à mesma fazenda (`idFazenda`). Caso contrário retorna `BadRequestException`.
+- **RN-ZM-004**: Apenas o usuário dono da fazenda pode criar, listar, atualizar e excluir zonas de manejo dessa fazenda.
+- **RN-ZM-005**: `POST /zona-manejo`: cria zona de manejo. Exige autenticação; valida pertencimento da fazenda ao usuário.
+- **RN-ZM-006**: `GET /zona-manejo/fazenda/:idFazenda`: lista zonas ativas da fazenda (ordenadas por nome). Suporta paginação (`page`, `pageSize`). Fazenda deve pertencer ao usuário.
+- **RN-ZM-007**: `GET /zona-manejo/fazenda/:idFazenda/mapa`: retorna **GeoJSON FeatureCollection** das zonas de manejo da fazenda. Cada feature contém `geometry` e `properties` (id, nome, tipo, cor, idTalhao). Fazenda deve pertencer ao usuário.
+- **RN-ZM-008**: `GET /zona-manejo/:id`: retorna uma zona por ID. Só retorna se a fazenda da zona pertencer ao usuário; caso contrário 404 ou 400.
+- **RN-ZM-009**: `PUT /zona-manejo/:id`: atualiza zona. Só permite se a fazenda da zona pertencer ao usuário.
+- **RN-ZM-010**: `DELETE /zona-manejo/:id`: remove a zona. Só permite se a fazenda da zona pertencer ao usuário.
+- **RN-ZM-011**: Cor, quando informada, deve ser string hex de 6 caracteres (ex.: #4CAF50), para exibição no mapa.
+
+### 8.3. Mapa agregado da fazenda
+- **RN-MAP-004**: `GET /mapa/fazenda/:idFazenda`: retorna **mapa completo** da fazenda em uma única resposta, com duas camadas GeoJSON: **talhoes** (FeatureCollection dos talhões com geometria) e **zonasManejo** (FeatureCollection das zonas de manejo). Permite ao front desenhar um único mapa com ambas as camadas. A fazenda deve pertencer ao usuário.
+- **RN-MAP-005**: A resposta tem o formato: `{ talhoes: { type: "FeatureCollection", features: [...] }, zonasManejo: { type: "FeatureCollection", features: [...] } }`.
+
+---
+
+## 9. Análise de Solo
+
+### 9.1. Criação
 - **RN-092**: O ID do usuário é obrigatório para criar uma análise de solo.
 - **RN-093**: O usuário deve existir no sistema.
 - **RN-094**: Campos opcionais: pH, área total, H+Al, SB, CTC, V, M, MO, PRNT, valor cultural, N, P, K.
 - **RN-095**: Análises são criadas com `ativo = true` por padrão.
 
-### 8.2. Consulta
+### 9.2. Consulta
 - **RN-096**: Usuários só podem listar análises próprias (`idUsuario`).
 - **RN-097**: Ordenação padrão é por `dateCreated` descendente.
 - **RN-098**: Busca por plantio retorna a análise vinculada ao plantio.
 
-### 8.3. Cálculo de Calagem
+### 9.3. Cálculo de Calagem
 - **RN-099**: O plantio deve possuir uma análise de solo vinculada.
 - **RN-100**: Fórmula: `RC = (CTC × (Valor Cultural - V)) / PRNT`
 - **RN-101**: Fórmula: `RCT = RC × Área Total`
 - **RN-102**: Retorna recomendação em t/ha (toneladas por hectare).
 - **RN-103**: Se o plantio não tiver análise, retorna `BadRequestException`.
 
-### 8.4. Cálculo de Adubação
+### 9.4. Cálculo de Adubação
 - **RN-104**: O plantio deve possuir análise de solo vinculada.
 - **RN-105**: A cultivar deve possuir valores de `aduboNitrogenio`, `aduboFosforo`, `aduboPotassio`.
 - **RN-106**: A análise deve possuir valores de N, P, K.
@@ -995,16 +1061,16 @@ Usuario (raiz)
 - **RN-109**: Retorna doses em kg/ha e total em kg para a área plantada.
 - **RN-110**: Se dados insuficientes, retorna `BadRequestException`.
 
-### 8.5. Comparativo de Nutrientes
+### 9.5. Comparativo de Nutrientes
 - **RN-111**: Compara valores da análise de solo com exigências da cultivar.
 - **RN-112**: Retorna pH, N, P, K, Ca, Mg do solo vs cultivar.
 - **RN-113**: Valores formatados com unidades apropriadas (kg/ha, pH).
 
 ---
 
-## 9. Produto Estoque
+## 10. Produto Estoque
 
-### 9.1. Criação
+### 10.1. Criação
 - **RN-114**: ID da fazenda é obrigatório.
 - **RN-115**: ID do fornecedor é obrigatório.
 - **RN-116**: Nome é opcional.
@@ -1015,19 +1081,19 @@ Usuario (raiz)
 - **RN-121**: Valor unitário padrão é 0.0.
 - **RN-122**: Produtos são criados com `ativo = true` por padrão.
 
-### 9.2. Aumentar Quantidade
+### 10.2. Aumentar Quantidade
 - **RN-123**: A quantidade a ser adicionada deve ser maior que 0.
 - **RN-124**: O produto deve existir.
 - **RN-125**: A quantidade é somada ao estoque atual.
 
-### 9.3. Remover Quantidade
+### 10.3. Remover Quantidade
 - **RN-126**: A quantidade a ser removida deve ser maior que 0.
 - **RN-127**: O produto deve existir.
 - **RN-128**: A quantidade a ser removida não pode ser maior que o estoque disponível.
 - **RN-129**: Se tentar remover mais do que tem, retorna `BadRequestException`.
 - **RN-130**: A quantidade é subtraída do estoque atual.
 
-### 9.4. Consulta por Fazenda
+### 10.4. Consulta por Fazenda
 - **RN-131**: O ID do usuário é obrigatório para listar estoque de uma fazenda.
 - **RN-132**: A fazenda deve existir e pertencer ao usuário logado.
 - **RN-133**: Se a fazenda não pertencer ao usuário, retorna `BadRequestException`.
@@ -1036,48 +1102,48 @@ Usuario (raiz)
 
 ---
 
-## 10. Dashboard
+## 11. Dashboard
 
-### 10.1. Dados Climáticos
+### 11.1. Dados Climáticos
 - **RN-136**: Cidade é obrigatória.
 - **RN-137**: Estado e país são opcionais (padrão: BR).
 - **RN-138**: Busca dados atuais e previsão dos próximos dias via OpenWeatherMap API.
 - **RN-139**: Retorna condição atual, temperatura, umidade, vento e previsão.
 
-### 10.2. Cotação de Commodities
+### 11.2. Cotação de Commodities
 - **RN-140**: Símbolo padrão é 'SOJA'.
 - **RN-141**: Busca cotações via BRAPI.
 - **RN-142**: Retorna preço atual, passado, futuro e prospecção.
 
-### 10.3. Notícias
+### 11.3. Notícias
 - **RN-143**: Query é obrigatória.
 - **RN-144**: PageSize padrão é 5.
 - **RN-145**: Busca até 5 páginas se necessário para atingir pageSize.
 - **RN-146**: Filtra artigos removidos ou inválidos.
 - **RN-147**: Retorna título, descrição, URL, imagem, fonte e data.
 
-### 10.4. Dados de Solo
+### 11.4. Dados de Solo
 - **RN-148**: Longitude e latitude são obrigatórias.
 - **RN-149**: Propriedades padrão: clay, sand, silt, bdod, cec, nitrogen, phh2o, cfvo, ocd, ocs, soc.
 - **RN-150**: Busca dados via ISRIC SoilGrids API.
 - **RN-151**: Retorna propriedades por profundidade.
 
-### 10.5. Dados de Cultura
+### 11.5. Dados de Cultura
 - **RN-152**: Nome da cultura é obrigatório.
 - **RN-153**: Busca em dados estáticos de culturas.
 - **RN-154**: Se cultura não encontrada, retorna `HttpException 404`.
 
 ---
 
-## 11. Sistema de Logs
+## 12. Sistema de Logs
 
-### 11.1. Registro Automático
+### 12.1. Registro Automático
 - **RN-155**: Todas as operações CREATE, UPDATE, DELETE, DEACTIVATE, ACTIVATE são logadas automaticamente.
 - **RN-156**: Operações READ são logadas apenas se houver contexto de usuário.
 - **RN-157**: Logs são registrados de forma assíncrona para não bloquear a resposta.
 - **RN-158**: Rotas ignoradas: `/api-docs`, `/health`, `/favicon.ico`, `/log`.
 
-### 11.2. Dados Capturados
+### 12.2. Dados Capturados
 - **RN-159**: Tipo de operação (CREATE, UPDATE, DELETE, etc.).
 - **RN-160**: Nome da tabela afetada.
 - **RN-161**: ID do registro (quando aplicável).
@@ -1089,87 +1155,87 @@ Usuario (raiz)
 - **RN-167**: User agent do cliente.
 - **RN-168**: Descrição gerada automaticamente.
 
-### 11.3. Consulta de Logs
+### 12.3. Consulta de Logs
 - **RN-169**: Logs podem ser consultados por tabela.
 - **RN-170**: Logs podem ser consultados por usuário.
 - **RN-171**: Logs podem ser consultados por tipo de operação.
 - **RN-172**: Listagem geral suporta paginação e filtros.
 - **RN-173**: Logs são ordenados por data de criação descendente.
 
-### 11.4. Sanitização
+### 12.4. Sanitização
 - **RN-174**: Campos sensíveis (password, token, secret, key) são ocultados como '[HIDDEN]'.
 
 ---
 
-## 12. Regras Gerais CRUD
+## 13. Regras Gerais CRUD
 
-### 12.1. Criação
+### 13.1. Criação
 - **RN-175**: Campos de auditoria `createdBy` e `dateCreated` são preenchidos automaticamente.
 - **RN-176**: Campos `ativo` padrão é `true`.
 
-### 12.2. Atualização
+### 13.2. Atualização
 - **RN-177**: Campos de auditoria `modifiedBy` e `dateModified` são atualizados automaticamente.
 - **RN-178**: Apenas campos válidos do modelo são atualizados (filtro automático).
 - **RN-179**: Registro deve existir antes de atualizar.
 - **RN-180**: Violações de unique constraint retornam `ConflictException` (409).
 
-### 12.3. Exclusão
+### 13.3. Exclusão
 - **RN-181**: Registro deve existir antes de excluir.
 - **RN-182**: Dados são capturados antes da exclusão para log.
 
-### 12.4. Desativação/Ativação
+### 13.4. Desativação/Ativação
 - **RN-183**: Registro deve existir antes de desativar/ativar.
 - **RN-184**: Desativação define `ativo = false`.
 - **RN-185**: Ativação define `ativo = true`.
 - **RN-186**: Campos de auditoria são atualizados.
 
-### 12.5. Consulta
+### 13.5. Consulta
 - **RN-187**: Listagem suporta paginação via `page` e `pageSize` (padrão: page=1, pageSize=10).
 - **RN-188**: Listagem suporta filtros via `options.where`.
 - **RN-189**: Listagem suporta ordenação via `options.order` ou `options.orderBy`.
 - **RN-190**: Consulta por ID retorna null se não encontrado.
 - **RN-191**: Respostas são transformadas usando `plainToInstance` com `excludeExtraneousValues`.
 
-### 12.6. Validação
+### 13.6. Validação
 - **RN-192**: ValidationPipe global valida DTOs com `whitelist: true` e `forbidNonWhitelisted: true`.
 - **RN-193**: Transformação automática de tipos é habilitada.
 
-### 12.7. Tratamento de Erros
+### 13.7. Tratamento de Erros
 - **RN-194**: Erros de unique constraint (P2002) são convertidos para `ConflictException` (409).
 - **RN-195**: Erros são formatados com status code, timestamp, path, method e mensagem.
 - **RN-196**: Mensagens de erro são padronizadas por status HTTP.
 
-### 12.8. Segurança
+### 13.8. Segurança
 - **RN-197**: CORS permite qualquer origem (`*`) - ajustar em produção.
 - **RN-198**: Senhas nunca são retornadas nas respostas (sanitização).
 - **RN-199**: Tokens JWT são obrigatórios para rotas protegidas.
 
 ---
 
-## 14. Planos e Assinaturas
+## 15. Planos e Assinaturas
 
-### 14.1. Visão geral e interação plano × usuário
+### 15.1. Visão geral e interação plano × usuário
 - **Plano (Plano)**: cadastro do tipo de oferta (nome, tipo, valor do plano para o período em dias — `valorPlano`, `tempoPlanoDias`). Tipos: BASICO, PRO, PREMIUM.
 - **UsuarioPlano (assinatura)**: vínculo do usuário com um plano. Cada usuário tem **no máximo uma assinatura ativa** (vigente, não cancelada). Contém `dataInicioPlano`, `dataFimPlano` (vigência em dias definida pelo `plano.tempoPlanoDias`).
 - **Usuario.idPlano**: referência ao plano atual do usuário (atualizado ao vincular plano).
 - **PagamentoPlano**: pagamentos registrados na assinatura; o último APROVADO define a cobertura do período (data do pagamento + `plano.tempoPlanoDias` dias).
 - **Cobranca**: cobranças geradas na assinatura (PIX, BOLETO, CARTAO_CREDITO); possuem `codigoCobranca`, `dataVencimento`, `valor`, status PENDENTE/PAGO/etc.
 
-### 14.2. Tipos de Plano (TipoPlanoEnum)
+### 15.2. Tipos de Plano (TipoPlanoEnum)
 - **BASICO**, **PRO**, **PREMIUM**: Planos com vigência em dias (`tempoPlanoDias`) e valor (`valorPlano`) para esse período.
 - **Plano inicial**: o plano **BASICO** é usado como plano inicial no cadastro (quando `idPlano` não é enviado ou é inválido).
 
-### 14.3. Registro e plano default
+### 15.3. Registro e plano default
 - **RN-PLN-001**: Ao criar conta, o usuário **já é vinculado** a um plano. Se o body enviar `idPlano` (opcional) e o plano existir e estiver ativo, esse plano é usado; senão usa o plano **BASICO**.
 - **RN-PLN-002**: O campo `Usuario.idPlano` é preenchido com o ID do plano vinculado.
 - **RN-PLN-003**: É criado um registro em `UsuarioPlano` com `dataInicioPlano = now()` e `dataFimPlano = now() + tempoPlanoDias` do plano (vigência sempre em dias).
 
-### 14.4. Vincular plano a usuário
+### 15.4. Vincular plano a usuário
 - **RN-PLN-004**: `POST /plano/usuario/:idUsuario/plano/:idPlano` (público): vincula um plano a um usuário. Parâmetros de path: `idUsuario` e `idPlano`. Não usa body.
 - **RN-PLN-005**: Se o usuário **já tiver assinatura ativa**, ela é **cancelada** (dataCanceladoEm, motivoCancelamento "Troca de plano", ativo = false) e em seguida é criada a nova assinatura com o novo plano. O campo `Usuario.idPlano` é atualizado.
 - **RN-PLN-006**: Usuário e plano devem existir e estar ativos; caso contrário retorna 400.
 
-### 14.5. Login e verificação de plano
+### 15.5. Login e verificação de plano
 - **RN-PLN-007**: No login, o sistema verifica o plano atual do usuário (último `UsuarioPlano` ativo, não cancelado, vigente).
 - **RN-PLN-008**: **Sem plano não loga**: se não houver plano ativo (`getStatusPlanoUsuario` retorna null), o login é bloqueado com `401` e mensagem "Nenhum plano ativo. Contrate um plano para acessar o sistema.".
 - **RN-PLN-009**: **Login permitido mesmo com plano inválido**: se o usuário tiver assinatura mas `planoValido` for false (vencido ou pagamento em atraso), o login **é permitido** e o token é retornado, para que o usuário possa gerar cobrança e registrar pagamento. A resposta inclui `plano.planoValido` e `plano.mensagem` para o front exibir "Regularize o pagamento" e liberar apenas fluxo de pagamento.
@@ -1177,20 +1243,20 @@ Usuario (raiz)
 - **RN-PLN-011**: **Cobertura por pagamento**: é necessário último pagamento com `statusPagamento = APROVADO` e vigência por **tempoPlanoDias** (dias) do plano — a cobertura vale a partir da data do pagamento: data do pagamento + `plano.tempoPlanoDias` dias. Se passou a data e não há pagamento aprovado cobrindo o período atual, o plano fica inválido (mas o login continua permitido para regularizar).
 - **RN-PLN-012**: A resposta do login inclui o objeto `plano`: `planoValido`, `tipoPlano`, `nomePlano`, `dataFimPlano`, `dataInicioPlano`, `pagamentoAprovado`, e opcionalmente `mensagem`.
 
-### 14.6. Endpoints de planos (catálogo e status)
+### 15.6. Endpoints de planos (catálogo e status)
 - **RN-PLN-013**: `GET /plano` (público): lista todos os planos ativos, ordenados por valor.
 - **RN-PLN-014**: `GET /plano/:id` (público): retorna um plano ativo por ID.
 - **RN-PLN-015**: `GET /plano/me/status` (autenticado): retorna o status da assinatura atual (vigência, pagamento, planoValido, mensagem). Requer token.
 
-### 14.7. Cancelar assinatura
+### 15.7. Cancelar assinatura
 - **RN-PLN-016**: `POST /plano/me/assinatura/cancelar` (autenticado): cancela a assinatura ativa do usuário. Registra `dataCanceladoEm`, `motivoCancelamento` (opcional), desativa renovação e assinatura (`ativo = false`). Requer token.
 
-### 14.8. Gerar cobrança
+### 15.8. Gerar cobrança
 - **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. Body: **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO) e **valor** (opcional; se omitido, usa o valor do plano, que é sempre para o período em dias — `plano.valorPlano`). **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
 - **RN-PLN-018**: Retorna `codigoCobranca` (ex.: PIX-YYYYMMDDHHmmss-XXX), que deve ser usado em **POST /plano/me/pagamento** (query) para simular o pagamento.
 - **RN-PLN-019**: **Não gera cobrança se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual (data atual ≤ data de vencimento do plano), retorna 400: "Você já pagou. Só poderá gerar nova cobrança quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
 
-### 14.9. Registrar pagamento (simulação)
+### 15.9. Registrar pagamento (simulação)
 - **RN-PLN-020**: `POST /plano/me/pagamento?codigoCobranca=...` (autenticado): registra um pagamento simulado na assinatura vigente. **codigoCobranca** vai na **query** (não no body). Body: **formaPagamento** e **valor** (opcionais). Data de vencimento do pagamento vem da cobrança quando há codigoCobranca.
 - **RN-PLN-021**: Quando o `codigoCobranca` (query) é **igual** ao da cobrança PENDENTE encontrada, o status do pagamento é **APROVADO na hora** e a cobrança é marcada como PAGO. Caso contrário o pagamento fica PROCESSANDO.
 - **RN-PLN-022**: **Valor pago**: deve ser igual ao valor da cobrança (quando há codigoCobranca) ou ao valor do plano. Tolerância R$ 0,01. Se diferente, retorna 400 com mensagem indicando o valor correto.
@@ -1198,55 +1264,58 @@ Usuario (raiz)
 - **RN-PLN-024**: **Só aceita a última cobrança**: se o codigoCobranca informado não for o da **última** cobrança PENDENTE da assinatura (código antigo), retorna 400: "Código de cobrança antigo. Gere uma nova cobrança em POST /plano/me/cobranca e use o último código retornado."
 - **RN-PLN-025**: **Não registra pagamento se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual, retorna 400: "Você já pagou. Só poderá pagar novamente quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
 
-### 14.10. Vigência e enums
+### 15.10. Vigência e enums
 - **Vigência em dias**: a cobertura após um pagamento aprovado é sempre **tempoPlanoDias** do plano (ex.: 365 dias). Não há enum de periodicidade; o valor do plano (`valorPlano`) é para esse período em dias.
 - **StatusPagamentoEnum**: CANCELADO, APROVADO, REPROVADO, PROCESSANDO.
 - **StatusCobrancaEnum**: PENDENTE, PAGO, CANCELADO, VENCIDO.
 - **FormaPagamentoEnum**: PIX, BOLETO, CARTAO_CREDITO.
 
-### 14.11. Seed de planos
+### 15.11. Seed de planos
 - **RN-PLN-026**: O seed `npm run seed:plano` cria/atualiza os planos (Básico, Pro, Premium) com `valorPlano` (R$) e `tempoPlanoDias` (ex.: 180, 365, 730). Deve ser executado antes do primeiro registro ou quando os planos forem alterados.
 
-### 14.12. Modelos e campos (resumo)
+### 15.12. Modelos e campos (resumo)
 - **UsuarioPlano**: não possui campo `valorPago`; valor do pagamento fica em **PagamentoPlano**.
 - **PagamentoPlano**: não possui campo `identificadorPagamento`; registra valor, status, forma de pagamento, data de vencimento (quando vinculado a cobrança).
 - **Cobranca**: codigoCobranca (único), valor, dataVencimento, formaPagamento, status; vinculada a UsuarioPlano e opcionalmente a PagamentoPlano quando paga.
 
 ---
 
-## 15. Relatórios (PDF)
+## 16. Relatórios (PDF)
 
 O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML ficam na pasta da feature (`relatorio/templates`); o service busca dados no Prisma, monta o objeto de dados e chama o template correspondente; a geração do PDF é feita com Puppeteer.
 
-### 15.1. Regras gerais
+### 16.1. Regras gerais
 - **RN-REL-001**: Todos os endpoints de relatório exigem autenticação (JWT). Sem token retorna 401.
 - **RN-REL-002**: Os relatórios consideram apenas dados do usuário autenticado (`req.user.id`).
 - **RN-REL-003**: A resposta é sempre PDF (`Content-Type: application/pdf`) com nome de arquivo sugerido em `Content-Disposition`.
 - **RN-REL-004**: Registros inativos (`ativo = false`) não entram nos relatórios, salvo quando a regra do relatório disser o contrário.
 
-### 15.2. Relatório: Meus plantios por safra/cultura
+### 16.2. Relatório: Meus plantios por safra/cultura
 - **RN-REL-005**: `GET /relatorio/plantios`. Parâmetros de query opcionais: **ano** (número), **idFazenda** (número).
 - **RN-REL-006**: Dados: plantios das fazendas do usuário (ativas). Se `idFazenda` informado, apenas essa fazenda; se **ano** informado, apenas `dataPlantio` dentro do ano.
-- **RN-REL-007**: Inclui resumo para decisão: área total, quantidade de plantios, área média por plantio, % concluídos; resumo por cultura e por fazenda.
+- **RN-REL-006b**: O relatório inclui por plantio: **talhão** (nome ou "—" se não vinculado), **custo total** (R$), **quantidade de operações**. No resumo: custo total dos plantios listados e custo médio por ha.
+- **RN-REL-007**: Inclui resumo para decisão: área total, quantidade de plantios, custo total, custo/ha médio, % concluídos; resumo por cultura e por fazenda.
 - **RN-REL-008**: Pontos de atenção: muitos plantios ainda "Planejados" (> 50%); plantios "Em monitoramento" (quantidade informada).
 
-### 15.3. Relatório: Meu estoque por fazenda
+### 16.3. Relatório: Meu estoque por fazenda
 - **RN-REL-010**: `GET /relatorio/estoque`. Parâmetros de query opcionais: **idFazenda** (número), **categoria** (string).
 - **RN-REL-011**: Dados: itens de estoque das fazendas do usuário (ativos). Filtro por fazenda e/ou categoria quando informados.
+- **RN-REL-011b**: A tabela inclui coluna **Fornecedor** (nome fantasia ou razão social) para cada item.
 - **RN-REL-012**: Inclui resumo: valor total do estoque, valor em risco (itens que vencem em até 90 dias), valor e quantidade de itens vencidos; valor por categoria.
 - **RN-REL-013**: Pontos de atenção: itens vencidos (valor e quantidade); itens que vencem em 90 dias (valor em risco); itens com status ESGOTADO.
 
-### 15.4. Relatório: Minhas análises de solo
+### 16.4. Relatório: Minhas análises de solo
 - **RN-REL-015**: `GET /relatorio/analises-solo`. Parâmetro de query opcional: **ano** (número).
 - **RN-REL-016**: Dados: análises de solo do usuário (ativas). Se **ano** informado, apenas `dateCreated` dentro do ano.
 - **RN-REL-017**: Inclui resumo: quantidade de análises, área coberta (soma de areaTotal), última análise (dias atrás), médias dos indicadores (pH, N, P, K, CTC, V%, MO) quando houver dados.
 - **RN-REL-018**: Pontos de atenção: pH médio fora da faixa ideal (5,5–6,5); última análise há mais de 365 dias.
 
-### 15.5. Relatório: Resumo geral do sistema para o cliente
+### 16.5. Relatório: Resumo geral do sistema para o cliente
 - **RN-REL-020**: `GET /relatorio/resumo`. Parâmetros de query opcionais: **ano** (número), **mes** (número 1–12). Gera PDF com **resumo de tudo relevante do sistema** para o cliente.
 - **RN-REL-021**: Período: se **mes** informado, intervalo do mês no ano (ano padrão = ano atual); senão, ano inteiro. Dados de plantios e pagamentos ao sistema são filtrados por esse período.
-- **RN-REL-022**: Conteúdo do relatório: **plano atual** (tipo, nome, vigência, status válido/atenção, mensagem); **resumo do sistema** (fazendas, área total, plantios no período, fornecedores, cultivares em uso, total pago ao sistema no período); **resumo de estoque** (total de itens, valor total estimado, itens próximos a vencer em 90 dias, itens vencidos); **resumo de análises de solo** (total de análises, última análise, área coberta); **destaques** e **pontos de atenção**; tabelas de fazendas, plantios por cultura e fornecedores.
-- **RN-REL-023**: Dados considerados: fazendas do usuário (ativas), plantios no período (com cultivar), assinaturas ativas e pagamentos APROVADOS no período, fornecedores (ativos), itens de estoque das fazendas do usuário (ativos), análises de solo do usuário (ativas), status do plano via `getStatusPlanoUsuario`.
+- **RN-REL-022**: Conteúdo do relatório: **plano atual** (tipo, nome, vigência, status válido/atenção, mensagem); **resumo do sistema** (fazendas, área total, **talhões**, **zonas de manejo**, plantios no período, fornecedores, cultivares em uso, **custo total da safra do ano de referência**, total pago ao sistema no período); **resumo de estoque** (total de itens, valor total estimado, itens próximos a vencer em 90 dias, itens vencidos); **resumo de análises de solo** (total de análises, última análise, área coberta); **destaques** e **pontos de atenção**; tabelas de fazendas, plantios por cultura e fornecedores.
+- **RN-REL-022b**: O custo da safra no resumo considera o **ano de referência** do relatório (ano ou ano do mês informado): soma de `plantio.custoTotal` e dos `custoTotal` das operações dos plantios desse ano em todas as fazendas do usuário.
+- **RN-REL-023**: Dados considerados: fazendas do usuário (ativas), contagem de **talhões** e **zonas de manejo** das fazendas do usuário, plantios no período (com cultivar), plantios da safra (ano de referência) para cálculo do custo safra, assinaturas ativas e pagamentos APROVADOS no período, fornecedores (ativos), itens de estoque das fazendas do usuário (ativos), análises de solo do usuário (ativas), status do plano via `getStatusPlanoUsuario`.
 - **RN-REL-024**: Pontos de atenção: nenhuma fazenda cadastrada; nenhum fornecedor cadastrado; plano inválido ou mensagem; itens de estoque vencidos ou próximos a vencer; nenhuma análise de solo cadastrada.
 
 ---
@@ -1263,4 +1332,4 @@ O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML fic
 ---
 
 **Última atualização**: 2026-02-19
-**Versão do documento**: 1.2
+**Versão do documento**: 1.3

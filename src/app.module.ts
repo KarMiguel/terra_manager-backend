@@ -10,6 +10,7 @@ import { CultivarModule } from './modules/cultivar/cultivar.module';
 import { PragaModule } from './modules/praga/praga.module';
 import { PlantioModule } from './modules/plantio/plantio.module';
 import { TalhaoModule } from './modules/talhao/talhao.module';
+import { ZonaManejoModule } from './modules/zona-manejo/zona-manejo.module';
 import { OperacaoPlantioModule } from './modules/operacao-plantio/operacao-plantio.module';
 import { AplicacaoModule } from './modules/aplicacao/aplicacao.module';
 import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
@@ -17,6 +18,7 @@ import { LogModule } from './modules/log/log.module';
 import { LoggingInterceptorModule } from './common/interceptors/logging.module';
 import { PlanoModule } from './modules/plano/plano.module';
 import { RelatorioModule } from './modules/relatorio/relatorio.module';
+import { MapaModule } from './modules/mapa/mapa.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { RelatorioModule } from './modules/relatorio/relatorio.module';
     CultivarModule,
     PlantioModule,
     TalhaoModule,
+    ZonaManejoModule,
+    MapaModule,
     OperacaoPlantioModule,
     AplicacaoModule,
     AnaliseSoloModule,

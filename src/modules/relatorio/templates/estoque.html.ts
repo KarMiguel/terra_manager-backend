@@ -2,6 +2,7 @@
 export interface EstoqueTemplateData {
   itens: Array<{
     fazenda: { nome: string };
+    fornecedor: { nomeFantasia: string | null; razaoSocial: string } | null;
     nome: string | null;
     descricao: string | null;
     categoria: string;
@@ -58,6 +59,7 @@ export function buildEstoqueBody(data: EstoqueTemplateData): string {
     .map(
       (i) => `<tr>
           <td>${i.fazenda.nome}</td>
+          <td>${i.fornecedor ? (i.fornecedor.nomeFantasia ?? i.fornecedor.razaoSocial) : '—'}</td>
           <td>${i.nome ?? i.descricao ?? '—'}</td>
           <td>${i.categoria}</td>
           <td>${i.quantidade} ${i.unidadeMedida}</td>
@@ -72,8 +74,8 @@ export function buildEstoqueBody(data: EstoqueTemplateData): string {
     ${resumoHtml}
     ${alertasHtml}
     <table>
-      <thead><tr><th>Fazenda</th><th>Produto</th><th>Categoria</th><th>Qtd</th><th>Valor unit.</th><th>Total</th><th>Validade</th><th>Status</th></tr></thead>
+      <thead><tr><th>Fazenda</th><th>Fornecedor</th><th>Produto</th><th>Categoria</th><th>Qtd</th><th>Valor unit.</th><th>Total</th><th>Validade</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr class="totais"><td colspan="5">Total estimado</td><td>R$ ${totalValor.toFixed(2)}</td><td colspan="2">—</td></tr></tfoot>
+      <tfoot><tr class="totais"><td colspan="6">Total estimado</td><td>R$ ${totalValor.toFixed(2)}</td><td colspan="2">—</td></tr></tfoot>
     </table>`;
 }

@@ -12,7 +12,7 @@ export class LoginDto {
 
   @ApiProperty({
     description: 'Senha do usuário.',
-    example: '123456',
+    example: 'senha123',
   })
   @IsNotEmpty({ message: 'O campo "password" é obrigatório.' })
   @IsString({ message: 'O campo "password" deve ser uma string.' })

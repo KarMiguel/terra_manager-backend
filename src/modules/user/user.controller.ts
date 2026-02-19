@@ -1,9 +1,12 @@
-import { Controller, Get, NotFoundException, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { CrudController } from '../../crud.controller';
 import { Usuario } from '@prisma/client';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { UserModel } from './interface/user.interface';
 import { UserService } from './user.service';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/guards/roles.decorator';
+import { Role } from '../../common/guards/roles.enum';
 
 @Controller('/user')
 @ApiTags('User')
@@ -43,6 +46,32 @@ export class UserController extends CrudController<Usuario, UserModel> {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  @Patch(':id/ativar')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Ativar usuário (ADMIN)', description: 'Reativa um usuário. Apenas role ADMIN.' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiResponse({ status: 200, description: 'Usuário ativado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Apenas ADMIN' })
+  @ApiBearerAuth('access-token')
+  async ativar(@Param('id', ParseIntPipe) id: number): Promise<Usuario> {
+    return this.userService.setAtivo(id, true);
+  }
+
+  @Patch(':id/desativar')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Desativar usuário (ADMIN)', description: 'Desativa um usuário. Apenas role ADMIN.' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiResponse({ status: 200, description: 'Usuário desativado' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Apenas ADMIN' })
+  @ApiBearerAuth('access-token')
+  async desativar(@Param('id', ParseIntPipe) id: number): Promise<Usuario> {
+    return this.userService.setAtivo(id, false);
   }
 
   // @Get('test')

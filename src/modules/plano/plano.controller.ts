@@ -102,7 +102,7 @@ export class PlanoController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Gerar cobrança (PIX, boleto ou cartão)',
+    summary: 'Gerar cobrança (PIX, boleto ou cartão) - Somente simulação',
     description:
       'Gera uma cobrança na assinatura vigente com código de identificação conforme a forma de pagamento (simulação, sem gateway real). Use o codigoCobranca retornado em POST /plano/me/pagamento para simular o pagamento.',
   })

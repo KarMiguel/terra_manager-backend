@@ -8,6 +8,9 @@ export class AnaliseSoloModel {
   idUsuario: number;
 
   @Expose()
+  nomeSolo?: string;
+
+  @Expose()
   ph?: number;
 
   @Expose()

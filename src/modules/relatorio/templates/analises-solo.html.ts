@@ -1,6 +1,7 @@
 /** Dados para o corpo do relatório de análises de solo. */
 export interface AnalisesSoloTemplateData {
   analises: Array<{
+    nomeSolo: string | null;
     dateCreated: Date;
     ph: number | null;
     areaTotal: number | null;
@@ -54,6 +55,7 @@ export function buildAnalisesSoloBody(data: AnalisesSoloTemplateData): string {
     .map(
       (a) => `
         <tr>
+          <td>${a.nomeSolo ?? '—'}</td>
           <td>${new Date(a.dateCreated).toLocaleDateString('pt-BR')}</td>
           <td>${a.ph ?? '—'}</td>
           <td>${a.areaTotal ?? '—'}</td>
@@ -70,7 +72,7 @@ export function buildAnalisesSoloBody(data: AnalisesSoloTemplateData): string {
     ${resumoHtml}
     ${alertasHtml}
     <table>
-      <thead><tr><th>Data</th><th>pH</th><th>Área (ha)</th><th>N</th><th>P</th><th>K</th><th>CTC</th><th>V%</th><th>MO</th></tr></thead>
+      <thead><tr><th>Nome</th><th>Data</th><th>pH</th><th>Área (ha)</th><th>N</th><th>P</th><th>K</th><th>CTC</th><th>V%</th><th>MO</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }

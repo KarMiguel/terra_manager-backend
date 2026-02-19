@@ -62,11 +62,13 @@ export class RelatorioService {
       };
     }
 
-    const plantios = await this.prisma.plantio.findMany({
+    const plantiosRaw = await this.prisma.plantio.findMany({
       where,
       include: {
         cultivar: { select: { nomePopular: true, tipoPlanta: true } },
         fazenda: { select: { nome: true, municipio: true, uf: true } },
+        talhao: { select: { nome: true } },
+        operacoes: { where: { ativo: true }, select: { id: true } },
       },
       orderBy: [{ fazenda: { nome: 'asc' } }, { dataPlantio: 'desc' }],
     });
@@ -76,11 +78,14 @@ export class RelatorioService {
     if (idFazenda) filtros.push(`Fazenda: ${fazendas[0]?.nome ?? idFazenda}`);
 
     let areaTotal = 0;
+    let custoTotalGeral = 0;
     const porStatus: Record<string, number> = { PLANEJADO: 0, EXECUTADO: 0, EM_MONITORAMENTO: 0, CONCLUIDO: 0 };
     const porCulturaMap: Record<string, { areaHa: number; quantidade: number }> = {};
     const porFazendaMap: Record<string, { areaHa: number; quantidade: number }> = {};
-    for (const p of plantios) {
+    const plantios = plantiosRaw.map((p) => {
       areaTotal += p.areaPlantada;
+      const custo = p.custoTotal ?? 0;
+      custoTotalGeral += custo;
       porStatus[p.statusPlantio] = (porStatus[p.statusPlantio] ?? 0) + 1;
       const cultura = p.cultivar.tipoPlanta;
       if (!porCulturaMap[cultura]) porCulturaMap[cultura] = { areaHa: 0, quantidade: 0 };
@@ -90,7 +95,17 @@ export class RelatorioService {
       if (!porFazendaMap[faz]) porFazendaMap[faz] = { areaHa: 0, quantidade: 0 };
       porFazendaMap[faz].areaHa += p.areaPlantada;
       porFazendaMap[faz].quantidade += 1;
-    }
+      return {
+        fazenda: p.fazenda,
+        talhao: p.talhao,
+        cultivar: p.cultivar,
+        dataPlantio: p.dataPlantio,
+        areaPlantada: p.areaPlantada,
+        custoTotal: p.custoTotal,
+        quantidadeOperacoes: p.operacoes.length,
+        statusPlantio: p.statusPlantio,
+      };
+    });
     const areaMediaHa = plantios.length ? areaTotal / plantios.length : 0;
     const porCultura = Object.entries(porCulturaMap).map(([cultura, v]) => ({ cultura, ...v }));
     const porFazenda = Object.entries(porFazendaMap).map(([fazenda, v]) => ({ fazenda, ...v }));
@@ -104,6 +119,7 @@ export class RelatorioService {
     const templateData: PlantiosTemplateData = {
       plantios,
       areaTotal,
+      custoTotalGeral,
       porStatus,
       porCultura,
       porFazenda,
@@ -185,6 +201,7 @@ export class RelatorioService {
       porCategoriaMap[cat].quantidade += 1;
       return {
         fazenda: i.fazenda,
+        fornecedor: i.fornecedor,
         nome: i.nome,
         descricao: i.descricao,
         categoria: i.categoria,
@@ -250,6 +267,7 @@ export class RelatorioService {
     if (ano) filtros.push(`Ano: ${ano}`);
 
     const analisesMap = analises.map((a) => ({
+      nomeSolo: a.nomeSolo ?? null,
       dateCreated: a.dateCreated,
       ph: a.ph,
       areaTotal: a.areaTotal,
@@ -330,19 +348,33 @@ export class RelatorioService {
       })
       .then((rows) => rows.map((r) => r.id));
 
+    const inicioAnoSafra = new Date(anoRef, 0, 1);
+    const fimAnoSafra = new Date(anoRef, 11, 31, 23, 59, 59);
+
     const [
       fazendas,
+      zonasManejoList,
       plantios,
       usuarioPlanos,
       fornecedores,
       itensEstoque,
       analisesSoloList,
       statusPlano,
+      totalTalhoes,
+      totalZonasManejo,
+      plantiosSafraAno,
     ] = await Promise.all([
       this.prisma.fazenda.findMany({
         where: { idUsuario, ativo: true },
         select: { id: true, nome: true, areaTotal: true, municipio: true, uf: true },
       }),
+      idsFazendas.length > 0
+        ? this.prisma.zonaManejo.findMany({
+            where: { idFazenda: { in: idsFazendas }, ativo: true },
+            select: { nome: true, tipo: true, fazenda: { select: { nome: true } }, talhao: { select: { nome: true } } },
+            orderBy: [{ fazenda: { nome: 'asc' } }, { nome: 'asc' }],
+          })
+        : Promise.resolve([]),
       this.prisma.plantio.findMany({
         where: {
           fazenda: { idUsuario },
@@ -383,6 +415,22 @@ export class RelatorioService {
         orderBy: { dateCreated: 'desc' },
       }),
       this.planoService.getStatusPlanoUsuario(idUsuario),
+      idsFazendas.length > 0
+        ? this.prisma.talhao.count({ where: { idFazenda: { in: idsFazendas }, ativo: true } })
+        : Promise.resolve(0),
+      idsFazendas.length > 0
+        ? this.prisma.zonaManejo.count({ where: { idFazenda: { in: idsFazendas }, ativo: true } })
+        : Promise.resolve(0),
+      idsFazendas.length > 0
+        ? this.prisma.plantio.findMany({
+            where: {
+              idFazenda: { in: idsFazendas },
+              ativo: true,
+              dataPlantio: { gte: inicioAnoSafra, lte: fimAnoSafra },
+            },
+            select: { custoTotal: true, operacoes: { where: { ativo: true }, select: { custoTotal: true } } },
+          })
+        : Promise.resolve([]),
     ]);
 
     const areaTotal = fazendas.reduce((s, f) => s + (f.areaTotal ?? 0), 0);
@@ -412,12 +460,22 @@ export class RelatorioService {
     const ultimaAnalise = analisesSoloList[0]?.dateCreated ?? null;
     const areaCobertaHa = analisesSoloList.reduce((s, a) => s + (a.areaTotal ?? 0), 0);
 
+    let custoSafraAnoAtual = 0;
+    for (const p of plantiosSafraAno) {
+      custoSafraAnoAtual += p.custoTotal ?? 0;
+      for (const op of p.operacoes) {
+        custoSafraAnoAtual += op.custoTotal ?? 0;
+      }
+    }
+    custoSafraAnoAtual = Math.round(custoSafraAnoAtual * 100) / 100;
+
     const periodoLabel = mes ? `${String(mes).padStart(2, '0')}/${anoRef}` : `Ano ${anoRef}`;
     const filtros = `Período: ${periodoLabel}`;
 
     const destaques: string[] = [];
-    destaques.push(`${fazendas.length} fazenda(s), área total ${areaTotal.toLocaleString('pt-BR')} ha.`);
+    destaques.push(`${fazendas.length} fazenda(s), área total ${areaTotal.toLocaleString('pt-BR')} ha; ${totalTalhoes} talhão(ões), ${totalZonasManejo} zona(s) de manejo.`);
     destaques.push(`${plantios.length} plantio(s) no período; ${cultivarIds.size} cultivar(es) em uso.`);
+    if (custoSafraAnoAtual > 0) destaques.push(`Custo total safra ${anoRef}: R$ ${custoSafraAnoAtual.toFixed(2)}.`);
     destaques.push(`${fornecedores.length} fornecedor(es); ${itensEstoque.length} itens em estoque (R$ ${valorTotalEstoque.toFixed(2)}).`);
     destaques.push(`${analisesSoloList.length} análise(s) de solo; área coberta ${areaCobertaHa.toLocaleString('pt-BR')} ha.`);
     if (totalPago > 0) destaques.push(`Total pago ao sistema no período: R$ ${totalPago.toFixed(2)}.`);
@@ -431,6 +489,13 @@ export class RelatorioService {
     if (itensVencidos > 0) pontosAtencao.push(`${itensVencidos} item(ns) de estoque vencido(s).`);
     if (itensProximoVencimento > 0) pontosAtencao.push(`${itensProximoVencimento} item(ns) de estoque próximos a vencer (90 dias).`);
     if (analisesSoloList.length === 0) pontosAtencao.push('Nenhuma análise de solo cadastrada.');
+
+    const zonasManejo = zonasManejoList.map((z) => ({
+      nomeFazenda: z.fazenda.nome,
+      nome: z.nome,
+      tipo: z.tipo ?? null,
+      nomeTalhao: z.talhao?.nome ?? null,
+    }));
 
     const templateData: ResumoRelatorioTemplateData = {
       periodoLabel,
@@ -447,10 +512,14 @@ export class RelatorioService {
       resumo: {
         totalFazendas: fazendas.length,
         areaTotalHa: areaTotal,
+        totalTalhoes,
+        totalZonasManejo,
         totalPlantiosPeriodo: plantios.length,
         totalFornecedores: fornecedores.length,
         totalCultivaresUsados: cultivarIds.size,
         totalPagoSistemaPeriodo: totalPago,
+        custoSafraAnoAtual,
+        anoReferenciaSafra: anoRef,
       },
       estoque: {
         totalItens: itensEstoque.length,
@@ -464,7 +533,13 @@ export class RelatorioService {
         areaCobertaHa,
       },
       porCultura,
-      fazendas,
+      zonasManejo,
+      fazendas: fazendas.map((f) => ({
+        nome: f.nome,
+        municipio: f.municipio ?? null,
+        uf: f.uf ?? null,
+        areaTotal: f.areaTotal ?? null,
+      })),
       fornecedores,
       destaques,
       pontosAtencao,

@@ -74,4 +74,11 @@ export class UserService extends CrudService<Usuario, UserModel> {
       },
     });
   }
+
+  async setAtivo(id: number, ativo: boolean): Promise<Usuario> {
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { ativo },
+    });
+  }
 }

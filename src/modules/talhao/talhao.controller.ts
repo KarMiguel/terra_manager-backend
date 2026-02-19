@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req, UseGuards
 import { CrudController } from 'src/crud.controller';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { TalhaoService } from './talhao.service';
+import { TalhaoService, TalhaoMapaResponse } from './talhao.service';
 import { Talhao } from '@prisma/client';
 import { TalhaoModel } from './interface/talhao.interface';
 import { CreateTalhaoDto } from './dto/create-talhao.dto';
@@ -55,6 +55,45 @@ export class TalhaoController extends CrudController<Talhao, TalhaoModel> {
     const paginate = page && pageSize ? { page, pageSize } : undefined;
     const result = await this.talhaoService.listarPorFazenda(idFazenda, idUsuario, paginate);
     return { data: plainToInstance(TalhaoModel, result.data, { excludeExtraneousValues: true }), count: result.count };
+  }
+
+  @Get('fazenda/:idFazenda/mapa')
+  @ApiOperation({
+    summary: 'GeoJSON mapa dos talhões',
+    description: 'Retorna GeoJSON FeatureCollection com os talhões que possuem geometria (Polygon/MultiPolygon). Para desenhar o mapa da fazenda.',
+  })
+  @ApiParam({ name: 'idFazenda', description: 'ID da fazenda', type: Number, example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'FeatureCollection com features (geometry + properties: id, nome, areaHa)',
+    schema: {
+      type: 'object',
+      properties: {
+        type: { enum: ['FeatureCollection'] },
+        features: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { enum: ['Feature'] },
+              geometry: { type: 'object', description: 'GeoJSON Geometry' },
+              properties: { type: 'object', properties: { id: { type: 'number' }, nome: { type: 'string' }, areaHa: { type: 'number' } } },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Fazenda não pertence ao usuário' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 404, description: 'Fazenda não encontrada' })
+  async mapaPorFazenda(
+    @Param('idFazenda', ParseIntPipe) idFazenda: number,
+    @Req() req?: any,
+  ): Promise<TalhaoMapaResponse> {
+    const idUsuario = req.user?.id;
+    if (!idUsuario) throw new Error('Usuário não autenticado.');
+    return this.talhaoService.mapaPorFazenda(idFazenda, idUsuario);
   }
 
   @Get('fazenda/:idFazenda/resumo')

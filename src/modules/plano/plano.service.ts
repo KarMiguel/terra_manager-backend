@@ -412,11 +412,11 @@ export class PlanoService {
 
     const mensagens: Record<FormaPagamentoEnum, string> = {
       [FormaPagamentoEnum.PIX]:
-        'Use o código PIX (copia e cola) acima para pagar. Após pagar, chame POST /plano/me/pagamento com codigoCobranca e statusPagamento APROVADO.',
+        'Use o código PIX (copia e cola) acima para pagar. Após pagar, chame POST /plano/me/pagamento com codigoCobranca',
       [FormaPagamentoEnum.BOLETO]:
-        'Use o código do boleto acima para pagar. Após pagar, chame POST /plano/me/pagamento com codigoCobranca e statusPagamento APROVADO.',
+        'Use o código do boleto acima para pagar. Após pagar, chame POST /plano/me/pagamento com codigoCobranca',
       [FormaPagamentoEnum.CARTAO_CREDITO]:
-        'Use a referência acima para pagamento com cartão. Após aprovação, chame POST /plano/me/pagamento com codigoCobranca e statusPagamento APROVADO.',
+        'Use a referência acima para pagamento com cartão. Após aprovação, chame POST /plano/me/pagamento com codigoCobranca',
     };
     const message = mensagens[body.formaPagamento] ?? 'Cobrança gerada. Use codigoCobranca em POST /plano/me/pagamento para registrar o pagamento.';
 

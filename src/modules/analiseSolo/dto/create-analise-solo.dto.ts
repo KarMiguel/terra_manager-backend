@@ -1,7 +1,12 @@
-import { IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsOptional, IsNumber, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAnaliseSoloDto {
+  @ApiProperty({ description: 'Nome da análise / identificação do solo', example: 'Talhão Norte - Amostra 1' })
+  @IsOptional()
+  @IsString()
+  nomeSolo?: string;
+
   @ApiProperty({ description: 'pH do solo', example: 6.2 })
   @IsOptional()
   @IsNumber()
