@@ -10,6 +10,7 @@ Este documento descreve todas as **regras de negócio** implementadas no sistema
 | **REGRAS_NEGOCIO.md** | Este arquivo: regras (RN-xxx), modelos de entidade, relacionamentos e foreign keys. |
 | **REFERENCIAS_AGRONOMIA.md** | Fórmulas e referências bibliográficas dos cálculos (talhão, dose por ha, custo por safra). |
 | **DOCUMENTACAO_SISTEMA.md** | Índice geral da documentação do projeto. |
+| **PASSO_A_PASSO_SISTEMA.md** | Passo a passo de uso: cadastro → plano → pagamento → fazenda → plantio → operações. |
 | **IDEIAS_EVOLUCAO.md** | Backlog de evolução e status do que já foi implementado. |
 
 ---
@@ -609,6 +610,14 @@ O sistema utiliza enums para garantir consistência e validação de dados:
 - Densidade real padrão é igual à densidade planejada se não informada
 - MM de água aplicado é obrigatório para controle de irrigação
 - Custos podem ser informados por categoria ou apenas o total
+
+**Status do plantio e fases (transições automáticas por operação)**:
+- O status do plantio é atualizado automaticamente ao registrar operações (POST /operacao-plantio):
+  - **COLHEITA** → status do plantio passa a **CONCLUIDO**
+  - **SEMEADURA** → status passa a **EM_MONITORAMENTO** (lavoura em campo)
+  - **PREPARO_SOLO** ou **SEMEADURA** (quando status ainda é PLANEJADO) → status passa a **EXECUTADO**
+- Para ajuste manual: **PATCH /plantio/:id/status** com body `{ "statusPlantio": "EM_MONITORAMENTO" }` (valores: PLANEJADO, EXECUTADO, EM_MONITORAMENTO, CONCLUIDO)
+- Listagem por fazenda aceita filtro por status: **GET /plantio/fazenda/:idFazenda?options={"statusPlantio":"EM_MONITORAMENTO"}**
 
 ---
 

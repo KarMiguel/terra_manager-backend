@@ -1,10 +1,32 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CrudService } from 'src/crud.service';
-import { PrismaClient, OperacaoPlantio } from '@prisma/client';
+import { OperacaoPlantio, PrismaClient, StatusPlantioEnum } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { OperacaoPlantioModel } from './interface/operacao-plantio.interface';
 import { CreateOperacaoPlantioDto } from './dto/create-operacao-plantio.dto';
 import { TipoEtapaOperacaoEnum } from './enum/tipo-etapa.enum';
+
+/**
+ * Regras de transição de status do plantio conforme a etapa da operação (melhores práticas):
+ * - COLHEITA → CONCLUIDO
+ * - SEMEADURA → EM_MONITORAMENTO (lavoura em campo)
+ * - PREPARO_SOLO → EXECUTADO (se ainda PLANEJADO)
+ * - Demais etapas não alteram status automaticamente (podem usar PATCH /plantio/:id/status se necessário)
+ */
+function novoStatusPorEtapa(
+  tipoEtapa: string,
+  statusAtual: StatusPlantioEnum,
+): StatusPlantioEnum | null {
+  if (tipoEtapa === TipoEtapaOperacaoEnum.COLHEITA) return StatusPlantioEnum.CONCLUIDO;
+  if (tipoEtapa === TipoEtapaOperacaoEnum.SEMEADURA && statusAtual !== StatusPlantioEnum.CONCLUIDO)
+    return StatusPlantioEnum.EM_MONITORAMENTO;
+  if (
+    (tipoEtapa === TipoEtapaOperacaoEnum.PREPARO_SOLO || tipoEtapa === TipoEtapaOperacaoEnum.SEMEADURA) &&
+    statusAtual === StatusPlantioEnum.PLANEJADO
+  )
+    return StatusPlantioEnum.EXECUTADO;
+  return null;
+}
 
 @Injectable()
 export class OperacaoPlantioService extends CrudService<OperacaoPlantio, OperacaoPlantioModel> {
@@ -24,7 +46,7 @@ export class OperacaoPlantioService extends CrudService<OperacaoPlantio, Operaca
   async createOperacao(dto: CreateOperacaoPlantioDto, createdBy: string): Promise<OperacaoPlantioModel> {
     const plantio = await this.prisma.plantio.findUnique({
       where: { id: dto.idPlantio },
-      select: { id: true, areaPlantada: true },
+      select: { id: true, areaPlantada: true, statusPlantio: true },
     });
     if (!plantio) {
       throw new NotFoundException(`Plantio com ID ${dto.idPlantio} não encontrado.`);
@@ -51,6 +73,15 @@ export class OperacaoPlantioService extends CrudService<OperacaoPlantio, Operaca
         createdBy,
       },
     });
+
+    const novoStatus = novoStatusPorEtapa(dto.tipoEtapa, plantio.statusPlantio);
+    if (novoStatus && novoStatus !== plantio.statusPlantio) {
+      await this.prisma.plantio.update({
+        where: { id: dto.idPlantio },
+        data: { statusPlantio: novoStatus, modifiedBy: createdBy },
+      });
+    }
+
     return plainToInstance(OperacaoPlantioModel, created, { excludeExtraneousValues: true });
   }
 

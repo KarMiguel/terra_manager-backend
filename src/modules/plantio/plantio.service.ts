@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CrudService } from 'src/crud.service';
-import { PrismaClient, Plantio } from '@prisma/client';
+import { Plantio, PrismaClient, StatusPlantioEnum } from '@prisma/client';
 
 import { plainToInstance } from 'class-transformer';
 import { calculatePagination } from 'src/common/utils/calculatePagination';
@@ -50,7 +50,39 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
       excludeExtraneousValues: true,
     });
   }
-  
+
+  /**
+   * Atualiza apenas o status do plantio (para ajuste manual quando necessário).
+   * O plantio deve pertencer a uma fazenda do usuário.
+   */
+  async updateStatusPlantio(
+    idPlantio: number,
+    statusPlantio: StatusPlantioEnum,
+    idUsuario: number,
+    modifiedBy: string,
+  ): Promise<PlantioModel> {
+    const plantio = await this.prisma.plantio.findUnique({
+      where: { id: idPlantio },
+      include: { fazenda: { select: { idUsuario: true } } },
+    });
+    if (!plantio) {
+      throw new NotFoundException(`Plantio com ID ${idPlantio} não encontrado.`);
+    }
+    if (plantio.fazenda.idUsuario !== idUsuario) {
+      throw new BadRequestException('O usuário não tem permissão para alterar este plantio.');
+    }
+    const updated = await this.prisma.plantio.update({
+      where: { id: idPlantio },
+      data: { statusPlantio, modifiedBy },
+      include: {
+        cultivar: { select: { id: true, nomePopular: true, nomeCientifico: true } },
+        fazenda: { select: { id: true, nome: true, municipio: true, uf: true } },
+        analiseSolo: { select: { id: true, hAi: true, sb: true, ctc: true, v: true, m: true, mo: true } },
+      },
+    });
+    return plainToInstance(PlantioModel, updated, { excludeExtraneousValues: true });
+  }
+
   async listarPorFazenda(
     idFazenda: number,
     idUsuario: number,
@@ -78,7 +110,9 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
       ...options.where,
       idFazenda,
     };
-  
+    if (options.where?.statusPlantio) {
+      where.statusPlantio = options.where.statusPlantio;
+    }
     if (options.where?.cultivarNome) {
       where.cultivar = {
         nomePopular: {

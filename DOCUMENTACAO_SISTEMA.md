@@ -38,7 +38,15 @@ Subir a API: `npm run start` ou `npm run start:dev`.
 
 ---
 
-## 4. Ideias de evolução (backlog)
+## 4. Passo a passo do sistema (fluxo de uso)
+
+- **Arquivo:** [PASSO_A_PASSO_SISTEMA.md](./PASSO_A_PASSO_SISTEMA.md)
+- **Conteúdo:** Ordem recomendada de uso: criar usuário → login → selecionar plano → gerar cobrança → pagar → criar fazenda → cultivar → talhão → plantio → operações → relatórios. Inclui endpoints e exemplos de body por etapa.
+- **Uso:** Onboarding, checklist de implantação e guia “o que fazer primeiro”.
+
+---
+
+## 5. Ideias de evolução (backlog)
 
 - **Arquivo:** [IDEIAS_EVOLUCAO.md](./IDEIAS_EVOLUCAO.md)
 - **Conteúdo:** Ideias por área (gestão, plantio, agronomia, sistema), priorização (alta/média/baixa) e **status** (feito vs pendente) das funcionalidades já implementadas (talhões, operações, aplicações, custo por safra).
@@ -46,7 +54,7 @@ Subir a API: `npm run start` ou `npm run start:dev`.
 
 ---
 
-## 5. README e outros
+## 6. README e outros
 
 - **README.md:** Configuração do projeto, como rodar, testes e seção **Documentação Swagger** (acesso à API docs, estrutura dos controllers, exemplos de uso).
 - **.docker-compose.env.example / docker-compose.yml:** Variáveis e serviços para ambiente Docker.
@@ -59,6 +67,7 @@ Subir a API: `npm run start` ou `npm run start:dev`.
 | Preciso de… | Onde ver |
 |-------------|----------|
 | Endpoints, parâmetros, exemplos de request/response | Swagger: `/api-docs` |
+| Ordem de uso: cadastro → plano → pagamento → fazenda → plantio | PASSO_A_PASSO_SISTEMA.md |
 | Regras (o que pode/não pode, validações, RN) | REGRAS_NEGOCIO.md |
 | Fórmulas e referências (dose por ha, custo safra) | REFERENCIAS_AGRONOMIA.md |
 | O que já foi feito e o que está no backlog | IDEIAS_EVOLUCAO.md |

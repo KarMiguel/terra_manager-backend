@@ -52,6 +52,7 @@ O projeto possui documentação estruturada em vários arquivos. O **índice ger
 | Documento | Conteúdo |
 |-----------|----------|
 | **[DOCUMENTACAO_SISTEMA.md](./DOCUMENTACAO_SISTEMA.md)** | Índice de toda a documentação |
+| **[PASSO_A_PASSO_SISTEMA.md](./PASSO_A_PASSO_SISTEMA.md)** | Passo a passo: cadastro → plano → pagamento → fazenda → plantio |
 | **[REGRAS_NEGOCIO.md](./REGRAS_NEGOCIO.md)** | Regras de negócio (RN), modelos de entidade, FKs |
 | **[REFERENCIAS_AGRONOMIA.md](./REFERENCIAS_AGRONOMIA.md)** | Fórmulas e referências dos cálculos agronômicos |
 | **[IDEIAS_EVOLUCAO.md](./IDEIAS_EVOLUCAO.md)** | Backlog e status das funcionalidades |

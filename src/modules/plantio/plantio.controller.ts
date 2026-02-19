@@ -1,16 +1,19 @@
 import { PlantioModel } from './interface/plantio.interface';
-import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { CrudController } from 'src/crud.controller';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreatePlantioDto } from './dto/create-plantio.dto';
+import { UpdateStatusPlantioDto } from './dto/update-status-plantio.dto';
 import { plainToInstance } from 'class-transformer';
 import { Paginate } from 'src/common/utils/types';
 import { PlantioService } from './plantio.service';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
 import { Plantio } from '@prisma/client';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 @ApiTags('Plantio')
 @Controller('plantio')
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 export class PlantioController extends CrudController<Plantio, PlantioModel> {
   constructor(private readonly plantioService: PlantioService) {
@@ -41,6 +44,26 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
     return this.plantioService.createPlantio(createPlantioDto, req.user?.email);
   }
 
+  @Patch(':id/status')
+  @ApiOperation({
+    summary: 'Atualiza o status do plantio',
+    description:
+      'Altera apenas o status do plantio (PLANEJADO, EXECUTADO, EM_MONITORAMENTO, CONCLUIDO). O status também é atualizado automaticamente ao registrar operações: PREPARO_SOLO/SEMEADURA → EXECUTADO/EM_MONITORAMENTO; COLHEITA → CONCLUIDO.',
+  })
+  @ApiParam({ name: 'id', description: 'ID do plantio', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Status atualizado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Sem permissão para este plantio' })
+  @ApiResponse({ status: 404, description: 'Plantio não encontrado' })
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusPlantioDto,
+    @Req() req: any,
+  ): Promise<PlantioModel> {
+    const idUsuario = req.user?.id;
+    if (!idUsuario) throw new BadRequestException('Usuário não autenticado.');
+    return this.plantioService.updateStatusPlantio(id, dto.statusPlantio as any, idUsuario, req.user?.email ?? '');
+  }
+
   @Get('fazenda/:idFazenda')
   @ApiOperation({ 
     summary: 'Lista plantios por ID da fazenda',
@@ -52,7 +75,7 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
     type: Number,
     example: 1
   })
-  @ApiQuery({ name: 'options', required: false, description: 'Filtros em formato JSON (opcional)', type: String, example: '{"tipoPlanta": "SOJA"}' })
+  @ApiQuery({ name: 'options', required: false, description: 'Filtros em formato JSON (opcional). Ex: {"statusPlantio": "EM_MONITORAMENTO", "cultivarNome": "SOJA"}', type: String, example: '{"statusPlantio": "EM_MONITORAMENTO"}' })
   @ApiQuery({ name: 'page', required: false, description: 'Número da página (padrão: 1)', type: Number, example: 1 })
   @ApiQuery({ name: 'pageSize', required: false, description: 'Tamanho da página (padrão: 10)', type: Number, example: 10 })
   @ApiResponse({ 

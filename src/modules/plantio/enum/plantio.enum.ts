@@ -1,9 +1,9 @@
-
+/** Alinhado ao Prisma StatusPlantioEnum. Transições automáticas via operações (ver OperacaoPlantioService). */
 export enum StatusPlantioEnum {
-    PLANEJADO = "PLANEJADO",
-    EM_ANDAMENTO = "EM_ANDAMENTO",
-    CONCLUIDO = "CONCLUIDO",
-    CANCELADO = "CANCELADO"
+  PLANEJADO = 'PLANEJADO',
+  EXECUTADO = 'EXECUTADO',
+  EM_MONITORAMENTO = 'EM_MONITORAMENTO',
+  CONCLUIDO = 'CONCLUIDO',
 }
 
 
