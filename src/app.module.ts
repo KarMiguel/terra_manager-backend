@@ -12,6 +12,8 @@ import { PlantioModule } from './modules/plantio/plantio.module';
 import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
 import { LogModule } from './modules/log/log.module';
 import { LoggingInterceptorModule } from './common/interceptors/logging.module';
+import { PlanoModule } from './modules/plano/plano.module';
+import { RelatorioModule } from './modules/relatorio/relatorio.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { LoggingInterceptorModule } from './common/interceptors/logging.module';
     LoggingInterceptorModule,
     AuthModule,
     UserModule,
+    PlanoModule,
+    RelatorioModule,
     DashboardModule,
     FazendaModule,
     ProdutoEstoqueModule,

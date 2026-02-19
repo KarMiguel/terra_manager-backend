@@ -42,6 +42,8 @@ async function bootstrap() {
       - **Fornecedores**: Controle de fornecedores
       - **Produto Estoque**: Gerenciamento de estoque de produtos por fazenda
       - **Usuários**: Gerenciamento de usuários do sistema
+      - **Planos**: Assinaturas, cobrança e pagamento (planos Básico, Pro, Premium)
+      - **Relatório**: Geração de PDFs — plantios, estoque, análises de solo e resumo para o contador
       
       ## Autenticação:
       
@@ -79,6 +81,8 @@ async function bootstrap() {
     .addTag('Fornecedor', 'Gerenciamento de fornecedores')
     .addTag('Produto Estoque', 'Gerenciamento de estoque de produtos')
     .addTag('User', 'Gerenciamento de usuários')
+    .addTag('Plano', 'Planos, assinaturas, cobrança e pagamento')
+    .addTag('Relatório', 'Relatórios em PDF (plantios, estoque, análises de solo, resumo contador)')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {

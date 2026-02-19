@@ -21,6 +21,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:praga": "ts-node prisma/seed/praga.ts",
+    "seed:plano": "ts-node prisma/seed/plano.ts",
+    "seed": "ts-node prisma/seed/praga.ts && ts-node prisma/seed/plano.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -38,6 +40,7 @@
     "lodash": "^4.17.21",
     "nodemailer": "^6.9.16",
     "passport-jwt": "^4.0.1",
+    "puppeteer": "^24.37.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"

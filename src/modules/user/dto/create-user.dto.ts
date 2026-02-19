@@ -1,6 +1,7 @@
-import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail } from 'class-validator';
+import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail, IsInt, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from 'src/common/guards/roles.enum';
+import { Type } from 'class-transformer';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -51,4 +52,14 @@ export class CreateUserDto {
   @IsOptional()
   @IsString({ message: 'O campo "telefone" deve ser uma string.' })
   telefone?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID do plano a ser vinculado ao usuário no registro. Se omitido, usa o plano inicial (menor valor).',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  idPlano?: number;
 }

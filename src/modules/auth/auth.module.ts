@@ -5,11 +5,13 @@ import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { JwtStrategy } from "../../common/guards/jwt.strategy";
 import { UserModule } from "../user/user.module";
+import { PlanoModule } from "../plano/plano.module";
 import { EmailService } from "../../common/utils/email";
 
 @Module({
   imports: [
     UserModule,
+    PlanoModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

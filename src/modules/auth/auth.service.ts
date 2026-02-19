@@ -8,6 +8,8 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Role } from 'src/common/guards/roles.enum';
 import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
+import { PlanoService } from '../plano/plano.service';
+import { TipoPeriodicidadeEnum } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly planoService: PlanoService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<Usuario | null> {
@@ -28,10 +31,32 @@ export class AuthService {
   async login(data: { email: string; password: string }) {
     const user = await this.validateUser(data.email, data.password);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const statusPlano = await this.planoService.getStatusPlanoUsuario(user.id);
+
+    if (!statusPlano) {
+      throw new UnauthorizedException(
+        'Nenhum plano ativo. Contrate um plano para acessar o sistema.',
+      );
+    }
+
+    // Permite login mesmo com plano inválido (ex.: pagamento pendente), para o usuário poder gerar cobrança e pagar com o token.
+    // O frontend pode usar plano.planoValido e plano.mensagem para exibir "Regularize o pagamento" e liberar só gerar cobrança / registrar pagamento.
+
+    // if (!statusPlano.planoValido) {
+    //   throw new UnauthorizedException(
+    //     statusPlano.mensagem ?? 'Plano vencido ou pagamento pendente. Regularize para acessar.',
+    //   );
+    // }
+
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      role: user.role,
+      tipoPlano: statusPlano.tipoPlano,
+    };
 
     const accessToken = this.jwtService.sign(payload);
 
@@ -44,11 +69,25 @@ export class AuthService {
       telefone: user.telefone,
       cpf: user.cpf,
       name: user.nome,
+      tipoPlano: statusPlano.tipoPlano,
       expires_at: new Date(decodedToken.exp * 1000).toISOString(),
+      plano: {
+        planoValido: statusPlano.planoValido,
+        tipoPlano: statusPlano.tipoPlano,
+        nomePlano: statusPlano.nomePlano,
+        dataFimPlano: statusPlano.dataFimPlano,
+        dataInicioPlano: statusPlano.dataInicioPlano,
+        pagamentoAprovado: statusPlano.pagamentoAprovado,
+        mensagem: statusPlano.mensagem,
+      },
     };
   }
 
 
+  /**
+   * Registra novo usuário e já vincula ao plano inicial (menor valor; idPlano + assinatura UsuarioPlano).
+   * Sem plano ativo o usuário não consegue logar depois.
+   */
   async register(data: CreateUserDto): Promise<UserModel> {
     const existingUser = await this.userService.findByEmail(data.email);
     if (existingUser) {
@@ -56,6 +95,16 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    let planoId: number;
+    if (data.idPlano != null) {
+      const plano = await this.planoService.findById(data.idPlano);
+      if (!plano) {
+        throw new BadRequestException('Plano não encontrado ou inativo. Use um idPlano válido ou omita para usar o plano inicial.');
+      }
+      planoId = data.idPlano;
+    } else {
+      planoId = (await this.planoService.getPlanoInicial()).id;
+    }
 
     try {
       const user = await this.userService.create({
@@ -66,7 +115,15 @@ export class AuthService {
         cpf: data.cpf || null,
         telefone: data.telefone || null,
         ativo: true,
+        plano: { connect: { id: planoId } },
       });
+
+      await this.planoService.criarUsuarioPlano(
+        user.id,
+        planoId,
+        TipoPeriodicidadeEnum.ANUAL,
+        data.email,
+      );
 
       return {
         id: user.id,
@@ -74,10 +131,9 @@ export class AuthService {
         nome: user.nome,
         role: user.role,
         cpf: user.cpf,
-        telefone: user.telefone
+        telefone: user.telefone,
       };
     } catch (error: any) {
-      // Captura erros de unique constraint do Prisma (email, cpf)
       if (error.code === 'P2002') {
         const target = error.meta?.target as string[] | undefined;
         const field = target?.includes('email') ? 'email' : 

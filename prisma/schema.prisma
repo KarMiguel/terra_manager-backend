@@ -99,6 +99,122 @@ enum TipoOperacaoEnum {
   READ // Leitura de registro
 }
 
+enum TipoPlanoEnum {
+  BASICO
+  PRO
+  PREMIUM
+}
+
+enum StatusPagamentoEnum {
+  CANCELADO
+  APROVADO
+  REPROVADO
+  PROCESSANDO
+}
+
+enum FormaPagamentoEnum {
+  PIX
+  CARTAO_CREDITO
+  BOLETO
+}
+
+enum TipoPeriodicidadeEnum {
+  MENSAL
+  SEMESTRAL
+  ANUAL
+}
+
+enum StatusCobrancaEnum {
+  PENDENTE
+  PAGO
+  CANCELADO
+  VENCIDO
+}
+
+model Plano {
+  id                   Int       @id @default(autoincrement())
+  nome                 String    
+  tempoPlanoDias       Int?      @map("tempo_plano_dias")
+  tipoPlano            TipoPlanoEnum @map("tipo_plano")
+  valorPlanoAnual      Float     @map("valor_plano_anual")
+  descricao            String?
+  ativo                Boolean   @default(true)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @default(now()) @map("date_created") @db.Timestamp(0)
+  dateModified         DateTime  @updatedAt @map("date_modified") @db.Timestamp(0)
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
+
+  usuarios       Usuario[]       @relation("UsuarioPlanoAtual")
+  usuarioPlanos  UsuarioPlano[]
+
+  @@map("plano")
+}
+
+model UsuarioPlano {
+  id                   Int       @id @default(autoincrement())
+  idPlano              Int       @map("id_plano")
+  idUsuario            Int       @map("id_usuario")
+  dataInicioPlano      DateTime  @default(now()) @map("data_inicio_plano") @db.Timestamp(0)
+  dataFimPlano         DateTime  @map("data_fim_plano") @db.Timestamp(0)
+  tipoPeriodicidade    TipoPeriodicidadeEnum @map("tipo_periodicidade")
+  dataCanceladoEm      DateTime? @map("cancelado_em") @db.Timestamp(0)
+  motivoCancelamento   String?   @map("motivo_cancelamento") @db.VarChar(255)
+  renovacaoAutomatica  Boolean   @default(true) @map("renovacao_automatica")
+  ativo                Boolean   @default(true)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @default(now()) @map("date_created") @db.Timestamp(0)
+  dateModified         DateTime  @updatedAt @map("date_modified") @db.Timestamp(0)
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
+
+  plano       Plano            @relation(fields: [idPlano], references: [id], onDelete: Restrict)
+  usuario     Usuario          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+  pagamentos  PagamentoPlano[]
+  cobrancas   Cobranca[]
+
+  @@map("usuario_plano")
+}
+
+model PagamentoPlano {
+  id                   Int       @id @default(autoincrement())
+  idUsuarioPlano       Int       @map("id_usuario_plano")
+  dataPagamento        DateTime  @default(now()) @map("data_pagamento") @db.Timestamp(0)
+  dataVencimento       DateTime? @map("data_vencimento") @db.Timestamp(0)
+  valor                Float?    @map("valor")
+  statusPagamento      StatusPagamentoEnum @map("status_pagamento")
+  formaPagamento       FormaPagamentoEnum? @map("forma_pagamento")
+  idTransacaoExterno   String?   @map("id_transacao_externo") @db.VarChar(255)
+  ativo                Boolean   @default(true)
+  createdBy            String?   @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime  @default(now()) @map("date_created") @db.Timestamp(0)
+  dateModified         DateTime  @updatedAt @map("date_modified") @db.Timestamp(0)
+  modifiedBy           String?   @map("modified_by") @db.VarChar(255)
+
+  usuarioPlano UsuarioPlano @relation(fields: [idUsuarioPlano], references: [id], onDelete: Cascade)
+  cobranca     Cobranca?   @relation("CobrancaPagamento")
+
+  @@map("pagamento_plano")
+}
+
+model Cobranca {
+  id                   Int                 @id @default(autoincrement())
+  idUsuarioPlano       Int                 @map("id_usuario_plano")
+  formaPagamento       FormaPagamentoEnum   @map("forma_pagamento")
+  valor                Float                @map("valor")
+  dataVencimento       DateTime            @map("data_vencimento") @db.Timestamp(0)
+  codigoCobranca       String               @unique @map("codigo_cobranca") @db.VarChar(64)
+  status               StatusCobrancaEnum   @default(PENDENTE) @map("status")
+  idPagamentoPlano     Int?                 @unique @map("id_pagamento_plano")
+  createdBy            String?              @map("created_by") @db.VarChar(255)
+  dateCreated          DateTime            @default(now()) @map("date_created") @db.Timestamp(0)
+  dateModified         DateTime            @updatedAt @map("date_modified") @db.Timestamp(0)
+  modifiedBy           String?              @map("modified_by") @db.VarChar(255)
+
+  usuarioPlano   UsuarioPlano    @relation(fields: [idUsuarioPlano], references: [id], onDelete: Cascade)
+  pagamentoPlano PagamentoPlano? @relation("CobrancaPagamento", fields: [idPagamentoPlano], references: [id], onDelete: SetNull)
+
+  @@map("cobranca")
+}
+
 model Usuario {
   id                   Int       @id @default(autoincrement())
   password             String    @db.VarChar(100)
@@ -116,12 +232,13 @@ model Usuario {
   dateModified         DateTime  @updatedAt @map("date_modified") @db.Timestamp(0)
   modifiedBy           String?   @map("modified_by") @db.VarChar(255)
 
-  fazendas     Fazenda[]
-  fornecedores Fornecedor[]
-  cultivares   Cultivar[]
-
-  analisesSolo AnaliseSolo[]
-  logs         Log[]
+  plano         Plano?          @relation("UsuarioPlanoAtual", fields: [idPlano], references: [id], onDelete: SetNull)
+  usuarioPlanos UsuarioPlano[]
+  fazendas      Fazenda[]
+  fornecedores  Fornecedor[]
+  cultivares    Cultivar[]
+  analisesSolo  AnaliseSolo[]
+  logs          Log[]
 
   @@map("usuario")
 }

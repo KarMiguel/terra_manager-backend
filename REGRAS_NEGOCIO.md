@@ -18,6 +18,9 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 10. [Dashboard](#10-dashboard)
 11. [Sistema de Logs](#11-sistema-de-logs)
 12. [Regras Gerais CRUD](#12-regras-gerais-crud)
+13. [Modelo Entidade Relacionamento](#13-modelo-entidade-relacionamento)
+14. [Planos e Assinaturas](#14-planos-e-assinaturas)
+15. [Relatórios (PDF)](#15-relatórios-pdf)
 
 ---
 
@@ -29,7 +32,7 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 - **RN-003**: Se as credenciais forem inválidas, retorna `UnauthorizedException`.
 - **RN-004**: O token JWT contém: `email`, `sub` (ID do usuário), e `role`.
 - **RN-005**: O token JWT expira conforme configurado em `JWT_EXPIRATION` (padrão: 720000ms).
-- **RN-006**: A resposta do login inclui: `accessToken`, `role`, `email`, `telefone`, `cpf`, `name`, `expires_at`.
+- **RN-006**: A resposta do login inclui: `accessToken`, `role`, `email`, `telefone`, `cpf`, `name`, `expires_at`, e objeto `plano` (status do plano: válido, tipo, datas, pagamento aprovado).
 
 ### 1.2. Registro de Usuário
 - **RN-007**: O email deve ser único no sistema.
@@ -39,6 +42,7 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 - **RN-011**: Usuários são criados com `ativo = true` por padrão.
 - **RN-012**: Se email ou CPF já existirem, retorna `ConflictException` (409).
 - **RN-013**: O sistema registra automaticamente a criação do usuário no log.
+- **RN-013b**: No registro, o usuário recebe automaticamente o **plano inicial** (plano BASICO). Opcionalmente o body pode enviar `idPlano`; se enviado e válido, esse plano é usado; senão usa o plano BASICO. É criado um vínculo em `UsuarioPlano` com vigência conforme `tempoPlanoDias` do plano.
 
 ### 1.3. Recuperação de Senha
 - **RN-014**: O email é obrigatório para solicitar recuperação de senha.
@@ -114,6 +118,643 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 ### 4.2. Consulta
 - **RN-055**: Usuários só podem listar fornecedores próprios (`idUsuario`).
 - **RN-056**: Listagem suporta paginação e filtros.
+
+---
+
+## 4.7. Modelo Entidade Relacionamento
+
+### 4.7.1. Padrão de Auditoria
+
+Todas as tabelas do sistema seguem um padrão comum de campos de auditoria para rastreabilidade e controle:
+
+#### Campos Padrão de Auditoria
+
+- **`id`** (Int, Primary Key, Auto Increment)
+  - Identificador único de cada registro
+  - Tipo: Integer com auto incremento
+  - Obrigatório em todas as tabelas
+
+- **`createdBy`** (String?, VarChar(255))
+  - Email ou identificador do usuário que criou o registro
+  - Opcional, mas preenchido automaticamente pelo sistema
+  - Armazena quem realizou a criação
+
+- **`dateCreated`** (DateTime, Timestamp)
+  - Data e hora de criação do registro
+  - Preenchido automaticamente com `@default(now())`
+  - Não pode ser modificado manualmente
+
+- **`dateModified`** (DateTime, Timestamp)
+  - Data e hora da última modificação
+  - Atualizado automaticamente com `@updatedAt` a cada alteração
+  - Mantém histórico de quando houve mudanças
+
+- **`modifiedBy`** (String?, VarChar(255))
+  - Email ou identificador do usuário que modificou o registro
+  - Opcional, mas preenchido automaticamente em atualizações
+  - Rastreia quem fez a última alteração
+
+- **`ativo`** (Boolean, Default: true)
+  - Indica se o registro está ativo no sistema
+  - Padrão: `true` (ativo)
+  - Usado para soft delete (desativação ao invés de exclusão física)
+  - Permite reativação de registros
+
+#### Regras de Auditoria
+
+- **RN-AUD-001**: Todos os registros são criados com `ativo = true` por padrão.
+- **RN-AUD-002**: `dateCreated` é definido automaticamente na criação e nunca alterado.
+- **RN-AUD-003**: `dateModified` é atualizado automaticamente a cada operação de UPDATE.
+- **RN-AUD-004**: `createdBy` e `modifiedBy` armazenam o email do usuário autenticado.
+- **RN-AUD-005**: Campos de auditoria não podem ser modificados diretamente pelo cliente.
+
+---
+
+### 4.7.2. Enumeradores (Enums)
+
+O sistema utiliza enums para garantir consistência e validação de dados:
+
+#### ROLE
+- **ADMIN**: Administrador do sistema (acesso total)
+- **USER**: Usuário comum (acesso padrão)
+- **MODERATOR**: Moderador (acesso intermediário)
+
+#### CategoriaEstoqueEnum
+- **DEFENSIVOS**: Produtos defensivos agrícolas
+- **FERTILIZANTES**: Fertilizantes e adubos
+- **SEMENTES**: Sementes para plantio
+- **CONDICIONADORES**: Condicionadores de solo
+- **FERRAMENTAS**: Ferramentas agrícolas
+- **EQUIPAMENTOS**: Equipamentos e maquinários
+- **EMBALAGENS**: Embalagens e recipientes
+
+#### StatusEstoqueEnum
+- **DISPONIVEL**: Produto disponível para uso
+- **EM_USO**: Produto em uso atual
+- **ESGOTADO**: Estoque esgotado
+- **DANIFICADO**: Produto danificado
+- **EXPIRADO**: Produto com validade vencida
+
+#### UnidadeMedidaEnum
+- **QUILO**: Quilogramas (kg)
+- **GRAMA**: Gramas (g)
+- **LITRO**: Litros (L)
+- **METRO**: Metros (m)
+- **CENTIMETRO**: Centímetros (cm)
+- **METRO_QUADRADO**: Metros quadrados (m²)
+- **METRO_CUBICO**: Metros cúbicos (m³)
+- **TONELADA**: Toneladas (t)
+
+#### TipoPlantaEnum
+- **SOJA**: Soja
+- **MILHO**: Milho
+- **FEIJAO**: Feijão
+- **ARROZ**: Arroz
+- **CAFE**: Café
+- **ALGODAO**: Algodão
+- **BANANA**: Banana
+- **LARANJA**: Laranja
+
+#### TipoSoloEnum
+- **ARENOSO**: Solo arenoso
+- **ARGILOSO**: Solo argiloso
+- **SILTOSO**: Solo siltoso
+- **MISTO**: Solo misto
+- **HUMIFERO**: Solo humífero
+- **CALCARIO**: Solo calcário
+- **GLEISSOLO**: Gleissolo
+- **LATOSSOLO**: Latossolo
+- **CAMBISSOLO**: Cambissolo
+- **ORGANOSSOLO**: Organossolo
+- **NEOSSOLO**: Neossolo
+- **PLANOSSOLO**: Planossolo
+- **VERTISSOLO**: Vertissolo
+
+#### StatusPlantioEnum
+- **PLANEJADO**: Plantio planejado (ainda não executado)
+- **EXECUTADO**: Plantio executado
+- **EM_MONITORAMENTO**: Em fase de monitoramento
+- **CONCLUIDO**: Plantio concluído (colheita realizada)
+
+#### UnidadeDoseEnum
+- **KG_HA**: Quilogramas por hectare
+- **G_HA**: Gramas por hectare
+- **ML_HA**: Mililitros por hectare
+- **L_HA**: Litros por hectare
+- **TON_HA**: Toneladas por hectare
+
+#### TipoOperacaoEnum
+- **CREATE**: Criação de registro
+- **UPDATE**: Atualização de registro
+- **DELETE**: Exclusão de registro
+- **DEACTIVATE**: Desativação de registro
+- **ACTIVATE**: Ativação de registro
+- **READ**: Leitura de registro
+
+---
+
+### 4.7.3. Tabelas do Sistema
+
+#### 4.7.3.1. Usuario (usuario)
+
+**Descrição**: Armazena informações dos usuários do sistema.
+
+**Campos de Auditoria Padrão**: ✅ Todos (id, createdBy, dateCreated, dateModified, modifiedBy, ativo)
+
+**Campos Específicos**:
+- `email` (String, Unique, Obrigatório): Email único do usuário
+- `password` (String, Obrigatório): Senha hasheada com bcrypt
+- `cpf` (String?, Unique, Opcional): CPF único quando informado
+- `nome` (String, Obrigatório): Nome completo do usuário
+- `telefone` (String?, Opcional): Telefone de contato
+- `role` (ROLE, Default: USER): Papel do usuário no sistema
+- `idPlano` (Int?, Opcional): Referência a plano de assinatura
+- `resetPasswordToken` (String?, Opcional): Token para recuperação de senha
+- `resetPasswordExpires` (DateTime?, Opcional): Data de expiração do token
+
+**Foreign Keys**:
+- Nenhuma (tabela raiz)
+
+**Relacionamentos**:
+- `fazendas`: Um usuário pode ter múltiplas fazendas (1:N)
+- `fornecedores`: Um usuário pode ter múltiplos fornecedores (1:N)
+- `cultivares`: Um usuário pode ter múltiplas cultivares (1:N)
+- `analisesSolo`: Um usuário pode ter múltiplas análises de solo (1:N)
+- `logs`: Um usuário pode ter múltiplos logs (1:N)
+
+**Regras Específicas**:
+- Email deve ser único no sistema
+- CPF deve ser único quando informado
+- Senha nunca é retornada nas consultas (sanitização)
+- Token de reset expira em 30 minutos
+
+---
+
+#### 4.7.3.2. Fazenda (fazenda)
+
+**Descrição**: Representa propriedades rurais dos usuários.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `nome` (String, Obrigatório): Nome da fazenda
+- `latitude` (Float, Obrigatório): Coordenada geográfica latitude
+- `longitude` (Float, Obrigatório): Coordenada geográfica longitude
+- `areaTotal` (Float?, Opcional): Área total em hectares
+- `cnpj` (String?, Unique, Opcional): CNPJ único quando informado
+- `soloPredominante` (String?, Opcional): Tipo de solo predominante
+- `cultivoPredominante` (String?, Opcional): Cultivo predominante
+- `municipio` (String?, Opcional): Município da fazenda
+- `uf` (String?, Opcional): Unidade federativa (2 caracteres)
+
+**Foreign Keys**:
+- `idUsuario` → `Usuario.id` (Obrigatório): Proprietário da fazenda
+
+**Relacionamentos**:
+- `usuario`: Uma fazenda pertence a um usuário (N:1)
+- `produtosEstoque`: Uma fazenda pode ter múltiplos produtos em estoque (1:N)
+- `plantios`: Uma fazenda pode ter múltiplos plantios (1:N)
+
+**Regras Específicas**:
+- CNPJ deve ser único quando informado
+- Latitude e longitude são obrigatórias para geolocalização
+- Usuário só pode acessar fazendas próprias
+
+---
+
+#### 4.7.3.3. Fornecedor (fornecedor)
+
+**Descrição**: Armazena informações de fornecedores de produtos e serviços.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `cnpj` (String, Unique, Obrigatório): CNPJ único do fornecedor
+- `razaoSocial` (String, Obrigatório): Razão social
+- `nomeFantasia` (String?, Opcional): Nome fantasia
+- `responsavel` (String?, Opcional): Nome do responsável
+- `email` (String?, Opcional): Email de contato
+- `telefone` (String?, Opcional): Telefone de contato
+- `linkSite` (String?, Opcional): URL do site
+- `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `estado`, `cep` (String?, Opcional): Endereço completo
+- `observacao` (String?, Opcional): Observações gerais
+
+**Foreign Keys**:
+- `idUsuario` → `Usuario.id` (Obrigatório): Usuário que cadastrou o fornecedor
+
+**Relacionamentos**:
+- `usuario`: Um fornecedor é cadastrado por um usuário (N:1)
+- `produtosEstoque`: Um fornecedor pode fornecer múltiplos produtos (1:N)
+- `cultivares`: Um fornecedor pode fornecer múltiplas cultivares (1:N)
+
+**Regras Específicas**:
+- CNPJ é obrigatório e único
+- Razão social é obrigatória
+
+---
+
+#### 4.7.3.4. Praga (praga)
+
+**Descrição**: Catálogo de pragas que podem afetar as culturas.
+
+**Campos de Auditoria Padrão**: ⚠️ Parcial (id, dateCreated, dateModified, createdBy, modifiedBy)
+- **Não possui campo `ativo`**: Pragas são permanentes no catálogo
+
+**Campos Específicos**:
+- `nomeCientifico` (String, Obrigatório): Nome científico da praga
+- `nomeComum` (String, Obrigatório): Nome comum/popular
+- `descricao` (String?, Opcional): Descrição detalhada
+
+**Foreign Keys**:
+- Nenhuma (tabela independente)
+
+**Relacionamentos**:
+- `cultivares`: Uma praga pode afetar múltiplas cultivares (1:N)
+
+**Regras Específicas**:
+- Nome científico e comum são obrigatórios
+- Pode ser criada independentemente ou durante criação de cultivar
+
+---
+
+#### 4.7.3.5. Cultivar (cultivar)
+
+**Descrição**: Armazena informações sobre variedades de plantas cultivadas.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `nomeCientifico` (String?, Opcional): Nome científico
+- `nomePopular` (String, Obrigatório): Nome popular/comum
+- `tipoPlanta` (TipoPlantaEnum, Obrigatório): Tipo de planta (enum)
+- `tipoSolo` (TipoSoloEnum, Obrigatório): Tipo de solo ideal (enum)
+- `phSolo` (Float?, Opcional): pH ideal do solo
+- `dataPlantioInicio` (DateTime?, Opcional): Data inicial recomendada para plantio
+- `dataPlantioFim` (DateTime?, Opcional): Data final recomendada para plantio
+- `periodoDias` (Int?, Opcional): Período de plantio em dias
+- `mmAgua` (Float?, Opcional): Necessidade de água em mm
+- `aduboNitrogenio`, `aduboFosforo`, `aduboPotassio`, `aduboCalcio`, `aduboMagnesio` (Float?, Opcional): Exigências nutricionais em kg/ha
+- `tempoCicloDias` (Int?, Opcional): Tempo de ciclo em dias
+- `densidadePlantio` (Float?, Opcional): Densidade recomendada de plantio
+- `densidadeColheita` (Float?, Opcional): Densidade esperada na colheita
+- `observacao` (String?, Opcional): Observações gerais
+
+**Foreign Keys**:
+- `idUsuario` → `Usuario.id` (Obrigatório): Usuário proprietário
+- `idPraga` → `Praga.id` (Opcional): Praga associada
+- `idFornecedor` → `Fornecedor.id` (Opcional): Fornecedor da cultivar
+
+**Relacionamentos**:
+- `usuario`: Uma cultivar pertence a um usuário (N:1)
+- `praga`: Uma cultivar pode ter uma praga associada (N:1, Opcional)
+- `fornecedor`: Uma cultivar pode ter um fornecedor (N:1, Opcional)
+- `plantios`: Uma cultivar pode ser usada em múltiplos plantios (1:N)
+
+**Regras Específicas**:
+- Nome popular é obrigatório
+- Tipo de planta e tipo de solo são obrigatórios (enums)
+- Pode criar praga automaticamente durante criação
+
+---
+
+#### 4.7.3.6. AnaliseSolo (analise_solo)
+
+**Descrição**: Armazena resultados de análises de solo.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `ph` (Float?, Opcional): pH do solo
+- `areaTotal` (Float?, Opcional): Área total analisada em hectares
+- `hAi` (Float?, Opcional): H+Al (acidez potencial)
+- `sb` (Float?, Opcional): Soma de bases (SB)
+- `ctc` (Float?, Opcional): Capacidade de troca catiônica (CTC)
+- `v` (Float?, Opcional): Saturação por bases (V%)
+- `m` (Float?, Opcional): Saturação por alumínio (M%)
+- `mo` (Float?, Opcional): Matéria orgânica (MO)
+- `prnt` (Float?, Opcional): Poder relativo de neutralização total (PRNT)
+- `valorCultural` (Float?, Opcional): Valor cultural para calagem
+- `n` (Float?, Opcional): Nitrogênio disponível (mg/dm³)
+- `p` (Float?, Opcional): Fósforo disponível (mg/dm³)
+- `k` (Float?, Opcional): Potássio disponível (mg/dm³)
+
+**Foreign Keys**:
+- `idUsuario` → `Usuario.id` (Obrigatório): Usuário proprietário da análise
+
+**Relacionamentos**:
+- `usuario`: Uma análise pertence a um usuário (N:1)
+- `plantios`: Uma análise pode ser vinculada a múltiplos plantios (1:N)
+
+**Regras Específicas**:
+- Todos os campos técnicos são opcionais
+- Usado para cálculos de calagem e adubação
+- Vinculada a plantios para recomendações
+
+---
+
+#### 4.7.2.1. Entidade Plantio (plantio)
+
+**Descrição**: A entidade Plantio representa a execução da atividade agrícola em uma fazenda. Armazena todas as informações relacionadas ao ciclo completo do plantio, desde o planejamento até a colheita, incluindo dados técnicos, financeiros e de monitoramento.
+
+**Campos de Auditoria Padrão**: ✅ Todos (id, createdBy, dateCreated, dateModified, modifiedBy, ativo)
+
+---
+
+#### 4.7.3.7. Plantio (plantio)
+
+**Descrição**: Registra informações sobre plantios realizados nas fazendas.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Atributos da Entidade Plantio**:
+
+**Identificação**:
+- `id` (Int, Primary Key): Identificador único do plantio
+
+**Datas do Ciclo**:
+- `dataPlantio` (DateTime, Obrigatório): Data do plantio
+- `dataEmergencia` (DateTime?, Opcional): Data de emergência das plantas
+- `dataMaturacao` (DateTime?, Opcional): Data de maturação
+- `dataPrevistaColheita` (DateTime?, Opcional): Data prevista para colheita
+
+**Área e Densidades**:
+- `areaPlantada` (Float, Obrigatório): Área plantada em hectares
+- `densidadePlanejada` (Float, Obrigatório): Densidade planejada (plantas/ha)
+- `densidadePlantioReal` (Float, Obrigatório): Densidade real efetiva (plantas/ha)
+
+**Dados de Irrigação**:
+- `mmAguaAplicado` (Float, Obrigatório): Lâmina de água aplicada (mm)
+- `irrigacaoVolume` (Float?, Opcional): Volume irrigado (mm)
+- `irrigacaoDuracao` (Int?, Opcional): Duração da irrigação (minutos)
+
+**Adubação e Defensivos**:
+- `aduboNitrogenioDose` (Float?, Opcional): Dose de nitrogênio
+- `aduboNitrogenioUnidade` (UnidadeDoseEnum?, Opcional): Unidade da dose de nitrogênio
+- `aduboFosforoDose` (Float?, Opcional): Dose de fósforo
+- `aduboFosforoUnidade` (UnidadeDoseEnum?, Opcional): Unidade da dose de fósforo
+- `aduboPotassioDose` (Float?, Opcional): Dose de potássio
+- `aduboPotassioUnidade` (UnidadeDoseEnum?, Opcional): Unidade da dose de potássio
+- `defensivoUtilizado` (String?, Opcional): Nome do defensivo utilizado
+- `doseDefensivo` (Float?, Opcional): Dose do defensivo aplicado
+- `unidadeDefensivo` (UnidadeDoseEnum?, Opcional): Unidade da dose do defensivo
+
+**Rendimento e Custos Agrícolas**:
+- `rendimentoEstimado` (Float?, Opcional): Rendimento estimado (kg/ha)
+- `custoSemente` (Float?, Opcional): Custo de sementes (R$/ha)
+- `custoFertilizante` (Float?, Opcional): Custo de fertilizantes (R$/ha)
+- `custoDefensivo` (Float?, Opcional): Custo de defensivos (R$/ha)
+- `custoCombustivel` (Float?, Opcional): Custo de combustível (R$)
+- `custoOutros` (Float?, Opcional): Outros custos (R$)
+- `custoTotal` (Float?, Opcional): Custo total do plantio (R$)
+
+**Status e Observações**:
+- `statusPlantio` (StatusPlantioEnum, Default: PLANEJADO): Status atual do plantio
+- `observacao` (String?, Opcional): Observações gerais sobre o plantio
+
+**Dados Adicionais de Semeadura**:
+- `phSoloInicial` (Float?, Opcional): pH do solo antes do plantio
+- `umidadeSoloInicial` (Float?, Opcional): Umidade do solo ao plantar (%)
+- `loteSemente` (String?, Opcional): Código do lote de semente
+- `taxaGerminacao` (Float?, Opcional): Taxa de germinação (%)
+- `tratamentoSemente` (String?, Opcional): Tratamento aplicado na semente (fungicida, inoculante, etc.)
+- `profundidadeSemeadura` (Float?, Opcional): Profundidade de semeadura (cm)
+- `espacamentoEntreLinhas` (Float?, Opcional): Espaçamento entre linhas (cm)
+- `orientacaoTransplantio` (String?, Opcional): Orientação do transplantio (N-S, L-O, etc.)
+
+**Foreign Keys**:
+- `idCultivar` (Int, Obrigatório): Referência à cultivar plantada
+- `idFazenda` (Int, Obrigatório): Referência à fazenda onde ocorre o plantio
+- `idAnaliseSolo` (Int?, Opcional): Referência à análise de solo vinculada
+
+**Campos de Auditoria**:
+- `ativo` (Boolean, Default: true): Indica se o plantio está ativo
+- `createdBy` (String?, Opcional): Email do usuário que criou
+- `dateCreated` (DateTime, Auto): Data de criação
+- `dateModified` (DateTime, Auto): Data da última modificação
+- `modifiedBy` (String?, Opcional): Email do usuário que modificou
+
+**Enums Utilizados**:
+- **StatusPlantioEnum**: Define o status do plantio
+  - `PLANEJADO`: Plantio planejado (ainda não executado)
+  - `EXECUTADO`: Plantio executado
+  - `EM_MONITORAMENTO`: Em fase de monitoramento
+  - `CONCLUIDO`: Plantio concluído (colheita realizada)
+  
+- **UnidadeDoseEnum**: Define as unidades de medida para doses de adubação e defensivos
+  - `KG_HA`: Quilogramas por hectare
+  - `G_HA`: Gramas por hectare
+  - `ML_HA`: Mililitros por hectare
+  - `L_HA`: Litros por hectare
+  - `TON_HA`: Toneladas por hectare
+
+**Campos Específicos** (versão detalhada):
+- `dataPlantio` (DateTime, Obrigatório): Data do plantio
+- `dataEmergencia` (DateTime?, Opcional): Data de emergência das plantas
+- `dataPrevistaColheita` (DateTime?, Opcional): Data prevista para colheita
+- `dataMaturacao` (DateTime?, Opcional): Data de maturação
+- `areaPlantada` (Float, Obrigatório): Área plantada em hectares
+- `densidadePlanejada` (Float, Obrigatório): Densidade planejada (plantas/ha)
+- `densidadePlantioReal` (Float, Obrigatório): Densidade real efetiva (plantas/ha)
+- `phSoloInicial` (Float?, Opcional): pH do solo antes do plantio
+- `umidadeSoloInicial` (Float?, Opcional): Umidade do solo ao plantar (%)
+- `loteSemente` (String?, Opcional): Código do lote de semente
+- `taxaGerminacao` (Float?, Opcional): Taxa de germinação (%)
+- `tratamentoSemente` (String?, Opcional): Tratamento aplicado na semente
+- `profundidadeSemeadura` (Float?, Opcional): Profundidade em cm
+- `espacamentoEntreLinhas` (Float?, Opcional): Espaçamento em cm
+- `orientacaoTransplantio` (String?, Opcional): Orientação (N-S, L-O, etc.)
+- `mmAguaAplicado` (Float, Obrigatório): Lâmina de água aplicada (mm)
+- `irrigacaoVolume`, `irrigacaoDuracao` (Float?, Int?, Opcional): Dados de irrigação
+- `aduboNitrogenioDose`, `aduboFosforoDose`, `aduboPotassioDose` (Float?, Opcional): Doses de adubação
+- `aduboNitrogenioUnidade`, `aduboFosforoUnidade`, `aduboPotassioUnidade` (UnidadeDoseEnum?, Opcional): Unidades das doses
+- `defensivoUtilizado` (String?, Opcional): Defensivo utilizado
+- `doseDefensivo`, `unidadeDefensivo` (Float?, UnidadeDoseEnum?, Opcional): Dose e unidade do defensivo
+- `rendimentoEstimado` (Float?, Opcional): Rendimento estimado (kg/ha)
+- `custoSemente`, `custoFertilizante`, `custoDefensivo`, `custoCombustivel`, `custoOutros`, `custoTotal` (Float?, Opcional): Custos em R$
+- `statusPlantio` (StatusPlantioEnum, Default: PLANEJADO): Status do plantio (enum)
+- `observacao` (String?, Opcional): Observações gerais
+
+**Foreign Keys**:
+- `idCultivar` → `Cultivar.id` (Obrigatório, onDelete: Restrict): Cultivar plantada
+- `idFazenda` → `Fazenda.id` (Obrigatório, onDelete: Restrict): Fazenda do plantio
+- `idAnaliseSolo` → `AnaliseSolo.id` (Opcional, onDelete: Cascade): Análise de solo vinculada
+
+**Relacionamentos**:
+- `cultivar`: Um plantio usa uma cultivar (N:1)
+- `fazenda`: Um plantio pertence a uma fazenda (N:1)
+- `analiseSolo`: Um plantio pode ter uma análise de solo (N:1, Opcional)
+
+**Regras Específicas**:
+- Cultivar e fazenda são obrigatórias
+- Análise de solo é opcional mas necessária para cálculos de calagem e adubação
+- Status padrão é PLANEJADO
+- Restrict em cultivar/fazenda: não permite deletar se houver plantios vinculados
+- Cascade em análise: deleta análise se plantio for deletado
+- Densidade real padrão é igual à densidade planejada se não informada
+- MM de água aplicado é obrigatório para controle de irrigação
+- Custos podem ser informados por categoria ou apenas o total
+
+---
+
+#### 4.7.3.8. ProdutosEstoque (produtos_estoque)
+
+**Descrição**: Gerencia estoque de produtos das fazendas.
+
+**Campos de Auditoria Padrão**: ✅ Todos
+
+**Campos Específicos**:
+- `nome` (String?, Opcional): Nome do produto
+- `descricao` (String?, Opcional): Descrição do produto
+- `marca` (String?, Opcional): Marca do produto
+- `quantidade` (Int, Default: 0): Quantidade em estoque
+- `valorUnitario` (Float, Default: 0.0): Valor unitário do produto
+- `unidadeMedida` (UnidadeMedidaEnum, Obrigatório): Unidade de medida (enum)
+- `dataValidade` (DateTime?, Opcional): Data de validade
+- `categoria` (CategoriaEstoqueEnum, Obrigatório): Categoria do produto (enum)
+- `status` (StatusEstoqueEnum, Obrigatório): Status atual do estoque (enum)
+
+**Foreign Keys**:
+- `idFazenda` → `Fazenda.id` (Obrigatório): Fazenda que possui o estoque
+- `idFornecedor` → `Fornecedor.id` (Obrigatório): Fornecedor do produto
+
+**Relacionamentos**:
+- `fazenda`: Um produto pertence a uma fazenda (N:1)
+- `fornecedor`: Um produto é fornecido por um fornecedor (N:1)
+
+**Regras Específicas**:
+- Quantidade padrão é 0
+- Valor unitário padrão é 0.0
+- Categoria e status são obrigatórios (enums)
+- Unidade de medida é obrigatória (enum)
+- Suporta aumento e remoção de quantidade com validações
+
+---
+
+#### 4.7.3.9. Log (log) ⭐ TABELA ESPECIAL
+
+**Descrição**: Sistema de auditoria e rastreabilidade de todas as operações do sistema.
+
+**Campos de Auditoria Padrão**: ⚠️ Parcial
+- **Possui**: `id`, `dateCreated`
+- **Não possui**: `createdBy`, `dateModified`, `modifiedBy`, `ativo`
+- **Motivo**: Logs são imutáveis e não podem ser modificados ou desativados
+
+**Campos Específicos**:
+- `tipoOperacao` (TipoOperacaoEnum, Obrigatório): Tipo da operação registrada (CREATE, UPDATE, DELETE, etc.)
+- `tabela` (String, VarChar(100), Obrigatório): Nome da tabela afetada
+- `idRegistro` (Int?, Opcional): ID do registro afetado na tabela
+- `dadosAnteriores` (Json?, Opcional): Dados do registro antes da operação (JSON)
+- `dadosNovos` (Json?, Opcional): Dados do registro após a operação (JSON)
+- `descricao` (String?, Text, Opcional): Descrição textual da operação
+- `idUsuario` (Int?, Opcional): ID do usuário que realizou a operação
+- `emailUsuario` (String?, VarChar(255), Opcional): Email do usuário (redundante para consultas rápidas)
+- `ipAddress` (String?, VarChar(45), Opcional): Endereço IP da requisição
+- `userAgent` (String?, VarChar(500), Opcional): User agent do cliente (navegador/app)
+
+**Foreign Keys**:
+- `idUsuario` → `Usuario.id` (Opcional, onDelete: SetNull): Usuário que realizou a operação
+
+**Relacionamentos**:
+- `usuario`: Um log pode estar associado a um usuário (N:1, Opcional)
+
+**Índices** (Performance):
+- `@@index([tabela])`: Índice para busca por tabela
+- `@@index([idRegistro])`: Índice para busca por registro específico
+- `@@index([tipoOperacao])`: Índice para busca por tipo de operação
+- `@@index([idUsuario])`: Índice para busca por usuário
+- `@@index([dateCreated])`: Índice para ordenação temporal
+
+**Regras Específicas**:
+- **Imutabilidade**: Logs nunca são modificados ou deletados
+- **Registro Automático**: Todas as operações CREATE, UPDATE, DELETE, DEACTIVATE, ACTIVATE são logadas automaticamente
+- **Assíncrono**: Logs são salvos de forma assíncrona para não bloquear a resposta
+- **Sanitização**: Campos sensíveis (password, token, secret) são ocultados como '[HIDDEN]'
+- **Dados JSON**: `dadosAnteriores` e `dadosNovos` armazenam snapshots completos em JSON
+- **Rastreabilidade**: Captura IP, user agent e email para auditoria completa
+- **SetNull**: Se usuário for deletado, `idUsuario` é setado como null (mantém histórico)
+- **Consulta**: Logs podem ser consultados por tabela, usuário, tipo de operação ou data
+
+**Casos de Uso**:
+- Auditoria de alterações em dados críticos
+- Rastreamento de ações dos usuários
+- Recuperação de dados após exclusões acidentais
+- Análise de uso do sistema
+- Compliance e segurança
+
+---
+
+### 4.7.4. Relacionamentos entre Tabelas
+
+#### Hierarquia de Dependências
+
+```
+Usuario (raiz)
+├── Fazenda
+│   ├── Plantio
+│   │   ├── Cultivar (referência)
+│   │   └── AnaliseSolo (referência opcional)
+│   └── ProdutosEstoque
+│       └── Fornecedor (referência)
+├── Fornecedor
+│   ├── ProdutosEstoque (referência)
+│   └── Cultivar (referência)
+├── Cultivar
+│   ├── Praga (referência opcional)
+│   └── Plantio (referência)
+├── AnaliseSolo
+│   └── Plantio (referência)
+└── Log (referência opcional a todas as tabelas)
+```
+
+#### Regras de Integridade Referencial
+
+- **Restrict**: Impede exclusão de registro se houver dependências
+  - Exemplo: Não pode deletar `Cultivar` se houver `Plantio` usando ela
+  
+- **Cascade**: Exclui registros dependentes quando o pai é excluído
+  - Exemplo: Deletar `Plantio` deleta `AnaliseSolo` vinculada
+  
+- **SetNull**: Define FK como null quando o registro referenciado é excluído
+  - Exemplo: Deletar `Usuario` mantém `Log` mas remove referência
+
+#### Cardinalidades
+
+- **1:N (Um para Muitos)**:
+  - Usuario → Fazenda, Fornecedor, Cultivar, AnaliseSolo
+  - Fazenda → Plantio, ProdutosEstoque
+  - Fornecedor → ProdutosEstoque, Cultivar
+  - Cultivar → Plantio
+  - AnaliseSolo → Plantio
+  - Praga → Cultivar
+
+- **N:1 (Muitos para Um)**:
+  - Plantio → Cultivar, Fazenda, AnaliseSolo
+  - ProdutosEstoque → Fazenda, Fornecedor
+  - Log → Usuario (opcional)
+
+---
+
+### 4.7.5. Resumo de Foreign Keys
+
+| Tabela | Campo FK | Referência | Obrigatório | onDelete |
+|--------|----------|------------|-------------|----------|
+| Fazenda | idUsuario | Usuario.id | ✅ Sim | Default |
+| Fornecedor | idUsuario | Usuario.id | ✅ Sim | Default |
+| Cultivar | idUsuario | Usuario.id | ✅ Sim | Default |
+| Cultivar | idPraga | Praga.id | ❌ Não | Default |
+| Cultivar | idFornecedor | Fornecedor.id | ❌ Não | Default |
+| AnaliseSolo | idUsuario | Usuario.id | ✅ Sim | Default |
+| Plantio | idCultivar | Cultivar.id | ✅ Sim | Restrict |
+| Plantio | idFazenda | Fazenda.id | ✅ Sim | Restrict |
+| Plantio | idAnaliseSolo | AnaliseSolo.id | ❌ Não | Cascade |
+| ProdutosEstoque | idFazenda | Fazenda.id | ✅ Sim | Default |
+| ProdutosEstoque | idFornecedor | Fornecedor.id | ✅ Sim | Default |
+| Log | idUsuario | Usuario.id | ❌ Não | SetNull |
+
+---
+
+**Última atualização**: 2025-01-XX
+**Versão do documento**: 1.1
 
 ---
 
@@ -365,6 +1006,111 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 
 ---
 
+## 14. Planos e Assinaturas
+
+### 14.1. Visão geral e interação plano × usuário
+- **Plano (Plano)**: cadastro do tipo de oferta (nome, tipo, valor anual, dias de vigência, etc.). Tipos: BASICO, PRO, PREMIUM.
+- **UsuarioPlano (assinatura)**: vínculo do usuário com um plano. Cada usuário tem **no máximo uma assinatura ativa** (vigente, não cancelada). Contém `dataInicioPlano`, `dataFimPlano`, `tipoPeriodicidade` (MENSAL, SEMESTRAL, ANUAL).
+- **Usuario.idPlano**: referência ao plano atual do usuário (atualizado ao vincular plano).
+- **PagamentoPlano**: pagamentos registrados na assinatura; o último APROVADO define a cobertura do período (MENSAL +1 mês, SEMESTRAL +6 meses, ANUAL +12 meses).
+- **Cobranca**: cobranças geradas na assinatura (PIX, BOLETO, CARTAO_CREDITO); possuem `codigoCobranca`, `dataVencimento`, `valor`, status PENDENTE/PAGO/etc.
+
+### 14.2. Tipos de Plano (TipoPlanoEnum)
+- **BASICO**, **PRO**, **PREMIUM**: Planos com vigência configurável (ex.: anual).
+- **Plano inicial**: o plano **BASICO** é usado como plano inicial no cadastro (quando `idPlano` não é enviado ou é inválido).
+
+### 14.3. Registro e plano default
+- **RN-PLN-001**: Ao criar conta, o usuário **já é vinculado** a um plano. Se o body enviar `idPlano` (opcional) e o plano existir e estiver ativo, esse plano é usado; senão usa o plano **BASICO**.
+- **RN-PLN-002**: O campo `Usuario.idPlano` é preenchido com o ID do plano vinculado.
+- **RN-PLN-003**: É criado um registro em `UsuarioPlano` com `dataInicioPlano = now()`, `dataFimPlano = now() + tempoPlanoDias` do plano, e `tipoPeriodicidade = ANUAL` para o primeiro vínculo.
+
+### 14.4. Vincular plano a usuário
+- **RN-PLN-004**: `POST /plano/usuario/:idUsuario/plano/:idPlano` (público): vincula um plano a um usuário. Parâmetros de path: `idUsuario` e `idPlano`. Não usa body.
+- **RN-PLN-005**: Se o usuário **já tiver assinatura ativa**, ela é **cancelada** (dataCanceladoEm, motivoCancelamento "Troca de plano", ativo = false) e em seguida é criada a nova assinatura com o novo plano. O campo `Usuario.idPlano` é atualizado.
+- **RN-PLN-006**: Usuário e plano devem existir e estar ativos; caso contrário retorna 400.
+
+### 14.5. Login e verificação de plano
+- **RN-PLN-007**: No login, o sistema verifica o plano atual do usuário (último `UsuarioPlano` ativo, não cancelado, vigente).
+- **RN-PLN-008**: **Sem plano não loga**: se não houver plano ativo (`getStatusPlanoUsuario` retorna null), o login é bloqueado com `401` e mensagem "Nenhum plano ativo. Contrate um plano para acessar o sistema.".
+- **RN-PLN-009**: **Login permitido mesmo com plano inválido**: se o usuário tiver assinatura mas `planoValido` for false (vencido ou pagamento em atraso), o login **é permitido** e o token é retornado, para que o usuário possa gerar cobrança e registrar pagamento. A resposta inclui `plano.planoValido` e `plano.mensagem` para o front exibir "Regularize o pagamento" e liberar apenas fluxo de pagamento.
+- **RN-PLN-010**: **Prazo do contrato**: o plano é considerado no prazo se `dataFimPlano >= now()`.
+- **RN-PLN-011**: **Cobertura por pagamento**: é necessário último pagamento com `statusPagamento = APROVADO` e vigência pela **periodicidade** — a cobertura vale a partir da data do pagamento: **MENSAL** +1 mês, **SEMESTRAL** +6 meses, **ANUAL** +12 meses. Se passou a data e não há pagamento aprovado cobrindo o período atual, o plano fica inválido (mas o login continua permitido para regularizar).
+- **RN-PLN-012**: A resposta do login inclui o objeto `plano`: `planoValido`, `tipoPlano`, `nomePlano`, `dataFimPlano`, `dataInicioPlano`, `pagamentoAprovado`, e opcionalmente `mensagem`.
+
+### 14.6. Endpoints de planos (catálogo e status)
+- **RN-PLN-013**: `GET /plano` (público): lista todos os planos ativos, ordenados por valor.
+- **RN-PLN-014**: `GET /plano/:id` (público): retorna um plano ativo por ID.
+- **RN-PLN-015**: `GET /plano/me/status` (autenticado): retorna o status da assinatura atual (vigência, pagamento, planoValido, mensagem). Requer token.
+
+### 14.7. Cancelar assinatura
+- **RN-PLN-016**: `POST /plano/me/assinatura/cancelar` (autenticado): cancela a assinatura ativa do usuário. Registra `dataCanceladoEm`, `motivoCancelamento` (opcional), desativa renovação e assinatura (`ativo = false`). Requer token.
+
+### 14.8. Gerar cobrança
+- **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. Body: **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO) e **valor** (opcional; se omitido, usa o valor anual do plano). **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
+- **RN-PLN-018**: Retorna `codigoCobranca` (ex.: PIX-YYYYMMDDHHmmss-XXX), que deve ser usado em **POST /plano/me/pagamento** (query) para simular o pagamento.
+- **RN-PLN-019**: **Não gera cobrança se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual (data atual ≤ data de vencimento do plano), retorna 400: "Você já pagou. Só poderá gerar nova cobrança quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
+
+### 14.9. Registrar pagamento (simulação)
+- **RN-PLN-020**: `POST /plano/me/pagamento?codigoCobranca=...` (autenticado): registra um pagamento simulado na assinatura vigente. **codigoCobranca** vai na **query** (não no body). Body: **formaPagamento** e **valor** (opcionais). Data de vencimento do pagamento vem da cobrança quando há codigoCobranca.
+- **RN-PLN-021**: Quando o `codigoCobranca` (query) é **igual** ao da cobrança PENDENTE encontrada, o status do pagamento é **APROVADO na hora** e a cobrança é marcada como PAGO. Caso contrário o pagamento fica PROCESSANDO.
+- **RN-PLN-022**: **Valor pago**: deve ser igual ao valor da cobrança (quando há codigoCobranca) ou ao valor do plano. Tolerância R$ 0,01. Se diferente, retorna 400 com mensagem indicando o valor correto.
+- **RN-PLN-023**: **Cobrança vencida**: se a cobrança encontrada tiver `dataVencimento` já passada (hoje > dataVencimento), retorna 400: "Cobrança vencida. Gere uma nova em POST /plano/me/cobranca e pague até a data de vencimento."
+- **RN-PLN-024**: **Só aceita a última cobrança**: se o codigoCobranca informado não for o da **última** cobrança PENDENTE da assinatura (código antigo), retorna 400: "Código de cobrança antigo. Gere uma nova cobrança em POST /plano/me/cobranca e use o último código retornado."
+- **RN-PLN-025**: **Não registra pagamento se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual, retorna 400: "Você já pagou. Só poderá pagar novamente quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
+
+### 14.10. Periodicidade e enums
+- **TipoPeriodicidadeEnum**: MENSAL, SEMESTRAL, ANUAL. Define a cobertura após um pagamento aprovado: +1 mês, +6 meses, +12 meses.
+- **StatusPagamentoEnum**: CANCELADO, APROVADO, REPROVADO, PROCESSANDO.
+- **StatusCobrancaEnum**: PENDENTE, PAGO, CANCELADO, VENCIDO.
+- **FormaPagamentoEnum**: PIX, BOLETO, CARTAO_CREDITO.
+
+### 14.11. Seed de planos
+- **RN-PLN-026**: O seed `npm run seed:plano` cria/atualiza os planos: Básico (R$ 299,90/ano), Pro (R$ 599,90/ano), Premium (R$ 999,90/ano). Deve ser executado antes do primeiro registro ou quando os planos forem alterados.
+
+### 14.12. Modelos e campos (resumo)
+- **UsuarioPlano**: não possui campo `valorPago`; valor do pagamento fica em **PagamentoPlano**.
+- **PagamentoPlano**: não possui campo `identificadorPagamento`; registra valor, status, forma de pagamento, data de vencimento (quando vinculado a cobrança).
+- **Cobranca**: codigoCobranca (único), valor, dataVencimento, formaPagamento, status; vinculada a UsuarioPlano e opcionalmente a PagamentoPlano quando paga.
+
+---
+
+## 15. Relatórios (PDF)
+
+O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML ficam na pasta da feature (`relatorio/templates`); o service busca dados no Prisma, monta o objeto de dados e chama o template correspondente; a geração do PDF é feita com Puppeteer.
+
+### 15.1. Regras gerais
+- **RN-REL-001**: Todos os endpoints de relatório exigem autenticação (JWT). Sem token retorna 401.
+- **RN-REL-002**: Os relatórios consideram apenas dados do usuário autenticado (`req.user.id`).
+- **RN-REL-003**: A resposta é sempre PDF (`Content-Type: application/pdf`) com nome de arquivo sugerido em `Content-Disposition`.
+- **RN-REL-004**: Registros inativos (`ativo = false`) não entram nos relatórios, salvo quando a regra do relatório disser o contrário.
+
+### 15.2. Relatório: Meus plantios por safra/cultura
+- **RN-REL-005**: `GET /relatorio/plantios`. Parâmetros de query opcionais: **ano** (número), **idFazenda** (número).
+- **RN-REL-006**: Dados: plantios das fazendas do usuário (ativas). Se `idFazenda` informado, apenas essa fazenda; se **ano** informado, apenas `dataPlantio` dentro do ano.
+- **RN-REL-007**: Inclui resumo para decisão: área total, quantidade de plantios, área média por plantio, % concluídos; resumo por cultura e por fazenda.
+- **RN-REL-008**: Pontos de atenção: muitos plantios ainda "Planejados" (> 50%); plantios "Em monitoramento" (quantidade informada).
+
+### 15.3. Relatório: Meu estoque por fazenda
+- **RN-REL-010**: `GET /relatorio/estoque`. Parâmetros de query opcionais: **idFazenda** (número), **categoria** (string).
+- **RN-REL-011**: Dados: itens de estoque das fazendas do usuário (ativos). Filtro por fazenda e/ou categoria quando informados.
+- **RN-REL-012**: Inclui resumo: valor total do estoque, valor em risco (itens que vencem em até 90 dias), valor e quantidade de itens vencidos; valor por categoria.
+- **RN-REL-013**: Pontos de atenção: itens vencidos (valor e quantidade); itens que vencem em 90 dias (valor em risco); itens com status ESGOTADO.
+
+### 15.4. Relatório: Minhas análises de solo
+- **RN-REL-015**: `GET /relatorio/analises-solo`. Parâmetro de query opcional: **ano** (número).
+- **RN-REL-016**: Dados: análises de solo do usuário (ativas). Se **ano** informado, apenas `dateCreated` dentro do ano.
+- **RN-REL-017**: Inclui resumo: quantidade de análises, área coberta (soma de areaTotal), última análise (dias atrás), médias dos indicadores (pH, N, P, K, CTC, V%, MO) quando houver dados.
+- **RN-REL-018**: Pontos de atenção: pH médio fora da faixa ideal (5,5–6,5); última análise há mais de 365 dias.
+
+### 15.5. Relatório: Resumo para o contador / gestão
+- **RN-REL-020**: `GET /relatorio/resumo-contador`. Parâmetros de query opcionais: **ano** (número), **mes** (número 1–12).
+- **RN-REL-021**: Período: se **mes** informado, intervalo do mês no ano (ano padrão = ano atual); senão, ano inteiro. Dados de plantios e pagamentos são filtrados por esse período.
+- **RN-REL-022**: Dados: fazendas do usuário (ativas), plantios no período, assinaturas ativas com pagamentos APROVADOS no período, fornecedores do usuário (ativos).
+- **RN-REL-023**: Inclui destaques: quantidade de fazendas e área total; plantios no período; total pago ao sistema no período; quantidade de fornecedores.
+- **RN-REL-024**: Pontos de atenção: nenhuma fazenda cadastrada; nenhum fornecedor cadastrado.
+
+---
+
 ## 📝 Notas Finais
 
 - Todas as operações de criação, atualização, exclusão, desativação e ativação são automaticamente logadas.
@@ -376,5 +1122,5 @@ Este documento descreve todas as regras de negócio implementadas no sistema Ter
 
 ---
 
-**Última atualização**: 2025-01-XX
-**Versão do documento**: 1.0
+**Última atualização**: 2026-02-19
+**Versão do documento**: 1.1

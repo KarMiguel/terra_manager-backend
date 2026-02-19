@@ -19,6 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('Token JWT inválido: campos obrigatórios ausentes.');
     }
 
-    return { id: payload.sub, email: payload.email, role: payload.role };
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      tipoPlano: payload.tipoPlano ?? undefined,
+    };
   }
 }

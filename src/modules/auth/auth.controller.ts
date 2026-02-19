@@ -17,23 +17,32 @@ export class AuthController {
     summary: 'Autenticação de usuário',
     description: 'Realiza o login do usuário e retorna um token JWT para autenticação nas demais requisições'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Login realizado com sucesso',
     schema: {
       type: 'object',
       properties: {
-        access_token: {
-          type: 'string',
-          description: 'Token JWT para autenticação',
-          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-        },
-        user: {
+        accessToken: { type: 'string', description: 'Token JWT para autenticação' },
+        role: { type: 'string', description: 'Role do usuário' },
+        email: { type: 'string', description: 'Email do usuário' },
+        name: { type: 'string', description: 'Nome do usuário' },
+        tipoPlano: { type: 'string', enum: ['BASICO', 'PRO', 'PREMIUM'], description: 'Tipo do plano do usuário logado' },
+        expires_at: { type: 'string', format: 'date-time', description: 'Data de expiração do token' },
+        plano: {
           type: 'object',
-          description: 'Dados do usuário autenticado'
-        }
-      }
-    }
+          properties: {
+            planoValido: { type: 'boolean' },
+            tipoPlano: { type: 'string', enum: ['BASICO', 'PRO', 'PREMIUM'] },
+            nomePlano: { type: 'string' },
+            dataFimPlano: { type: 'string', format: 'date-time' },
+            dataInicioPlano: { type: 'string', format: 'date-time' },
+            pagamentoAprovado: { type: 'boolean' },
+            mensagem: { type: 'string' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ 
     status: 401, 
