@@ -1,8 +1,8 @@
+import express from 'express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './src/app.module';
-import * as serverless from 'serverless-http';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import * as express from 'express';
+import serverless from 'serverless-http';
 
 const server = express();
 
@@ -11,6 +11,7 @@ async function bootstrap() {
   app.enableCors();
   await app.init();
 }
+
 bootstrap();
 
 export const handler = serverless(server);
