@@ -15,6 +15,34 @@ Este documento descreve **em ordem** o que fazer no sistema: do início (criar u
 
 ---
 
+## Ordem dos módulos (sequência de dependência)
+
+A ordem em que os módulos devem ser usados no sistema, do primeiro ao último:
+
+| # | Módulo | Depende de | Observação |
+|---|--------|------------|------------|
+| 1 | **Usuário** | — | Cadastro e login. Raiz do sistema. |
+| 2 | **Plano** | Usuário | Vincular plano ao usuário; cobrança e pagamento. |
+| 3 | **Fazenda** | Usuário | Uma fazenda pertence ao usuário logado. |
+| 4 | **Fornecedor** | Usuário | Opcional; usado em Cultivar e Produto estoque. |
+| 5 | **Praga** | — | Opcional; pode ser usada na criação de Cultivar. |
+| 6 | **Cultivar** | Usuário; opcional: Praga, Fornecedor | Necessária para criar Plantio. |
+| 7 | **Análise de solo** | Usuário | Opcional; pode ser vinculada ao Plantio. |
+| 8 | **Talhão** | Fazenda | Plano Premium. Opcional para Plantio e operações. |
+| 9 | **Plantio** | **Fazenda**, **Cultivar**; opcional: Talhão, Análise de solo | Ordem: depois de Fazenda e Cultivar. |
+| 10 | **Operação do plantio** | Plantio; opcional: Talhão | Plano Pro ou Premium. Etapas do ciclo (preparo, semeadura, colheita, etc.). |
+| 11 | **Aplicação** | Operação do plantio; opcional: Produto estoque | Plano Pro ou Premium. Defensivo/fertilizante por operação. |
+| 12 | **Produto estoque** | Fazenda, Fornecedor | Por fazenda; pode ser usado em Aplicação. |
+| 13 | **Zona de manejo** | Fazenda; opcional: Talhão | Plano Premium. Mapa e relatórios. |
+| 14 | **Mapa** | Fazenda (talhões e zonas) | Plano Premium. Visualização. |
+| 15 | **Relatório** | Dados do usuário (fazendas, plantios, estoque, etc.) | Plano Premium. PDF. |
+| 16 | **Dashboard** | — | Clima/notícias: público; cotação/dados-solo/dados-cultura: Pro ou Premium. |
+| 17 | **Log** | — | Consulta de auditoria (autenticado). |
+
+**Resumo da sequência principal:** **Usuário** → **Fazenda** → **Cultivar** (e opcionalmente Fornecedor/Praga) → **Plantio** → **Operação do plantio** → **Aplicação**.
+
+---
+
 ## Fase 1: Início — usuário e plano
 
 ### Passo 1.1 — Criar usuário (registro)

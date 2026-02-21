@@ -10,8 +10,8 @@ import { Aplicacao } from '@prisma/client';
 import { AplicacaoModel } from './interface/aplicacao.interface';
 import { CreateAplicacaoDto } from './dto/create-aplicacao.dto';
 
-@ApiTags('Aplicação')
-@Controller('aplicacao')
+@ApiTags('Aplicação do Plantio')
+@Controller('aplicacao-plantio')
 @UseGuards(JwtAuthGuard, PlanoGuard)
 @RequerPlanoMinimo(TipoPlanoEnum.PRO)
 @ApiBearerAuth('access-token')
@@ -22,7 +22,7 @@ export class AplicacaoController extends CrudController<Aplicacao, AplicacaoMode
 
   @Post()
   @ApiOperation({
-    summary: 'Registra aplicação de defensivo ou fertilizante',
+    summary: 'Registra aplicação de defensivo ou fertilizante em uma operação do plantio',
     description:
       '**Requer plano: Pro ou Premium.** Cadastra aplicação com tipo (DEFENSIVO ou FERTILIZANTE), dosePorHa e unidadeDose (KG_HA, L_HA, ML_HA, etc.). quantidadeTotal é calculada automaticamente: dosePorHa × areaHa da operação (fórmula agronômica). Pode vincular a produto do estoque (idProdutosEstoque) ou informar nomeProduto. Ver REGRAS_NEGOCIO.md §7.6 e REFERENCIAS_AGRONOMIA.md.',
   })

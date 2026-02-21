@@ -33,6 +33,47 @@ Este documento descreve todas as **regras de negócio** implementadas no sistema
 14. [Modelo Entidade Relacionamento](#14-modelo-entidade-relacionamento)
 15. [Planos e Assinaturas](#15-planos-e-assinaturas)
 16. [Relatórios (PDF)](#16-relatórios-pdf)
+17. [Sistemas e Endpoints Reais](#-sistemas-e-endpoints-reais-o-que-o-sistema-tem)
+
+---
+
+## 📌 Sistemas e Endpoints Reais (o que o sistema tem)
+
+Resumo dos **módulos** e **endpoints** existentes no código, para conferência com as regras de negócio abaixo.
+
+| Módulo | Endpoints (método + path) | Plano / Observação |
+|--------|---------------------------|--------------------|
+| **Auth** | `POST /auth/login`, `POST /auth/register`, `POST /auth/forgot-password`, `POST /auth/verify-reset-password-token`, `POST /auth/reset-password` | Público |
+| **User** | `GET /user`, `GET /user/by-email`, `GET /user/:id`, `PUT /user/:id`, `DELETE /user/:id`, `PATCH /user/:id/ativar`, `PATCH /user/:id/desativar` | Ativar/desativar: só ADMIN |
+| **Fazenda** | `POST /fazenda`, `GET /fazenda/lista`, `GET /fazenda`, `GET /fazenda/:id`, `PUT /fazenda/:id`, `DELETE /fazenda/:id`, `PATCH /fazenda/:id/desativar`, `PATCH /fazenda/:id/ativar` | Básico+ |
+| **Fornecedor** | `POST /fornecedor`, `GET /fornecedor/lista`, `GET /fornecedor`, `GET /fornecedor/:id`, `PUT /fornecedor/:id`, `DELETE /fornecedor/:id`, `PATCH /fornecedor/:id/desativar`, `PATCH /fornecedor/:id/ativar` | Básico+ |
+| **Cultivar** | `POST /cultivar`, `GET /cultivar/lista`, `GET /cultivar/check-cultivars`, `GET /cultivar`, `GET /cultivar/:id`, `PUT /cultivar/:id`, `DELETE /cultivar/:id`, `PATCH /cultivar/:id/desativar`, `PATCH /cultivar/:id/ativar` | Básico+ |
+| **Praga** | `POST /praga`, `GET /praga`, `GET /praga/:id`, `PUT /praga/:id`, `DELETE /praga/:id`, `PATCH /praga/:id/desativar`, `PATCH /praga/:id/ativar` | Básico+ |
+| **Plantio** | `POST /plantio`, `PATCH /plantio/:id/status`, `GET /plantio/fazenda/:idFazenda`, `GET /plantio/fazenda/:idFazenda/tipo-planta/:tipoPlanta`, `GET /plantio/fazenda/:idFazenda/custo-safra`, + CRUD base (`GET /plantio`, `GET /plantio/:id`, `PUT`, `DELETE`, `PATCH .../desativar|ativar`) | custo-safra: **Premium** |
+| **Operação do plantio** | `POST /operacao-plantio`, `GET /operacao-plantio/plantio/:idPlantio`, + CRUD base | **Pro ou Premium** |
+| **Aplicação** | `POST /aplicacao`, `GET /aplicacao/operacao/:idOperacaoPlantio`, + CRUD base | **Pro ou Premium** |
+| **Talhão** | `POST /talhao`, `GET /talhao/fazenda/:idFazenda`, `GET /talhao/fazenda/:idFazenda/mapa`, `GET /talhao/fazenda/:idFazenda/resumo`, + CRUD base | **Premium** |
+| **Zona de manejo** | `POST /zona-manejo`, `GET /zona-manejo/fazenda/:idFazenda`, `GET /zona-manejo/fazenda/:idFazenda/mapa`, `GET /zona-manejo/:id`, `PUT /zona-manejo/:id`, `DELETE /zona-manejo/:id` | **Premium** |
+| **Mapa** | `GET /mapa/fazenda/:idFazenda` | **Premium** |
+| **Análise de solo** | `POST /analise-solo`, `GET /analise-solo/lista`, `GET /analise-solo/plantio/:idPlantio`, `GET /analise-solo/calagem/:idPlantio`, `GET /analise-solo/adubacao/:idPlantio`, `GET /analise-solo/comparativo-nutrientes/:idPlantio`, + CRUD base | calagem/adubacao/comparativo: **Pro ou Premium** |
+| **Produto estoque** | `POST /produto-estoque`, `PATCH /produto-estoque/:id/aumentar-quantidade`, `PATCH /produto-estoque/:id/remover-quantidade`, `GET /produto-estoque/fazenda/:idFazenda`, + CRUD base | Básico+ |
+| **Dashboard** | `GET /dashboard/clima`, `GET /dashboard/noticias`, `GET /dashboard/cotacao-bolsa`, `GET /dashboard/dados-solo`, `GET /dashboard/dados-cultura` | clima/notícias: público; cotação/dados-solo/dados-cultura: **Pro ou Premium** |
+| **Plano** | `POST /plano` (ADMIN), `GET /plano`, `GET /plano/:id`, `POST /plano/usuario/:idUsuario/plano/:idPlano`, `GET /plano/me/status`, `POST /plano/me/assinatura/cancelar`, `POST /plano/me/cobranca`, `POST /plano/me/pagamento` | Públicos: GET planos, vincular; autenticados: me/status, cobrança, pagamento |
+| **Relatório** | `GET /relatorio/plantios`, `GET /relatorio/estoque`, `GET /relatorio/analises-solo`, `GET /relatorio/resumo` | **Premium**; resposta: PDF |
+| **Log** | `GET /log`, `GET /log/tabela/:tabela`, `GET /log/usuario/:idUsuario`, `GET /log/operacao/:tipoOperacao` | Autenticado |
+
+**Legenda:** CRUD base = `GET /recurso`, `GET /recurso/:id`, `PUT /recurso/:id`, `DELETE /recurso/:id`, `PATCH /recurso/:id/desativar`, `PATCH /recurso/:id/ativar` (quando o controller estende `CrudController` e não sobrescreve).
+
+### Comportamentos reais (conferência código)
+
+- **Auth – forgot-password:** Se o email não existir, o sistema retorna **400 Bad Request** ("User not found"). Não há resposta genérica 200 por segurança.
+- **Auth – login:** Sem plano ativo (nenhuma assinatura vigente), retorna **401** "Nenhum plano ativo. Contrate um plano para acessar o sistema." Com plano vencido ou pagamento pendente, o login **é permitido** (401 não é lançado); a resposta inclui `plano.planoValido` e `plano.mensagem` para o front exibir fluxo de regularização.
+- **Fazenda / Fornecedor / Cultivar:** Listagem por usuário é via **GET /recurso/lista** (não GET /recurso), com query `options`, `page`, `pageSize`.
+- **Plano – gerar cobrança:** Forma de pagamento é enviada na **query** (`?formaPagamento=PIX`), não no body. Valor da cobrança é sempre `plano.valorPlano`.
+- **Plano – registrar pagamento:** `codigoCobranca` é enviado na **query**; body pode ter `formaPagamento` e `valor` (opcionais).
+- **Produto estoque – aumentar/remover quantidade:** A quantidade pode vir na query (`?quantidade=10`); se omitida, **aumentar-quantidade** usa padrão **1**, **remover-quantidade** usa padrão **1**.
+- **Análise de solo:** Análise é criada com `idUsuario` (dono). O vínculo com plantio é opcional no **plantio** (`idAnaliseSolo`). Os endpoints calagem, adubação e comparativo-nutrientes recebem **idPlantio** e exigem que o plantio tenha análise vinculada; exigem plano **Pro ou Premium**.
+- **Log:** Não há POST/PUT/DELETE de log; logs são apenas gerados automaticamente e consultados via GET (tabela, usuario, operacao, listagem geral com paginação).
 
 ---
 
@@ -907,8 +948,8 @@ Usuario (raiz)
 
 ---
 
-**Última atualização**: 2026-02-19
-**Versão do documento**: 1.3
+**Última atualização**: 2026-02-20
+**Versão do documento**: 1.4
 
 ---
 
@@ -948,9 +989,10 @@ Usuario (raiz)
 ## 7. Plantios
 
 ### 7.1. Criação
-- **RN-074**: ID da cultivar (`idCultivar`) é obrigatório.
-- **RN-075**: ID da fazenda (`idFazenda`) é obrigatório.
-- **RN-075b**: ID do talhão (`idTalhao`) é opcional; quando informado, o plantio fica vinculado à parcela (talhão) da fazenda.
+- **RN-074**: ID da cultivar (`idCultivar`) é obrigatório. A cultivar deve existir no sistema (integridade referencial).
+- **RN-075**: ID da fazenda (`idFazenda`) é obrigatório. A fazenda deve existir no sistema (integridade referencial).
+- **RN-075b**: ID do talhão (`idTalhao`) é opcional; quando informado, o plantio fica vinculado à parcela (talhão) da fazenda. O talhão deve existir e, em boas práticas, pertencer à mesma fazenda informada.
+- **RN-075c**: ID da análise de solo (`idAnaliseSolo`) é opcional; quando informado, o plantio fica vinculado à análise (usado em calagem/adubação).
 - **RN-076**: Data de plantio é obrigatória e convertida para Date.
 - **RN-077**: Área plantada é obrigatória (em hectares).
 - **RN-078**: Densidade planejada é obrigatória (plantas/ha).
@@ -959,18 +1001,27 @@ Usuario (raiz)
 - **RN-081**: Datas opcionais (emergência, colheita, maturação) são convertidas para Date quando informadas.
 - **RN-082**: Status padrão é `PLANEJADO`.
 - **RN-083**: Plantios são criados com `ativo = true` por padrão.
+- **RN-083b**: O campo `createdBy` é preenchido com o email do usuário autenticado (token).
 
 ### 7.2. Consulta por Fazenda
-- **RN-084**: O ID do usuário é obrigatório para listar plantios de uma fazenda.
+- **RN-084**: O ID do usuário é obrigatório para listar plantios de uma fazenda. Endpoint: `GET /plantio/fazenda/:idFazenda`.
 - **RN-085**: A fazenda deve existir e pertencer ao usuário logado.
 - **RN-086**: Se a fazenda não pertencer ao usuário, retorna `BadRequestException`.
 - **RN-087**: Listagem inclui relacionamentos: `cultivar`, `fazenda`, `analiseSolo`.
 - **RN-088**: Ordenação padrão é por `dataPlantio` descendente.
-- **RN-089**: Filtro por nome de cultivar usa busca case-insensitive.
+- **RN-089**: Filtro via query `options` (JSON): suporta `statusPlantio` e `cultivarNome` (busca case-insensitive no nome popular da cultivar).
 
 ### 7.3. Consulta por Tipo de Planta
-- **RN-090**: Lista plantios de uma fazenda filtrados por tipo de planta.
-- **RN-091**: Inclui dados completos de análise de solo quando disponível.
+- **RN-090**: `GET /plantio/fazenda/:idFazenda/tipo-planta/:tipoPlanta`: lista plantios da fazenda filtrados pelo tipo de planta da cultivar (ex.: SOJA, MILHO).
+- **RN-091**: Inclui dados completos de análise de solo quando disponível (inclui n, p, k, valorCultural, prnt, areaTotal na análise).
+
+### 7.3b. Atualização de status do plantio
+- **RN-PLT-001**: `PATCH /plantio/:id/status` permite alterar apenas o status do plantio. Body: `{ "statusPlantio": "PLANEJADO" | "EXECUTADO" | "EM_MONITORAMENTO" | "CONCLUIDO" }`.
+- **RN-PLT-002**: Apenas o usuário dono da fazenda do plantio pode alterar o status; caso contrário retorna `BadRequestException` ("O usuário não tem permissão para alterar este plantio.").
+- **RN-PLT-003**: O status também é atualizado automaticamente ao registrar operações (POST /operacao-plantio): PREPARO_SOLO ou SEMEADURA (quando ainda PLANEJADO) → EXECUTADO; SEMEADURA → EM_MONITORAMENTO; COLHEITA → CONCLUIDO (ver §7.5).
+
+### 7.3c. CRUD genérico (herdado do CrudController)
+- **RN-PLT-004**: O módulo plantio expõe também: `GET /plantio` (lista com options/paginate), `GET /plantio/:id` (busca por ID), `PUT /plantio/:id` (atualização), `DELETE /plantio/:id` (exclusão), `PATCH /plantio/:id/desativar`, `PATCH /plantio/:id/ativar`. A listagem por fazenda (§7.2) é a forma recomendada para o usuário ver apenas seus plantios (com validação de pertencimento).
 
 ### 7.4. Talhões
 - **RN-TAL-001**: Talhão é uma parcela de terra da fazenda; base para custo, rotação e mapa. Campos obrigatórios: `idFazenda`, `nome`, `areaHa` (área em hectares).
@@ -1091,16 +1142,16 @@ Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **
 - **RN-122**: Produtos são criados com `ativo = true` por padrão.
 
 ### 10.2. Aumentar Quantidade
-- **RN-123**: A quantidade a ser adicionada deve ser maior que 0.
+- **RN-123**: A quantidade a ser adicionada deve ser maior que 0. Se não informada na query `quantidade`, o padrão é **1**.
 - **RN-124**: O produto deve existir.
-- **RN-125**: A quantidade é somada ao estoque atual.
+- **RN-125**: A quantidade é somada ao estoque atual. Endpoint: `PATCH /produto-estoque/:id/aumentar-quantidade` (query opcional: `quantidade`).
 
 ### 10.3. Remover Quantidade
-- **RN-126**: A quantidade a ser removida deve ser maior que 0.
+- **RN-126**: A quantidade a ser removida deve ser maior que 0. Se não informada na query `quantidade`, o padrão é **1**.
 - **RN-127**: O produto deve existir.
 - **RN-128**: A quantidade a ser removida não pode ser maior que o estoque disponível.
 - **RN-129**: Se tentar remover mais do que tem, retorna `BadRequestException`.
-- **RN-130**: A quantidade é subtraída do estoque atual.
+- **RN-130**: A quantidade é subtraída do estoque atual. Endpoint: `PATCH /produto-estoque/:id/remover-quantidade` (query opcional: `quantidade`).
 
 ### 10.4. Consulta por Fazenda
 - **RN-131**: O ID do usuário é obrigatório para listar estoque de uma fazenda.
@@ -1114,31 +1165,31 @@ Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **
 ## 11. Dashboard
 
 ### 11.1. Dados Climáticos
-- **RN-136**: Cidade é obrigatória.
+- **RN-136**: Cidade é obrigatória. Query: **city** (obrigatório), **state** (opcional), **country** (opcional, padrão BR). Endpoint: `GET /dashboard/clima` (público).
 - **RN-137**: Estado e país são opcionais (padrão: BR).
 - **RN-138**: Busca dados atuais e previsão dos próximos dias via OpenWeatherMap API.
 - **RN-139**: Retorna condição atual, temperatura, umidade, vento e previsão.
 
 ### 11.2. Cotação de Commodities
-- **RN-140**: Símbolo padrão é 'SOJA'.
+- **RN-140**: Query **symbol** é obrigatória (ex.: SOJA, MILHO, CAFE). Requer plano **Pro ou Premium**. Endpoint: `GET /dashboard/cotacao-bolsa`.
 - **RN-141**: Busca cotações via BRAPI.
 - **RN-142**: Retorna preço atual, passado, futuro e prospecção.
 
 ### 11.3. Notícias
-- **RN-143**: Query é obrigatória.
-- **RN-144**: PageSize padrão é 5.
+- **RN-143**: Query **query** é obrigatória (termos separados por vírgula; internamente unidos com OR). Endpoint: `GET /dashboard/noticias` (público).
+- **RN-144**: Parâmetro **size** (pageSize) padrão é 5.
 - **RN-145**: Busca até 5 páginas se necessário para atingir pageSize.
 - **RN-146**: Filtra artigos removidos ou inválidos.
 - **RN-147**: Retorna título, descrição, URL, imagem, fonte e data.
 
 ### 11.4. Dados de Solo
-- **RN-148**: Longitude e latitude são obrigatórias.
-- **RN-149**: Propriedades padrão: clay, sand, silt, bdod, cec, nitrogen, phh2o, cfvo, ocd, ocs, soc.
+- **RN-148**: Query **log** (longitude) e **lat** (latitude); têm valores padrão no código (-45.9 e -16.1). Requer plano **Pro ou Premium**. Endpoint: `GET /dashboard/dados-solo`.
+- **RN-149**: Query **properties** (opcional): lista de propriedades separadas por vírgula; padrão: clay, sand, silt, bdod, cec, nitrogen, phh2o, cfvo, ocd, ocs, soc.
 - **RN-150**: Busca dados via ISRIC SoilGrids API.
 - **RN-151**: Retorna propriedades por profundidade.
 
 ### 11.5. Dados de Cultura
-- **RN-152**: Nome da cultura é obrigatório.
+- **RN-152**: Query **nome** é obrigatória (ex.: soja, milho, feijão, algodão). Requer plano **Pro ou Premium**. Endpoint: `GET /dashboard/dados-cultura`.
 - **RN-153**: Busca em dados estáticos de culturas.
 - **RN-154**: Se cultura não encontrada, retorna `HttpException 404`.
 
@@ -1261,8 +1312,8 @@ Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **
 - **RN-PLN-016**: `POST /plano/me/assinatura/cancelar` (autenticado): cancela a assinatura ativa do usuário. Registra `dataCanceladoEm`, `motivoCancelamento` (opcional), desativa renovação e assinatura (`ativo = false`). Requer token.
 
 ### 15.8. Gerar cobrança
-- **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. Body: **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO) e **valor** (opcional; se omitido, usa o valor do plano, que é sempre para o período em dias — `plano.valorPlano`). **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
-- **RN-PLN-018**: Retorna `codigoCobranca` (ex.: PIX-YYYYMMDDHHmmss-XXX), que deve ser usado em **POST /plano/me/pagamento** (query) para simular o pagamento.
+- **RN-PLN-017**: `POST /plano/me/cobranca` (autenticado): gera uma cobrança na assinatura vigente. **Query:** **formaPagamento** (obrigatório: PIX | BOLETO | CARTAO_CREDITO). O valor da cobrança é sempre o valor do plano (`plano.valorPlano`); não há parâmetro valor na geração. **Data de vencimento** é calculada no backend: 3 dias a partir de hoje (fim do dia 23:59:59). Simulação, sem gateway real.
+- **RN-PLN-018**: Retorna `codigoCobranca` (ex.: PIX-YYYYMMDDHHmmss-XXX), que deve ser usado em **POST /plano/me/pagamento** (query `codigoCobranca`) para simular o pagamento.
 - **RN-PLN-019**: **Não gera cobrança se já pagou no período**: se o usuário já tem pagamento APROVADO cobrindo o período atual (data atual ≤ data de vencimento do plano), retorna 400: "Você já pagou. Só poderá gerar nova cobrança quando passar a data de vencimento do seu plano (DD/MM/AAAA)."
 
 ### 15.9. Registrar pagamento (simulação)
@@ -1289,40 +1340,73 @@ Este módulo reúne as regras de **geometria (shape/GeoJSON)** para talhões, **
 
 ### 15.13. Controle de acesso por plano (validação de módulos e endpoints)
 
-O **tipo de plano** do usuário (`tipoPlano`: BASICO, PRO, PREMIUM) é incluído no **token JWT** no login (payload `tipoPlano`). O guard **PlanoGuard** e os decorators **@RequerPlanoMinimo('PRO')** e **@RequerPlanoExato('PREMIUM')** aplicam a validação por rota. Resposta **403 Forbidden** quando o plano não atende ao requisito.
+O **tipo de plano** do usuário (`tipoPlano`: BASICO, PRO, PREMIUM) é incluído no **token JWT** no login (payload `tipoPlano`). O guard **PlanoGuard** e os decorators **@RequerPlanoMinimo('PRO')** e **@RequerPlanoExato('PREMIUM')** aplicam a validação por rota no código. Resposta **403 Forbidden** quando o plano não atende ao requisito.
+
+**Validação (conferido no código):** Os controllers usam `@RequerPlanoMinimo(TipoPlanoEnum.PRO)` ou `@RequerPlanoExato(TipoPlanoEnum.PREMIUM)` conforme a tabela e os blocos abaixo. Básico não possui nenhum desses decorators nas rotas que exige Pro ou Premium.
+
+---
 
 #### Plano Básico
-- **Não possui** acesso aos módulos e endpoints exclusivos de Pro e Premium.
-- Possui acesso a: Auth, Usuário (perfil), Fazenda, Fornecedor, Cultivar, Plantio (CRUD básico, listagem por fazenda, tipo-planta, **exceto** custo-safra), Análise de Solo, Produto Estoque, Praga, Dashboard **clima** e **notícias** (endpoints públicos ou básicos).
 
-#### Plano Pro (mínimo Pro = Pro ou Premium)
-- Possui **tudo do plano Básico** e mais:
-  - **Operação do plantio**: `POST/GET/PUT/DELETE /operacao-plantio`, `GET /operacao-plantio/plantio/:idPlantio`.
-  - **Aplicação**: `POST/GET/PUT/DELETE /aplicacao`, `GET /aplicacao/operacao/:idOperacaoPlantio`.
-  - **Dashboard**: `GET /dashboard/cotacao-bolsa`, `GET /dashboard/dados-solo`, `GET /dashboard/dados-cultura`.
-- **Não possui**: Mapa, Talhão, Zona de manejo, Relatório (PDF), endpoint Custo por safra.
+- **Não tem** acesso aos módulos e endpoints exclusivos de Pro nem de Premium.
+- **O que o Básico tem acesso:**
+  - **Auth** (login, registro, forgot-password, reset-password)
+  - **Usuário** (perfil, CRUD; ativar/desativar só ADMIN)
+  - **Fazenda** (CRUD, lista por usuário)
+  - **Fornecedor** (CRUD, lista por usuário)
+  - **Cultivar** (CRUD, lista, check-cultivars)
+  - **Praga** (CRUD)
+  - **Plantio** (CRUD, listagem por fazenda, por tipo-planta) — **sem** o endpoint **custo-safra**
+  - **Análise de solo** (CRUD, lista, por plantio) — **sem** os endpoints **calagem**, **adubação** e **comparativo-nutrientes**
+  - **Produto estoque** (CRUD, lista por fazenda, aumentar/remover quantidade)
+  - **Dashboard:** apenas **clima** e **notícias** (públicos; cotação, dados-solo e dados-cultura **não**)
+  - **Plano** (me/status, cobrança, pagamento conforme seção 15)
+  - **Log** (consulta)
 
-#### Plano Premium (exato Premium)
-- Possui **todos os acessos dos planos Básico e Pro** e mais (somente Premium):
-  - **Mapa**: `GET /mapa/fazenda/:idFazenda`.
-  - **Talhão**: `POST/GET/PUT/DELETE /talhao`, `GET /talhao/fazenda/:idFazenda`, `GET /talhao/fazenda/:idFazenda/resumo`, `GET /talhao/fazenda/:idFazenda/mapa`.
-  - **Zona de manejo**: `POST/GET/PUT/DELETE /zona-manejo`, `GET /zona-manejo/fazenda/:idFazenda`, `GET /zona-manejo/fazenda/:idFazenda/mapa`.
-  - **Relatório**: `GET /relatorio/plantios`, `GET /relatorio/estoque`, `GET /relatorio/analises-solo`, `GET /relatorio/resumo`.
-  - **Custo por safra**: `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY`.
+---
 
-#### Resumo técnico (onde a validação é aplicada)
-| Recurso | Decorator / Guard | Quem acessa |
-|---------|-------------------|-------------|
-| Operação do plantio (todo o controller) | @RequerPlanoMinimo('PRO') | Pro, Premium |
-| Aplicação (todo o controller) | @RequerPlanoMinimo('PRO') | Pro, Premium |
+#### Plano Pro
+
+- Tem **tudo o que o Plano Básico tem** e mais os módulos e endpoints abaixo.
+- **O que só Pro (e Premium) têm:**
+  - **Módulo Operação do plantio:** todo o controller — `POST /operacao-plantio`, `GET /operacao-plantio/plantio/:idPlantio`, CRUD (`GET`, `GET/:id`, `PUT`, `DELETE`, `PATCH .../desativar|ativar`).
+  - **Módulo Aplicação:** todo o controller — `POST /aplicacao`, `GET /aplicacao/operacao/:idOperacaoPlantio`, CRUD.
+  - **Dashboard – cotação bolsa:** `GET /dashboard/cotacao-bolsa`
+  - **Dashboard – dados solo:** `GET /dashboard/dados-solo`
+  - **Dashboard – dados cultura:** `GET /dashboard/dados-cultura`
+  - **Análise de solo – calagem:** `GET /analise-solo/calagem/:idPlantio`
+  - **Análise de solo – adubação:** `GET /analise-solo/adubacao/:idPlantio`
+  - **Análise de solo – comparativo nutrientes:** `GET /analise-solo/comparativo-nutrientes/:idPlantio`
+- **O que o Pro não tem:** Mapa, Talhão, Zona de manejo, Relatório (PDF), endpoint Custo por safra. Esses recursos exigem **Plano Premium**.
+
+---
+
+#### Plano Premium
+
+- Tem **todos os acessos dos planos Básico e Pro** e, além disso, **somente** quem tem Plano Premium pode acessar:
+  - **Mapa:** todo o módulo — `GET /mapa/fazenda/:idFazenda`
+  - **Talhão:** todo o módulo — `POST/GET/PUT/DELETE /talhao`, `GET /talhao/fazenda/:idFazenda`, `GET /talhao/fazenda/:idFazenda/resumo`, `GET /talhao/fazenda/:idFazenda/mapa`
+  - **Zona de manejo:** todo o módulo — `POST/GET/PUT/DELETE /zona-manejo`, `GET /zona-manejo/fazenda/:idFazenda`, `GET /zona-manejo/fazenda/:idFazenda/mapa`
+  - **Relatório:** todo o módulo — `GET /relatorio/plantios`, `GET /relatorio/estoque`, `GET /relatorio/analises-solo`, `GET /relatorio/resumo`
+  - **Endpoint Custo por safra:** `GET /plantio/fazenda/:idFazenda/custo-safra?ano=YYYY`
+
+---
+
+#### Resumo técnico (validação no código)
+
+| Recurso | Decorator no código | Quem acessa |
+|---------|---------------------|-------------|
+| Operação do plantio (controller inteiro) | @RequerPlanoMinimo('PRO') | Pro, Premium |
+| Aplicação (controller inteiro) | @RequerPlanoMinimo('PRO') | Pro, Premium |
 | Dashboard: cotacao-bolsa, dados-solo, dados-cultura | @RequerPlanoMinimo('PRO') | Pro, Premium |
-| Mapa (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
-| Talhão (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
-| Zona de manejo (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
-| Relatório (todo o controller) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
-| Plantio: custo-safra (apenas esse endpoint) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Análise de solo: calagem, adubação, comparativo-nutrientes | @RequerPlanoMinimo('PRO') | Pro, Premium |
+| Mapa (controller inteiro) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Talhão (controller inteiro) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Zona de manejo (controller inteiro) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Relatório (controller inteiro) | @RequerPlanoExato('PREMIUM') | Apenas Premium |
+| Plantio: endpoint custo-safra | @RequerPlanoExato('PREMIUM') | Apenas Premium |
 
-- **RN-PLN-027**: Requisição a rota que exige plano superior ao do usuário retorna **403 Forbidden** com mensagem explicando que o recurso exige plano X ou Premium (ou apenas Premium).
+- **RN-PLN-027**: Requisição a rota que exige plano superior ao do usuário retorna **403 Forbidden** com mensagem explicando que o recurso exige plano Pro ou Premium (ou apenas Premium).
 - **RN-PLN-028**: Se o token não tiver `tipoPlano` (ex.: token antigo), o usuário é tratado como **BASICO** para fins de validação de plano.
 
 ---
@@ -1378,5 +1462,5 @@ O módulo de relatórios gera PDFs para apoio à decisão. Os templates HTML fic
 
 ---
 
-**Última atualização**: 2026-02-19
-**Versão do documento**: 1.3
+**Última atualização**: 2026-02-20
+**Versão do documento**: 1.4

@@ -54,8 +54,8 @@ async function bootstrap() {
 
       O token JWT inclui \`tipoPlano\` (BASICO, PRO, PREMIUM). Cada endpoint exige o plano indicado; caso contrário a API retorna **403 Forbidden**.
 
-      - **Plano Básico**: Acesso a Auth, Usuário, Fazenda, Cultivar, Fornecedor, Plantio (CRUD e listagem, exceto custo-safra), Análise de Solo (criar e listar), Produto Estoque, Praga. Dashboard: clima e notícias (públicos). **Não tem acesso** a: Operação do plantio, Aplicação, Dashboard (cotação bolsa, dados solo, dados cultura), Análise de Solo (calagem, adubação, comparativo nutrientes), Mapa, Talhão, Zona de manejo, Relatório (PDF), Custo por safra.
-      - **Plano Pro**: Tudo do Básico + **Operação do plantio**, **Aplicação**, **Dashboard** (cotação bolsa, dados solo, dados cultura), **Análise de Solo** (calagem, adubação, comparativo nutrientes). Endpoints desses recursos **requerem plano Pro ou Premium**.
+      - **Plano Básico**: Acesso a Auth, Usuário, Fazenda, Cultivar, Fornecedor, Plantio (CRUD e listagem, exceto custo-safra), Análise de Solo (criar e listar), Produto Estoque, Praga. Dashboard: clima e notícias (públicos). **Não tem acesso** a: Operação do plantio, Aplicação do plantio, Dashboard (cotação bolsa, dados solo, dados cultura), Análise de Solo (calagem, adubação, comparativo nutrientes), Mapa, Talhão, Zona de manejo, Relatório (PDF), Custo por safra.
+      - **Plano Pro**: Tudo do Básico + **Operação do plantio**, **Aplicação do plantio**, **Dashboard** (cotação bolsa, dados solo, dados cultura), **Análise de Solo** (calagem, adubação, comparativo nutrientes). Endpoints desses recursos **requerem plano Pro ou Premium**.
       - **Plano Premium**: Tudo do Pro + **Mapa**, **Talhão**, **Zona de manejo**, **Relatório** (PDF), **Custo por safra** (\`GET /plantio/fazenda/:id/custo-safra\`). Endpoints desses módulos **requerem plano Premium**.
 
       Em cada operação abaixo, o plano exigido está indicado na descrição (**Requer plano: Pro ou Premium** ou **Requer plano: Premium**).
@@ -89,7 +89,7 @@ async function bootstrap() {
     .addTag('Talhão', 'Parcelas de terra por fazenda (área, resumo, mapa). Requer plano Premium.')
     .addTag('Plantio', 'Plantios por fazenda; custo por safra (custo-safra requer Premium).')
     .addTag('Operação do plantio', 'Etapas do plantio e custo por operação. Requer plano Pro ou Premium.')
-    .addTag('Aplicação', 'Defensivos e fertilizantes (dose por ha, quantidade total). Requer plano Pro ou Premium.')
+    .addTag('Aplicação do Plantio', 'Defensivos e fertilizantes (dose por ha, quantidade total). Requer plano Pro ou Premium.')
     .addTag('Análise de Solo', 'Análises (criar/listar); calagem, adubação e comparativo nutrientes requerem plano Pro ou Premium.')
     .addTag('Cultivar', 'Cultivares e exigências nutricionais')
     .addTag('Praga', 'Cadastro de pragas')
