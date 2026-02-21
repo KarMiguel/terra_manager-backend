@@ -1,7 +1,7 @@
-import { IsString, IsEnum, IsNumber, IsDate, IsOptional, IsDateString, IsObject } from 'class-validator';
+﻿import { IsString, IsEnum, IsNumber, IsDate, IsOptional, IsDateString, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TipoPlantaEnum, TipoSoloEnum } from '../enum/cultivar.enum';
-import { CreatePragaDto } from 'src/modules/praga/dto/create-praga.dto';
+import { CreatePragaDto } from '../../praga/dto/create-praga.dto';
 
 export class CreateCultivarDto {
   @ApiProperty({
