@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { PrismaClient, ZonaManejo } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { ZonaManejoModel } from './interface/zona-manejo.interface';
 import { CreateZonaManejoDto } from './dto/create-zona-manejo.dto';
-import { Paginate } from 'src/common/utils/types';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
 
 @Injectable()
 export class ZonaManejoService extends CrudService<ZonaManejo, ZonaManejoModel> {

@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { Plantio, PrismaClient, StatusPlantioEnum } from '@prisma/client';
 
 import { plainToInstance } from 'class-transformer';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
-import { CrudServiceOptions, Paginate } from 'src/common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
+import { CrudServiceOptions, Paginate } from '../../common/utils/types';
 import { PlantioModel } from './interface/plantio.interface';
 import { CreatePlantioDto } from './dto/create-plantio.dto';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';

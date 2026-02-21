@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, Injectable } from '@nestjs/common';
 import { AnaliseSolo, PrismaClient } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
-import { Paginate } from 'src/common/utils/types';
-import { CrudService } from 'src/crud.service';
+import { calculatePagination } from '../../common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
+import { CrudService } from '../../crud.service';
 
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';
 import { AdubacaoResponseModel, AnaliseSoloModel, CalagemModel, CalagemResponseModel, NutrienteComparacaoResponseModel } from './interface/analise-solo.interface';

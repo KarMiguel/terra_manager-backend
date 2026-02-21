@@ -1,8 +1,8 @@
-import { Expose } from 'class-transformer';
+﻿import { Expose } from 'class-transformer';
 import { TipoPlantaEnum, TipoSoloEnum } from '@prisma/client';
-import { UserModel } from 'src/modules/user/interface/user.interface';
-import { PragaModel } from 'src/modules/praga/interface/praga.interface';
-import { FornecedorModel } from 'src/modules/fornecedor/interface/fornecedor.interface';
+import { UserModel } from '../../user/interface/user.interface';
+import { PragaModel } from '../../praga/interface/praga.interface';
+import { FornecedorModel } from '../../fornecedor/interface/fornecedor.interface';
 
 export class CultivarModel {
   @Expose()

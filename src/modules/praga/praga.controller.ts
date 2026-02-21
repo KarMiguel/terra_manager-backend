@@ -1,7 +1,7 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+﻿import { Body, Controller, Post, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { Praga } from '@prisma/client';
-import { CrudController } from 'src/crud.controller';
+import { CrudController } from '../../crud.controller';
 import { PragaModel } from './interface/praga.interface';
 import { PragaService } from './praga.service';
 import { CreatePragaDto } from './dto/create-praga.dto';

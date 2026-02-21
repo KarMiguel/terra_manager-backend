@@ -1,10 +1,10 @@
-import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiQuery, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
-import { Public } from 'src/common/guards/public.decorator';
-import { PlanoGuard } from 'src/common/guards/plano.guard';
-import { RequerPlanoMinimo } from 'src/common/guards/plano.decorator';
-import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
+import { Public } from '../../common/guards/public.decorator';
+import { PlanoGuard } from '../../common/guards/plano.guard';
+import { RequerPlanoMinimo } from '../../common/guards/plano.decorator';
+import { TipoPlanoEnum } from '../../common/guards/plano.constants';
 
 @Controller('/dashboard')
 @ApiTags('Dashboard')

@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { OperacaoPlantio, PrismaClient, StatusPlantioEnum } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { OperacaoPlantioModel } from './interface/operacao-plantio.interface';

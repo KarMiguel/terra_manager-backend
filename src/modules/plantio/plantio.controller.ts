@@ -1,18 +1,18 @@
-import { PlantioModel } from './interface/plantio.interface';
+﻿import { PlantioModel } from './interface/plantio.interface';
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { CrudController } from 'src/crud.controller';
+import { CrudController } from '../../crud.controller';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreatePlantioDto } from './dto/create-plantio.dto';
 import { UpdateStatusPlantioDto } from './dto/update-status-plantio.dto';
 import { plainToInstance } from 'class-transformer';
-import { Paginate } from 'src/common/utils/types';
+import { Paginate } from '../../common/utils/types';
 import { PlantioService } from './plantio.service';
 import { TipoPlantaEnum } from '../cultivar/enum/cultivar.enum';
 import { Plantio } from '@prisma/client';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { PlanoGuard } from 'src/common/guards/plano.guard';
-import { RequerPlanoExato } from 'src/common/guards/plano.decorator';
-import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PlanoGuard } from '../../common/guards/plano.guard';
+import { RequerPlanoExato } from '../../common/guards/plano.decorator';
+import { TipoPlanoEnum } from '../../common/guards/plano.constants';
 
 @ApiTags('Plantio')
 @Controller('plantio')

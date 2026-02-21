@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+﻿import { BadRequestException, Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { Fornecedor } from '@prisma/client';
-import { CrudController } from 'src/crud.controller';
+import { CrudController } from '../../crud.controller';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
 import { FornecedorService } from './fornecedor.service';
 import { FornecedorModel } from './interface/fornecedor.interface';

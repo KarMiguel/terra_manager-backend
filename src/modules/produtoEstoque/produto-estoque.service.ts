@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { PrismaClient, Fazenda } from '@prisma/client';
 import { ProdutoEstoqueModel } from './interface/produto-estoque.interface';
 import { CreateProdutoEstoqueDto } from './dto/create-produto-estoque.dto';
 import { plainToInstance } from 'class-transformer';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
-import { CrudServiceOptions, Paginate } from 'src/common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
+import { CrudServiceOptions, Paginate } from '../../common/utils/types';
 
 @Injectable()
 export class ProdutoEstoqueService extends CrudService<Fazenda, ProdutoEstoqueModel> {

@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
-import { CrudController } from 'src/crud.controller';
+﻿import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { CrudController } from '../../crud.controller';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { PlanoGuard } from 'src/common/guards/plano.guard';
-import { RequerPlanoMinimo } from 'src/common/guards/plano.decorator';
-import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PlanoGuard } from '../../common/guards/plano.guard';
+import { RequerPlanoMinimo } from '../../common/guards/plano.decorator';
+import { TipoPlanoEnum } from '../../common/guards/plano.constants';
 import { AplicacaoService } from './aplicacao.service';
 import { Aplicacao } from '@prisma/client';
 import { AplicacaoModel } from './interface/aplicacao.interface';

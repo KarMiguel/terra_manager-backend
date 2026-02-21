@@ -1,11 +1,11 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+﻿import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { AnaliseSolo } from '@prisma/client';
-import { CrudController } from 'src/crud.controller';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { PlanoGuard } from 'src/common/guards/plano.guard';
-import { RequerPlanoMinimo } from 'src/common/guards/plano.decorator';
-import { TipoPlanoEnum } from 'src/common/guards/plano.constants';
+import { CrudController } from '../../crud.controller';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PlanoGuard } from '../../common/guards/plano.guard';
+import { RequerPlanoMinimo } from '../../common/guards/plano.decorator';
+import { TipoPlanoEnum } from '../../common/guards/plano.constants';
 
 import { AnaliseSoloService } from './analise-solo.service';
 import { CreateAnaliseSoloDto } from './dto/create-analise-solo.dto';

@@ -1,8 +1,8 @@
-import { Expose, Type } from 'class-transformer';
+﻿import { Expose, Type } from 'class-transformer';
 import { UnidadeDoseEnum, StatusPlantioEnum } from '../enum/plantio.enum';
-import { CultivarModel } from 'src/modules/cultivar/interface/cultivar.interface';
-import { FazendaModel } from 'src/modules/fazenda/interface/fazenda.interface';
-import { AnaliseSoloModel } from 'src/modules/analiseSolo/interface/analise-solo.interface';
+import { CultivarModel } from '../../cultivar/interface/cultivar.interface';
+import { FazendaModel } from '../../fazenda/interface/fazenda.interface';
+import { AnaliseSoloModel } from '../../analiseSolo/interface/analise-solo.interface';
 
 export class PlantioModel {
   @Expose()

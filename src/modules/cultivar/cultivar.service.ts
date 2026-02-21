@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCultivarDto } from './dto/create-cultivar.dto';
 import { CultivarModel } from './interface/cultivar.interface';
 import { Cultivar, PrismaClient } from '@prisma/client';
-import { CrudService } from 'src/crud.service';
+import { CrudService } from '../../crud.service';
 import { plainToInstance } from 'class-transformer';
-import { Paginate } from 'src/common/utils/types';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
 import { TipoPlantaEnum } from './enum/cultivar.enum';
 
 @Injectable()

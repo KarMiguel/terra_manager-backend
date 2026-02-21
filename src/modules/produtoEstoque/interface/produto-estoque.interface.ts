@@ -1,7 +1,7 @@
-import { Expose } from 'class-transformer';
+﻿import { Expose } from 'class-transformer';
 import { CategoriaEstoqueEnum, StatusEstoqueEnum, UnidadeMedidaEnum } from '../enum/produto-estoque.enum';
-import { FazendaModel } from 'src/modules/fazenda/interface/fazenda.interface';
-import { FornecedorModel } from 'src/modules/fornecedor/interface/fornecedor.interface';
+import { FazendaModel } from '../../fazenda/interface/fazenda.interface';
+import { FornecedorModel } from '../../fornecedor/interface/fornecedor.interface';
 
 export class ProdutoEstoqueModel {
   @Expose()

@@ -1,6 +1,6 @@
-
+﻿
 import { plainToInstance } from 'class-transformer';
-import { CrudService } from 'src/crud.service';
+import { CrudService } from '../../crud.service';
 import { PragaModel } from './interface/praga.interface';
 import { CreatePragaDto } from './dto/create-praga.dto';
 import { Praga, PrismaClient } from '@prisma/client';

@@ -1,6 +1,6 @@
-import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail, IsInt, Min } from 'class-validator';
+﻿import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail, IsInt, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from 'src/common/guards/roles.enum';
+import { Role } from '../../../common/guards/roles.enum';
 import { Type } from 'class-transformer';
 
 export class CreateUserDto {

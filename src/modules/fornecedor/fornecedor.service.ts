@@ -1,9 +1,9 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { Fornecedor, PrismaClient } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
-import { Paginate } from 'src/common/utils/types';
-import { CrudService } from 'src/crud.service';
+import { calculatePagination } from '../../common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
+import { CrudService } from '../../crud.service';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
 import { FornecedorModel } from './interface/fornecedor.interface';
 

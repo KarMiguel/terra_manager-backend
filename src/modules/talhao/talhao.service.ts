@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { PrismaClient, Talhao } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { TalhaoModel } from './interface/talhao.interface';
 import { CreateTalhaoDto } from './dto/create-talhao.dto';
-import { Paginate } from 'src/common/utils/types';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
 
 export interface TalhaoMapaFeature {
   type: 'Feature';

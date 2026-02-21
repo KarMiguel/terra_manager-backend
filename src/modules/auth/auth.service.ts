@@ -1,11 +1,11 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
 import { Usuario } from '@prisma/client';
 import { CreateUserDto } from '../user/dto/create-user.dto';
-import { Role } from 'src/common/guards/roles.enum';
+import { Role } from '../../common/guards/roles.enum';
 import { UserModel } from '../user/interface/user.interface';
 import { EmailService } from '../../common/utils/email';
 import { PlanoService } from '../plano/plano.service';

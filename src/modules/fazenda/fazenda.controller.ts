@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
-import { CrudController } from 'src/crud.controller';
+﻿import { BadRequestException, Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { CrudController } from '../../crud.controller';
 import { FazendaModel } from './interface/fazenda.interface';
 import { FazendaService } from './fazenda.service';
 import { Fazenda } from '@prisma/client';

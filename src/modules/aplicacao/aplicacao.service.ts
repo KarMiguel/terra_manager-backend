@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CrudService } from 'src/crud.service';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { CrudService } from '../../crud.service';
 import { PrismaClient, Aplicacao } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { AplicacaoModel } from './interface/aplicacao.interface';

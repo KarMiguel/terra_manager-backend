@@ -1,12 +1,12 @@
-import { ProdutoEstoqueModel } from './interface/produto-estoque.interface';
+﻿import { ProdutoEstoqueModel } from './interface/produto-estoque.interface';
 import { BadRequestException, Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req } from '@nestjs/common';
-import { CrudController } from 'src/crud.controller';
+import { CrudController } from '../../crud.controller';
 import { Fazenda } from '@prisma/client';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { ProdutoEstoqueService } from './produto-estoque.service';
 import { CreateProdutoEstoqueDto } from './dto/create-produto-estoque.dto';
 import { plainToInstance } from 'class-transformer';
-import { Paginate } from 'src/common/utils/types';
+import { Paginate } from '../../common/utils/types';
 
 @ApiTags('Produto Estoque') 
 @Controller('produto-estoque')

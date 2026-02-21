@@ -1,8 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Req, } from '@nestjs/common';
+﻿import { BadRequestException, Body, Controller, Get, Post, Query, Req, } from '@nestjs/common';
 import { CultivarService } from './cultivar.service';
 
 import { CultivarModel } from './interface/cultivar.interface';
-import { CrudController } from 'src/crud.controller';
+import { CrudController } from '../../crud.controller';
 import { Cultivar } from '@prisma/client';
 import { CreateCultivarDto } from './dto/create-cultivar.dto';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiResponse } from '@nestjs/swagger';

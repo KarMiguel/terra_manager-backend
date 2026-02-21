@@ -1,10 +1,10 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { FazendaModel } from './interface/fazenda.interface';
-import { CrudService } from 'src/crud.service';
+import { CrudService } from '../../crud.service';
 import { Prisma, PrismaClient, Fazenda } from '@prisma/client';
 import { CreateFazendaDto } from './dto/create-fazenda.dto';
-import { calculatePagination } from 'src/common/utils/calculatePagination';
-import { Paginate } from 'src/common/utils/types';
+import { calculatePagination } from '../../common/utils/calculatePagination';
+import { Paginate } from '../../common/utils/types';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
