@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "framework": null,
+  "buildCommand": "prisma generate",
+  "outputDirectory": ".",
   "functions": {
     "api/index.ts": {
       "maxDuration": 60,
