@@ -5,15 +5,11 @@
       "src": "main.serverless.ts",
       "use": "@vercel/node",
       "config": {
-        "maxLambdaSize": "50mb"
+        "maxLambdaSize": "50mb",
+        "maxDuration": 30
       }
     }
   ],
-  "functions": {
-    "main.serverless.ts": {
-      "maxDuration": 30
-    }
-  },
   "routes": [
     { "src": "/", "dest": "main.serverless.ts" },
     { "src": "/(.*)", "dest": "main.serverless.ts" }
