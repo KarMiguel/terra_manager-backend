@@ -4,6 +4,7 @@
     { "src": "main.serverless.ts", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/", "dest": "main.serverless.ts" },
     { "src": "/(.*)", "dest": "main.serverless.ts" }
   ]
 }

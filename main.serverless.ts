@@ -6,8 +6,6 @@ import serverless from 'serverless-http';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './src/common/filters/http-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
-import { LoggingInterceptor } from './src/common/interceptors/logging.interceptor';
-import { PrismaClient } from '@prisma/client';
 import { IncomingMessage, ServerResponse } from 'http';
 
 let cachedHandler: ReturnType<typeof serverless> | null = null;
@@ -16,7 +14,9 @@ async function bootstrap(): Promise<ReturnType<typeof serverless>> {
   if (cachedHandler) return cachedHandler;
 
   const expressApp = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
+    logger: ['error', 'warn'],
+  });
 
   app.enableCors({
     origin: '*',
@@ -32,9 +32,9 @@ async function bootstrap(): Promise<ReturnType<typeof serverless>> {
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor(new PrismaClient()));
+  // LoggingInterceptor já registrado via LoggingInterceptorModule (APP_INTERCEPTOR)
 
-  // Swagger em /api-docs
+  // Swagger em /api-docs — assets via CDN para evitar múltiplas chamadas serverless
   const config = new DocumentBuilder()
     .setTitle('Terra Manager API')
     .setDescription('API para gerenciamento agrícola')
@@ -44,6 +44,11 @@ async function bootstrap(): Promise<ReturnType<typeof serverless>> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {
     swaggerOptions: { persistAuthorization: true },
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
+    customJs: [
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js',
+    ],
   });
 
   await app.init();
@@ -52,7 +57,7 @@ async function bootstrap(): Promise<ReturnType<typeof serverless>> {
   return cachedHandler;
 }
 
-// Handler padrão do Vercel — aguarda o bootstrap antes de processar cada requisição
+// Handler padrão do Vercel — aguarda bootstrap antes de processar cada requisição
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const handle = await bootstrap();
   return handle(req, res);
