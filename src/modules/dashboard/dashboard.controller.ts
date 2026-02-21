@@ -1,7 +1,8 @@
-﻿import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
-import { ApiQuery, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, HttpException, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiQuery, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { Public } from '../../common/guards/public.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PlanoGuard } from '../../common/guards/plano.guard';
 import { RequerPlanoMinimo } from '../../common/guards/plano.decorator';
 import { TipoPlanoEnum } from '../../common/guards/plano.constants';
@@ -42,7 +43,8 @@ export class DashboardController {
   
 
   @Get('cotacao-bolsa')
-  @UseGuards(PlanoGuard)
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @ApiBearerAuth('access-token')
   @RequerPlanoMinimo(TipoPlanoEnum.PRO)
   @ApiOperation({ 
     summary: 'Busca cotação de commodities na bolsa',
@@ -89,7 +91,8 @@ export class DashboardController {
   }
 
   @Get('dados-solo')
-  @UseGuards(PlanoGuard)
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @ApiBearerAuth('access-token')
   @RequerPlanoMinimo(TipoPlanoEnum.PRO)
   @ApiOperation({ 
     summary: 'Busca propriedades do solo por coordenadas',
@@ -138,7 +141,8 @@ export class DashboardController {
   }
  
   @Get('dados-cultura')
-  @UseGuards(PlanoGuard)
+  @UseGuards(JwtAuthGuard, PlanoGuard)
+  @ApiBearerAuth('access-token')
   @RequerPlanoMinimo(TipoPlanoEnum.PRO)
   @ApiOperation({ 
     summary: 'Busca informações sobre uma cultura específica',
@@ -146,10 +150,10 @@ export class DashboardController {
   })
   @ApiQuery({ 
     name: 'nome', 
-    description: 'Nome da cultura a ser buscada (ex: soja, milho, feijão, algodão)', 
+    description: 'Nome da cultura a ser buscada (ex: soja, milho, feijão, algodão, cafe, arroz, trigo, cana-de-acucar)', 
     required: true, 
-    type: String, 
-    example: 'milho' 
+    enum: DashboardService.TiposDasCulturasEnum, 
+    example: 'MILHO' 
   })
   @ApiResponse({ status: 200, description: 'Informações da cultura retornadas com sucesso' })
   @ApiResponse({ status: 400, description: 'Nome da cultura não fornecido ou inválido' })

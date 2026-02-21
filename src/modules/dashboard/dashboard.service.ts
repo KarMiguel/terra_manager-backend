@@ -11,6 +11,18 @@ export class DashboardService {
   
   private cultivos = cultivosData.culturas;
 
+  static readonly TiposDasCulturasEnum: {
+    [key: string]: string;
+  } = {
+    soja: "SOJA",
+    milho: "MILHO",
+    feijao: "FEIJAO",
+    algodao: "ALGODAO",
+    cafe: "CAFE",
+    arroz: "ARROZ",
+    trigo: "TRIGO",
+    "cana-de-acucar": "CANA-DE-ACUCAR"
+  };
   async getCultivoByName(nome: string) {
     const cultivo = this.cultivos[nome.toLowerCase()];
     if (!cultivo) {

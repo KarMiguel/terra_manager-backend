@@ -166,6 +166,241 @@ export const cultivosData = {
           }
         }
       }
+    },
+    "algodao": {
+    "clima": {
+      "temperatura": {
+        "ideal": "20°C a 30°C",
+        "minima": "Abaixo de 15°C prejudica germinação",
+        "maxima": "Acima de 35°C reduz retenção de maçãs"
+      },
+      "chuvas": {
+        "necessidade": "500 a 1.200 mm durante o ciclo",
+        "criticos": "Florescimento e formação de capulhos são fases mais sensíveis"
+      }
+    },
+    "solo": {
+      "tipo": "Profundo, bem drenado e fértil",
+      "textura": "Franco-argilosa a argilosa",
+      "ph": {
+        "ideal": "5.5 a 6.5",
+        "correcao": "Calagem conforme análise de solo"
+      },
+      "nutrientes": {
+        "essenciais": "Nitrogênio (N), fósforo (P), potássio (K) e boro (B)",
+        "quantidade_por_he": "Nitrogênio: 80-150 kg/ha, Fósforo: 60-120 kg/ha, Potássio: 60-120 kg/ha",
+        "manejo": "Adubação parcelada, principalmente nitrogênio",
+        "adubo_recomendado": "NPK 8-28-16 na base e ureia em cobertura"
+      }
+    },
+    "irrigacao": {
+      "qtd_por_he": "6.000 a 8.000 litros/ha por dia",
+      "periodicidade": "A cada 3 dias em períodos secos"
+    },
+    "manejo_pragas_doencas": {
+      "pragas": ["Bicudo-do-algodoeiro", "Pulgão", "Lagarta-rosada"],
+      "doencas": ["Ramulária", "Murcha-de-fusarium"],
+      "controle": {
+        "pragas": {
+          "produto_recomendado": "Lambda-cialotrina ou Imidacloprido",
+          "dosagem": "300 mL/ha",
+          "frequencia": "Conforme monitoramento"
+        },
+        "doencas": {
+          "produto_recomendado": "Tebuconazol",
+          "dosagem": "300 mL/ha",
+          "frequencia": "A cada 15 dias em período úmido"
+        }
+      }
+    }
+    },
+    "cafe": {
+      "clima": {
+        "temperatura": {
+          "ideal": "18°C a 24°C",
+          "minima": "Geadas podem causar perdas severas",
+          "maxima": "Acima de 30°C reduz produtividade"
+        },
+        "chuvas": {
+          "necessidade": "1.200 a 1.800 mm por ano",
+          "criticos": "Florada e enchimento de grãos"
+        }
+      },
+      "solo": {
+        "tipo": "Profundo, bem drenado e rico em matéria orgânica",
+        "textura": "Franco-argilosa",
+        "ph": {
+          "ideal": "5.5 a 6.5",
+          "correcao": "Calagem e gessagem conforme análise"
+        },
+        "nutrientes": {
+          "essenciais": "Nitrogênio, potássio e cálcio",
+          "quantidade_por_he": "N: 150-300 kg/ha/ano",
+          "manejo": "Adubação parcelada ao longo do ano",
+          "adubo_recomendado": "NPK 20-05-20"
+        }
+      },
+      "irrigacao": {
+        "qtd_por_he": "Variável conforme fase produtiva",
+        "periodicidade": "Suplementar na seca"
+      },
+      "manejo_pragas_doencas": {
+        "pragas": ["Broca-do-café", "Bicho-mineiro"],
+        "doencas": ["Ferrugem-do-cafeeiro", "Cercosporiose"],
+        "controle": {
+          "pragas": {
+            "produto_recomendado": "Clorpirifós",
+            "dosagem": "300 mL/ha",
+            "frequencia": "Conforme monitoramento"
+          },
+          "doencas": {
+            "produto_recomendado": "Azoxistrobina",
+            "dosagem": "250 mL/ha",
+            "frequencia": "Preventivo"
+          }
+        }
+      }
+    },
+    "arroz": {
+      "clima": {
+        "temperatura": {
+          "ideal": "20°C a 30°C",
+          "minima": "Abaixo de 15°C afeta desenvolvimento",
+          "maxima": "Acima de 35°C prejudica floração"
+        },
+        "chuvas": {
+          "necessidade": "700 a 1.200 mm",
+          "criticos": "Perfilhamento e floração"
+        }
+      },
+      "solo": {
+        "tipo": "Solos planos com boa retenção de água",
+        "textura": "Argilosa",
+        "ph": {
+          "ideal": "5.5 a 6.5",
+          "correcao": "Calagem se necessário"
+        },
+        "nutrientes": {
+          "essenciais": "Nitrogênio, fósforo e potássio",
+          "quantidade_por_he": "N: 90-120 kg/ha",
+          "manejo": "Nitrogênio parcelado",
+          "adubo_recomendado": "NPK 05-25-15"
+        }
+      },
+      "irrigacao": {
+        "qtd_por_he": "Lâmina contínua de 5 a 10 cm",
+        "periodicidade": "Manter inundação controlada"
+      },
+      "manejo_pragas_doencas": {
+        "pragas": ["Percevejo-do-arroz", "Lagarta-da-panícula"],
+        "doencas": ["Brusone"],
+        "controle": {
+          "pragas": {
+            "produto_recomendado": "Lambda-cialotrina",
+            "dosagem": "250 mL/ha",
+            "frequencia": "Conforme monitoramento"
+          },
+          "doencas": {
+            "produto_recomendado": "Triazóis",
+            "dosagem": "300 mL/ha",
+            "frequencia": "Preventivo"
+          }
+        }
+      }
+    },
+    "trigo": {
+      "clima": {
+        "temperatura": {
+          "ideal": "15°C a 22°C",
+          "minima": "Tolera frio moderado",
+          "maxima": "Acima de 30°C reduz rendimento"
+        },
+        "chuvas": {
+          "necessidade": "450 a 650 mm",
+          "criticos": "Espigamento e enchimento de grãos"
+        }
+      },
+      "solo": {
+        "tipo": "Bem drenado e fértil",
+        "textura": "Franco-argilosa",
+        "ph": {
+          "ideal": "5.5 a 6.5",
+          "correcao": "Calagem conforme análise"
+        },
+        "nutrientes": {
+          "essenciais": "Nitrogênio e fósforo",
+          "quantidade_por_he": "N: 60-120 kg/ha",
+          "manejo": "Cobertura no perfilhamento",
+          "adubo_recomendado": "NPK 08-20-20"
+        }
+      },
+      "irrigacao": {
+        "qtd_por_he": "4.000 a 6.000 litros/ha por dia",
+        "periodicidade": "Em períodos críticos"
+      },
+      "manejo_pragas_doencas": {
+        "pragas": ["Pulgão-do-trigo"],
+        "doencas": ["Ferrugem-da-folha", "Giberela"],
+        "controle": {
+          "pragas": {
+            "produto_recomendado": "Imidacloprido",
+            "dosagem": "200 mL/ha",
+            "frequencia": "Conforme monitoramento"
+          },
+          "doencas": {
+            "produto_recomendado": "Tebuconazol",
+            "dosagem": "300 mL/ha",
+            "frequencia": "No início da infecção"
+          }
+        }
+      }
+    },
+    "cana_de_acucar": {
+      "clima": {
+        "temperatura": {
+          "ideal": "20°C a 32°C",
+          "minima": "Abaixo de 15°C reduz crescimento",
+          "maxima": "Acima de 38°C causa estresse hídrico"
+        },
+        "chuvas": {
+          "necessidade": "1.000 a 1.500 mm por ano",
+          "criticos": "Perfilhamento"
+        }
+      },
+      "solo": {
+        "tipo": "Profundo e fértil",
+        "textura": "Franco-argilosa",
+        "ph": {
+          "ideal": "5.5 a 6.5",
+          "correcao": "Calagem e gessagem se necessário"
+        },
+        "nutrientes": {
+          "essenciais": "Nitrogênio e potássio",
+          "quantidade_por_he": "N: 100 kg/ha, K: 120 kg/ha",
+          "manejo": "Adubação após corte",
+          "adubo_recomendado": "NPK 20-05-20"
+        }
+      },
+      "irrigacao": {
+        "qtd_por_he": "8.000 litros/ha por dia",
+        "periodicidade": "Suplementar na seca"
+      },
+      "manejo_pragas_doencas": {
+        "pragas": ["Broca-da-cana"],
+        "doencas": ["Ferrugem-alaranjada"],
+        "controle": {
+          "pragas": {
+            "produto_recomendado": "Clorpirifós",
+            "dosagem": "400 mL/ha",
+            "frequencia": "Conforme monitoramento"
+          },
+          "doencas": {
+            "produto_recomendado": "Triazóis",
+            "dosagem": "300 mL/ha",
+            "frequencia": "Preventivo"
+          }
+        }
+      }
     }
   }
 };
