@@ -8,20 +8,22 @@ import { HttpExceptionFilter } from './src/common/filters/http-exception.filter'
 import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './src/common/interceptors/logging.interceptor';
 import { PrismaClient } from '@prisma/client';
+import { IncomingMessage, ServerResponse } from 'http';
 
-const server = express();
+let cachedHandler: ReturnType<typeof serverless> | null = null;
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+async function bootstrap(): Promise<ReturnType<typeof serverless>> {
+  if (cachedHandler) return cachedHandler;
 
-  // CORS
+  const expressApp = express();
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   });
 
-  // Pipes, filtros e interceptors
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,12 +32,12 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor(app.get(PrismaClient)));
+  app.useGlobalInterceptors(new LoggingInterceptor(new PrismaClient()));
 
-  // Swagger
+  // Swagger em /api-docs
   const config = new DocumentBuilder()
     .setTitle('Terra Manager API')
-    .setDescription('API para gerenciamento agrícola...')
+    .setDescription('API para gerenciamento agrícola')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -44,11 +46,14 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  // Não usar app.listen, apenas init para serverless
   await app.init();
+
+  cachedHandler = serverless(expressApp);
+  return cachedHandler;
 }
 
-bootstrap();
-
-// Exporta o handler para Vercel
-export const handler = serverless(server);
+// Handler padrão do Vercel — aguarda o bootstrap antes de processar cada requisição
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
+  const handle = await bootstrap();
+  return handle(req, res);
+}

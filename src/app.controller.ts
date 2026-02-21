@@ -8,19 +8,26 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOperation({ 
-    summary: 'Endpoint de verificação de saúde da API',
-    description: 'Retorna uma mensagem simples indicando que a API está funcionando. Útil para verificar se o servidor está online.'
+  @ApiOperation({
+    summary: 'Informações da API',
+    description: 'Retorna informações básicas da API e link para documentação Swagger.',
   })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'API está funcionando',
+  @ApiResponse({
+    status: 200,
+    description: 'API online',
     schema: {
-      type: 'string',
-      example: 'Hello World!'
-    }
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Terra Manager API' },
+        version: { type: 'string', example: '1.0.0' },
+        description: { type: 'string', example: 'API para gerenciamento agrícola' },
+        status: { type: 'string', example: 'online' },
+        docs: { type: 'string', example: '/api-docs' },
+        timestamp: { type: 'string', example: '2026-02-21T00:00:00.000Z' },
+      },
+    },
   })
-  getHello(): string {
-    return this.appService.getHello();
+  getInfo() {
+    return this.appService.getInfo();
   }
 }
