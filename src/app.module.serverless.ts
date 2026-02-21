@@ -17,24 +17,14 @@ import { OperacaoPlantioModule } from './modules/operacao-plantio/operacao-plant
 import { AplicacaoModule } from './modules/aplicacao/aplicacao.module';
 import { AnaliseSoloModule } from './modules/analiseSolo/analise-solo.module';
 import { LogModule } from './modules/log/log.module';
-import { LoggingInterceptorModule } from './common/interceptors/logging.module';
 import { PlanoModule } from './modules/plano/plano.module';
 import { MapaModule } from './modules/mapa/mapa.module';
 
-/**
- * Módulo para ambiente serverless (Vercel).
- * RelatorioModule é excluído pois usa puppeteer/Chromium (~170MB),
- * incompatível com funções serverless.
- */
 @Module({
   controllers: [AppController],
   providers: [AppService],
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    LoggingInterceptorModule,
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     UserModule,
     PlanoModule,
