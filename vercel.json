@@ -1,8 +1,19 @@
 {
   "version": 2,
   "builds": [
-    { "src": "main.serverless.ts", "use": "@vercel/node" }
+    {
+      "src": "main.serverless.ts",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
   ],
+  "functions": {
+    "main.serverless.ts": {
+      "maxDuration": 30
+    }
+  },
   "routes": [
     { "src": "/", "dest": "main.serverless.ts" },
     { "src": "/(.*)", "dest": "main.serverless.ts" }

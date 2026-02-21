@@ -1,6 +1,6 @@
 import express from 'express';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './src/app.module';
+import { AppModuleServerless } from './src/app.module.serverless';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import serverless from 'serverless-http';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -14,7 +14,7 @@ async function bootstrap(): Promise<ReturnType<typeof serverless>> {
   if (cachedHandler) return cachedHandler;
 
   const expressApp = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
+  const app = await NestFactory.create(AppModuleServerless, new ExpressAdapter(expressApp), {
     logger: ['error', 'warn'],
   });
 
