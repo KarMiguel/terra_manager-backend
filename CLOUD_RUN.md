@@ -184,31 +184,42 @@ Depois: configurar **Variables & Secrets** no Cloud Run com `DATABASE_URL`, `JWT
 
 ## Solução de problemas: "Container failed to start and listen on PORT=8080"
 
-1. **Porta do container no Cloud Run**  
+1. **Porta do container no Cloud Run (obrigatório)**  
    No console: serviço **terra-manager** → **Editar e implantar nova revisão** → aba **Container** → em **Porta do contêiner** defina **8080**. Se estiver em branco ou outro valor, o Cloud Run não enxerga a aplicação.
 
-2. **Deploy via gcloud com porta explícita**  
+2. **Configurações recomendadas no Cloud Run**  
+   Na mesma tela **Editar e implantar nova revisão**:
+   - **Porta do contêiner:** 8080
+   - **Tempo limite da solicitação:** 300 (segundos) — dá tempo da aplicação subir
+   - **Memória:** 512 MiB ou 1 GiB — evita OOM durante o bootstrap do NestJS
+   - **Variáveis de ambiente:** defina pelo menos `DATABASE_URL`, `JWT_SECURITY`, `JWT_EXPIRATION`
+
+3. **Deploy via gcloud com porta e timeout**  
    ```bash
    gcloud run deploy terra-manager \
      --image ... \
      --port 8080 \
+     --timeout 300 \
+     --memory 512Mi \
      --region ... \
      --platform managed \
      --allow-unauthenticated
    ```
 
-3. **Tempo de inicialização**  
-   Se a aplicação demorar para subir (muitos módulos, banco lento), aumente o **Tempo limite da solicitação** (ex.: 300s) e, se existir, o tempo de **inicialização** do serviço.
-
 4. **Logs no Cloud Logging**  
-   Use o link "Abrir o Cloud Logging" da revisão. Procure por:
-   - `[Terra Manager] Iniciando aplicação...` — processo iniciou
-   - `[Terra Manager] Escutando na porta 8080` — está prestes a abrir a porta
-   - `[Terra Manager] Servidor iniciado` — subiu com sucesso
-   - `Falha ao iniciar a aplicação:` — erro (ex.: `DATABASE_URL` ausente, Prisma falhou)
+   Use o link "Abrir o Cloud Logging" da revisão. Procure por (na ordem):
+   - `[Terra Manager] Container iniciado. Escutando na porta 8080` — script de entrada rodou
+   - `[Terra Manager] Processo iniciado. PORT= 8080` — Node iniciou
+   - `[Terra Manager] Iniciando aplicação (porta 8080)` — bootstrap começou
+   - `[Terra Manager] Escutando na porta 8080 0.0.0.0` — prestes a abrir a porta
+   - `[Terra Manager] Servidor iniciado` — subiu com sucesso  
+   Se aparecer `Falha ao iniciar a aplicação:` — o texto seguinte é o erro (ex.: `DATABASE_URL` ausente, Prisma falhou).
 
-5. **Variáveis de ambiente**  
-   Sem `DATABASE_URL` (e outras obrigatórias), o NestJS pode falhar ao carregar módulos. Configure **Variables & Secrets** no serviço com pelo menos `DATABASE_URL`, `JWT_SECURITY` e `JWT_EXPIRATION`.
+5. **Redeploy após alterações**  
+   Depois de mudar o código (main.ts, Dockerfile, scripts), faça **novo build e deploy** da imagem; a revisão que falha pode ser uma versão antiga.
+
+6. **Variáveis de ambiente**  
+   Sem `DATABASE_URL` (e outras obrigatórias), o NestJS pode falhar ao carregar módulos. Configure **Variables & Secrets** no serviço.
 
 ---
 
@@ -218,6 +229,7 @@ Depois: configurar **Variables & Secrets** no Cloud Run com `DATABASE_URL`, `JWT
 |----------------|------------------------------------------|
 | `Dockerfile`   | Build da imagem para Cloud Run           |
 | `.gcloudignore`| Arquivos ignorados no `gcloud builds submit` |
-| `scripts/docker-entrypoint.sh` | Migrações + start da API        |
+| `scripts/start-cloudrun.sh`    | Entrada no Cloud Run (PORT + log) |
+| `scripts/docker-entrypoint.sh`| Migrações + start (Docker Compose) |
 
 Documentação de variáveis de ambiente e APIs externas: `docs/TECNOLOGIAS_E_APIS.md`.

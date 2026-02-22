@@ -1,3 +1,6 @@
+// Log imediato para Cloud Run: confirma que o processo iniciou
+console.log('[Terra Manager] Processo iniciado. PORT=', process.env.PORT);
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -7,8 +10,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const port = parseInt(process.env.PORT ?? '8080', 10) || 8080;
-  console.log('[Terra Manager] Iniciando aplicação...');
-  const app = await NestFactory.create(AppModule);
+  console.log('[Terra Manager] Iniciando aplicação (porta', port, ')...');
+  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
 
   app.enableCors({
     origin: '*',

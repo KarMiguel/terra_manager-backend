@@ -23,12 +23,12 @@ COPY . .
 # Build do NestJS
 RUN npm run build
 
-# Variáveis de ambiente
+# Variáveis de ambiente (Cloud Run injeta PORT=8080)
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Porta da aplicação
 EXPOSE 8080
 
-# Comando final
-CMD ["node", "dist/main.js"]
+# Script de entrada: garante PORT e log; exec para PID 1
+RUN chmod +x scripts/start-cloudrun.sh
+CMD ["./scripts/start-cloudrun.sh"]
