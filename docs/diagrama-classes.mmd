@@ -1,0 +1,900 @@
+---
+config:
+  layout: elk
+  theme: neutral
+---
+classDiagram
+direction LR
+    class ROLE {
+	    ADMIN
+	    USER
+    }
+
+    class TipoPlanoEnum {
+	    BASICO
+	    PRO
+	    PREMIUM
+    }
+
+    class TipoPlantaEnum {
+	    SOJA
+	    MILHO
+	    FEIJAO
+	    ARROZ
+	    CAFE
+	    ALGODAO
+	    BANANA
+	    LARANJA
+    }
+
+    class TipoSoloEnum {
+	    ARENOSO
+	    ARGILOSO
+	    SILTOSO
+	    MISTO
+	    HUMIFERO
+	    CALCARIO
+	    GLEISSOLO
+	    LATOSSOLO
+	    CAMBISSOLO
+	    ORGANOSSOLO
+	    NEOSSOLO
+	    PLANOSSOLO
+	    VERTISSOLO
+    }
+
+    class StatusPlantioEnum {
+	    PLANEJADO
+	    EXECUTADO
+	    EM_MONITORAMENTO
+	    CONCLUIDO
+    }
+
+    class UnidadeDoseEnum {
+	    KG_HA
+	    G_HA
+	    ML_HA
+	    L_HA
+	    TON_HA
+    }
+
+    class TipoEtapaOperacaoEnum {
+	    PREPARO_SOLO
+	    SEMEADURA
+	    APLICACAO_DEFENSIVO
+	    APLICACAO_FERTILIZANTE
+	    IRRIGACAO
+	    COLHEITA
+	    OUTROS
+    }
+
+    class TipoAplicacaoEnum {
+	    DEFENSIVO
+	    FERTILIZANTE
+    }
+
+    class StatusPagamentoEnum {
+	    CANCELADO
+	    APROVADO
+	    REPROVADO
+	    PROCESSANDO
+    }
+
+    class FormaPagamentoEnum {
+	    PIX
+	    CARTAO_CREDITO
+	    BOLETO
+    }
+
+    class StatusCobrancaEnum {
+	    PENDENTE
+	    PAGO
+	    CANCELADO
+	    VENCIDO
+    }
+
+    class CategoriaEstoqueEnum {
+	    DEFENSIVOS
+	    FERTILIZANTES
+	    SEMENTES
+	    CONDICIONADORES
+	    FERRAMENTAS
+	    EQUIPAMENTOS
+	    EMBALAGENS
+    }
+
+    class StatusEstoqueEnum {
+	    DISPONIVEL
+	    EM_USO
+	    ESGOTADO
+	    DANIFICADO
+	    EXPIRADO
+    }
+
+    class UnidadeMedidaEnum {
+	    QUILO
+	    GRAMA
+	    LITRO
+	    METRO
+	    CENTIMETRO
+	    METRO_QUADRADO
+	    METRO_CUBICO
+	    TONELADA
+    }
+
+    class Usuario {
+	    -id: Int
+	    -email: String
+	    -password: String
+	    -nome: String
+	    -role: ROLE
+	    -cpf: String
+	    -telefone: String
+	    -plano: Plano
+	    -resetPasswordToken: String
+	    -resetPasswordExpires: DateTime
+	    -ativo: Boolean
+	    +alterarDados(nome, telefone) void
+	    +alterarSenha(novaSenha) void
+	    +definirAtivo(ativo) void
+    }
+
+    class Plano {
+	    -id: Int
+	    -nome: String
+	    -tipoPlano: TipoPlanoEnum
+	    -valorPlano: Float
+	    -tempoPlanoDias: Int
+	    -descricao: String
+	    -ativo: Boolean
+    }
+
+    class UsuarioPlano {
+	    -id: Int
+	    -plano: Plano
+	    -usuario: Usuario
+	    -dataInicioPlano: DateTime
+	    -dataFimPlano: DateTime
+	    -dataCanceladoEm: DateTime
+	    -motivoCancelamento: String
+	    -renovacaoAutomatica: Boolean
+	    -ativo: Boolean
+	    +estaVigente() Boolean
+	    +estaAtivo() Boolean
+	    +estaCancelada() Boolean
+	    +cancelar(motivo) void
+    }
+
+    class Cobranca {
+	    -id: Int
+	    -usuarioPlano: UsuarioPlano
+	    -formaPagamento: FormaPagamentoEnum
+	    -valor: Float
+	    -dataVencimento: DateTime
+	    -codigoCobranca: String
+	    -status: StatusCobrancaEnum
+	    -pagamentoPlano: PagamentoPlano
+	    +estaPendente() Boolean
+	    +estaPaga() Boolean
+	    +estaVencida() Boolean
+	    +marcarComoPaga(pagamento) void
+    }
+
+    class PagamentoPlano {
+	    -id: Int
+	    -usuarioPlano: UsuarioPlano
+	    -dataPagamento: DateTime
+	    -dataVencimento: DateTime
+	    -valor: Float
+	    -statusPagamento: StatusPagamentoEnum
+	    -formaPagamento: FormaPagamentoEnum
+	    -idTransacaoExterno: String
+	    -ativo: Boolean
+	    +estaAprovado() Boolean
+	    +estaProcessando() Boolean
+    }
+
+    class Fazenda {
+	    -id: Int
+	    -nome: String
+	    -latitude: Float
+	    -longitude: Float
+	    -areaTotal: Float
+	    -cnpj: String
+	    -soloPredominante: String
+	    -cultivoPredominante: String
+	    -municipio: String
+	    -uf: String
+	    -usuario: Usuario
+	    -ativo: Boolean
+    }
+
+    class Talhao {
+	    -id: Int
+	    -fazenda: Fazenda
+	    -nome: String
+	    -areaHa: Float
+	    -geometria: Json
+	    -observacao: String
+	    -ativo: Boolean
+    }
+
+    class ZonaManejo {
+	    -id: Int
+	    -fazenda: Fazenda
+	    -talhao: Talhao
+	    -nome: String
+	    -descricao: String
+	    -tipo: String
+	    -geometria: Json
+	    -cor: String
+	    -ativo: Boolean
+    }
+
+    class Cultivar {
+	    -id: Int
+	    -nomeCientifico: String
+	    -nomePopular: String
+	    -tipoPlanta: TipoPlantaEnum
+	    -tipoSolo: TipoSoloEnum
+	    -phSolo: Float
+	    -dataPlantioInicio: DateTime
+	    -dataPlantioFim: DateTime
+	    -periodoDias: Int
+	    -mmAgua: Float
+	    -aduboNitrogenio: Float
+	    -aduboFosforo: Float
+	    -aduboPotassio: Float
+	    -aduboCalcio: Float
+	    -aduboMagnesio: Float
+	    -tempoCicloDias: Int
+	    -densidadePlantio: Float
+	    -densidadeColheita: Float
+	    -observacao: String
+	    -usuario: Usuario
+	    -praga: Praga
+	    -fornecedor: Fornecedor
+    }
+
+    class Praga {
+	    -id: Int
+	    -nomeCientifico: String
+	    -nomeComum: String
+	    -descricao: String
+    }
+
+    class Fornecedor {
+	    -id: Int
+	    -cnpj: String
+	    -razaoSocial: String
+	    -nomeFantasia: String
+	    -responsavel: String
+	    -email: String
+	    -telefone: String
+	    -linkSite: String
+	    -logradouro: String
+	    -numero: String
+	    -complemento: String
+	    -bairro: String
+	    -cidade: String
+	    -estado: String
+	    -cep: String
+	    -observacao: String
+	    -usuario: Usuario
+	    -ativo: Boolean
+    }
+
+    class AnaliseSolo {
+	    -id: Int
+	    -usuario: Usuario
+	    -nomeSolo: String
+	    -ph: Float
+	    -areaTotal: Float
+	    -hAi: Float
+	    -sb: Float
+	    -ctc: Float
+	    -v: Float
+	    -m: Float
+	    -mo: Float
+	    -prnt: Float
+	    -valorCultural: Float
+	    -n: Float
+	    -p: Float
+	    -k: Float
+	    -ativo: Boolean
+	    -cultivar: Cultivar
+	    +calculaCalagem(plantio) void
+	    +calculoAdubacao(plantio) void
+	    +comparativoNutrientes(plantio) void
+    }
+
+    class Plantio {
+	    -id: Int
+	    -cultivar: Cultivar
+	    -fazenda: Fazenda
+	    -talhao: Talhao
+	    -analiseSolo: AnaliseSolo
+	    -dataPlantio: DateTime
+	    -dataEmergencia: DateTime
+	    -dataPrevistaColheita: DateTime
+	    -dataMaturacao: DateTime
+	    -areaPlantada: Float
+	    -densidadePlanejada: Float
+	    -densidadePlantioReal: Float
+	    -phSoloInicial: Float
+	    -umidadeSoloInicial: Float
+	    -loteSemente: String
+	    -taxaGerminacao: Float
+	    -tratamentoSemente: String
+	    -profundidadeSemeadura: Float
+	    -espacamentoEntreLinhas: Float
+	    -orientacaoTransplantio: String
+	    -mmAguaAplicado: Float
+	    -irrigacaoVolume: Float
+	    -irrigacaoDuracao: Int
+	    -aduboNitrogenioDose: Float
+	    -aduboNitrogenioUnidade: UnidadeDoseEnum
+	    -aduboFosforoDose: Float
+	    -aduboFosforoUnidade: UnidadeDoseEnum
+	    -aduboPotassioDose: Float
+	    -aduboPotassioUnidade: UnidadeDoseEnum
+	    -defensivoUtilizado: String
+	    -doseDefensivo: Float
+	    -unidadeDefensivo: UnidadeDoseEnum
+	    -rendimentoEstimado: Float
+	    -custoSemente: Float
+	    -custoFertilizante: Float
+	    -custoDefensivo: Float
+	    -custoCombustivel: Float
+	    -custoOutros: Float
+	    -custoTotal: Float
+	    -statusPlantio: StatusPlantioEnum
+	    -observacao: String
+	    -ativo: Boolean
+	    +calcularCustoTotal() Float
+	    +volumeIrrigacaoRecomendado() Float
+	    +custoPorSafra(anoNum)
+	    +atualizarStatus(novoStatus) void
+    }
+
+    class OperacaoPlantio {
+	    -id: Int
+	    -plantio: Plantio
+	    -talhao: Talhao
+	    -tipoEtapa: TipoEtapaOperacaoEnum
+	    -dataInicio: DateTime
+	    -dataFim: DateTime
+	    -areaHa: Float
+	    -custoTotal: Float
+	    -custoPorHa: Float
+	    -observacao: String
+	    -ativo: Boolean
+	    +calcularCustoPorHa(custoTotal, areaHa) Float
+	    +areaDentroDoPlantio() Boolean
+    }
+
+    class Aplicacao {
+	    -id: Int
+	    -operacaoPlantio: OperacaoPlantio
+	    -produtoEstoque: ProdutosEstoque
+	    -tipo: TipoAplicacaoEnum
+	    -nomeProduto: String
+	    -dosePorHa: Float
+	    -unidadeDose: UnidadeDoseEnum
+	    -quantidadeTotal: Float
+	    -custoAplicacao: Float
+	    -dataAplicacao: DateTime
+	    -observacao: String
+	    -ativo: Boolean
+	    -calcularQuantidadeTotal(dosePorHa, areaHa) Float
+    }
+
+    class ProdutosEstoque {
+	    -id: Int
+	    -nome: String
+	    -descricao: String
+	    -marca: String
+	    -quantidade: Int
+	    -valorUnitario: Float
+	    -unidadeMedida: UnidadeMedidaEnum
+	    -dataValidade: DateTime
+	    -categoria: CategoriaEstoqueEnum
+	    -status: StatusEstoqueEnum
+	    -fazenda: Fazenda
+	    -fornecedor: Fornecedor
+	    -ativo: Boolean
+	    +aumentarQuantidade(quantidade) void
+	    +removerQuantidade(quantidade) void
+    }
+
+	<<enumeration>> ROLE
+	<<enumeration>> TipoPlanoEnum
+	<<enumeration>> TipoPlantaEnum
+	<<enumeration>> TipoSoloEnum
+	<<enumeration>> StatusPlantioEnum
+	<<enumeration>> UnidadeDoseEnum
+	<<enumeration>> TipoEtapaOperacaoEnum
+	<<enumeration>> TipoAplicacaoEnum
+	<<enumeration>> StatusPagamentoEnum
+	<<enumeration>> FormaPagamentoEnum
+	<<enumeration>> StatusCobrancaEnum
+	<<enumeration>> CategoriaEstoqueEnum
+	<<enumeration>> StatusEstoqueEnum
+	<<enumeration>> UnidadeMedidaEnum
+
+    Usuario "1" --> "1..*" Fazenda : usuario
+    Usuario "1" --> "*" UsuarioPlano : usuario
+    Usuario "1" --> "*" Cultivar : usuario
+    Usuario "1" --> "*" AnaliseSolo : usuario
+    Usuario "1" --> "*" Fornecedor : usuario
+    Plano "1" --> "*" UsuarioPlano : plano
+    Plano "0..1" --> "1" Usuario : plano
+    UsuarioPlano "1" --> "*" Cobranca : usuarioPlano
+    UsuarioPlano "1" --> "*" PagamentoPlano : usuarioPlano
+    Fazenda "1" --> "*" Talhao : fazenda
+    Fazenda "1" --> "*" ZonaManejo : fazenda
+    Fazenda "1" --> "*" Plantio : fazenda
+    Fazenda "1" --> "*" ProdutosEstoque : fazenda
+    Talhao "1" --> "*" Plantio : talhao
+    Talhao "1" --> "*" OperacaoPlantio : talhao
+    Talhao "0..1" --> "*" ZonaManejo : talhao
+    Cultivar "1" --> "*" Plantio : cultivar
+    Praga "0..1" --> "*" Cultivar : praga
+    Fornecedor "0..1" --> "*" Cultivar : fornecedor
+    Fornecedor "1" --> "*" ProdutosEstoque : fornecedor
+    AnaliseSolo "0..1" --> "*" Plantio : analiseSolo
+    Plantio "1" --> "*" OperacaoPlantio : plantio
+    OperacaoPlantio "1" --> "*" Aplicacao : operacaoPlantio
+    ProdutosEstoque "0..1" --> "*" Aplicacao : produtoEstoque
+
+
+-------------------------------------------------------------------------------------
+
+
+@startuml
+' Layout
+left to right direction
+
+' ===========================
+' ENUMERAÇÕES
+' ===========================
+enum ROLE {
+    ADMIN
+    USER
+}
+
+enum TipoPlanoEnum {
+    BASICO
+    PRO
+    PREMIUM
+}
+
+enum TipoPlantaEnum {
+    SOJA
+    MILHO
+    FEIJAO
+    ARROZ
+    CAFE
+    ALGODAO
+    BANANA
+    LARANJA
+}
+
+enum TipoSoloEnum {
+    ARENOSO
+    ARGILOSO
+    SILTOSO
+    MISTO
+    HUMIFERO
+    CALCARIO
+    GLEISSOLO
+    LATOSSOLO
+    CAMBISSOLO
+    ORGANOSSOLO
+    NEOSSOLO
+    PLANOSSOLO
+    VERTISSOLO
+}
+
+enum StatusPlantioEnum {
+    PLANEJADO
+    EXECUTADO
+    EM_MONITORAMENTO
+    CONCLUIDO
+}
+
+enum UnidadeDoseEnum {
+    KG_HA
+    G_HA
+    ML_HA
+    L_HA
+    TON_HA
+}
+
+enum TipoEtapaOperacaoEnum {
+    PREPARO_SOLO
+    SEMEADURA
+    APLICACAO_DEFENSIVO
+    APLICACAO_FERTILIZANTE
+    IRRIGACAO
+    COLHEITA
+    OUTROS
+}
+
+enum TipoAplicacaoEnum {
+    DEFENSIVO
+    FERTILIZANTE
+}
+
+enum StatusPagamentoEnum {
+    CANCELADO
+    APROVADO
+    REPROVADO
+    PROCESSANDO
+}
+
+enum FormaPagamentoEnum {
+    PIX
+    CARTAO_CREDITO
+    BOLETO
+}
+
+enum StatusCobrancaEnum {
+    PENDENTE
+    PAGO
+    CANCELADO
+    VENCIDO
+}
+
+enum CategoriaEstoqueEnum {
+    DEFENSIVOS
+    FERTILIZANTES
+    SEMENTES
+    CONDICIONADORES
+    FERRAMENTAS
+    EQUIPAMENTOS
+    EMBALAGENS
+}
+
+enum StatusEstoqueEnum {
+    DISPONIVEL
+    EM_USO
+    ESGOTADO
+    DANIFICADO
+    EXPIRADO
+}
+
+enum UnidadeMedidaEnum {
+    QUILO
+    GRAMA
+    LITRO
+    METRO
+    CENTIMETRO
+    METRO_QUADRADO
+    METRO_CUBICO
+    TONELADA
+}
+
+' ===========================
+' CLASSES
+' ===========================
+class Usuario {
+    -id: Int
+    -email: String
+    -password: String
+    -nome: String
+    -role: ROLE
+    -cpf: String
+    -telefone: String
+    -plano: Plano
+    -resetPasswordToken: String
+    -resetPasswordExpires: DateTime
+    -ativo: Boolean
+    +alterarDados(nome, telefone): void
+    +alterarSenha(novaSenha): void
+    +definirAtivo(ativo): void
+}
+
+class Plano {
+    -id: Int
+    -nome: String
+    -tipoPlano: TipoPlanoEnum
+    -valorPlano: Float
+    -tempoPlanoDias: Int
+    -descricao: String
+    -ativo: Boolean
+}
+
+class UsuarioPlano {
+    -id: Int
+    -plano: Plano
+    -usuario: Usuario
+    -dataInicioPlano: DateTime
+    -dataFimPlano: DateTime
+    -dataCanceladoEm: DateTime
+    -motivoCancelamento: String
+    -renovacaoAutomatica: Boolean
+    -ativo: Boolean
+    +estaVigente(): Boolean
+    +estaAtivo(): Boolean
+    +estaCancelada(): Boolean
+    +cancelar(motivo): void
+}
+
+class Cobranca {
+    -id: Int
+    -usuarioPlano: UsuarioPlano
+    -formaPagamento: FormaPagamentoEnum
+    -valor: Float
+    -dataVencimento: DateTime
+    -codigoCobranca: String
+    -status: StatusCobrancaEnum
+    -pagamentoPlano: PagamentoPlano
+    +estaPendente(): Boolean
+    +estaPaga(): Boolean
+    +estaVencida(): Boolean
+    +marcarComoPaga(pagamento): void
+}
+
+class PagamentoPlano {
+    -id: Int
+    -usuarioPlano: UsuarioPlano
+    -dataPagamento: DateTime
+    -dataVencimento: DateTime
+    -valor: Float
+    -statusPagamento: StatusPagamentoEnum
+    -formaPagamento: FormaPagamentoEnum
+    -idTransacaoExterno: String
+    -ativo: Boolean
+    +estaAprovado(): Boolean
+    +estaProcessando(): Boolean
+}
+
+class Fazenda {
+    -id: Int
+    -nome: String
+    -latitude: Float
+    -longitude: Float
+    -areaTotal: Float
+    -cnpj: String
+    -soloPredominante: String
+    -cultivoPredominante: String
+    -municipio: String
+    -uf: String
+    -usuario: Usuario
+    -ativo: Boolean
+}
+
+class Talhao {
+    -id: Int
+    -fazenda: Fazenda
+    -nome: String
+    -areaHa: Float
+    -geometria: Json
+    -observacao: String
+    -ativo: Boolean
+}
+
+class ZonaManejo {
+    -id: Int
+    -fazenda: Fazenda
+    -talhao: Talhao
+    -nome: String
+    -descricao: String
+    -tipo: String
+    -geometria: Json
+    -cor: String
+    -ativo: Boolean
+}
+
+class Cultivar {
+    -id: Int
+    -nomeCientifico: String
+    -nomePopular: String
+    -tipoPlanta: TipoPlantaEnum
+    -tipoSolo: TipoSoloEnum
+    -phSolo: Float
+    -dataPlantioInicio: DateTime
+    -dataPlantioFim: DateTime
+    -periodoDias: Int
+    -mmAgua: Float
+    -aduboNitrogenio: Float
+    -aduboFosforo: Float
+    -aduboPotassio: Float
+    -aduboCalcio: Float
+    -aduboMagnesio: Float
+    -tempoCicloDias: Int
+    -densidadePlantio: Float
+    -densidadeColheita: Float
+    -observacao: String
+    -usuario: Usuario
+    -praga: Praga
+    -fornecedor: Fornecedor
+}
+
+class Praga {
+    -id: Int
+    -nomeCientifico: String
+    -nomeComum: String
+    -descricao: String
+}
+
+class Fornecedor {
+    -id: Int
+    -cnpj: String
+    -razaoSocial: String
+    -nomeFantasia: String
+    -responsavel: String
+    -email: String
+    -telefone: String
+    -linkSite: String
+    -logradouro: String
+    -numero: String
+    -complemento: String
+    -bairro: String
+    -cidade: String
+    -estado: String
+    -cep: String
+    -observacao: String
+    -usuario: Usuario
+    -ativo: Boolean
+}
+
+class AnaliseSolo {
+    -id: Int
+    -usuario: Usuario
+    -nomeSolo: String
+    -ph: Float
+    -areaTotal: Float
+    -hAi: Float
+    -sb: Float
+    -ctc: Float
+    -v: Float
+    -m: Float
+    -mo: Float
+    -prnt: Float
+    -valorCultural: Float
+    -n: Float
+    -p: Float
+    -k: Float
+    -ativo: Boolean
+    -cultivar: Cultivar
+    +calculaCalagem(plantio): void
+    +calculoAdubacao(plantio): void
+    +comparativoNutrientes(plantio): void
+}
+
+class Plantio {
+    -id: Int
+    -cultivar: Cultivar
+    -fazenda: Fazenda
+    -talhao: Talhao
+    -analiseSolo: AnaliseSolo
+    -dataPlantio: DateTime
+    -dataEmergencia: DateTime
+    -dataPrevistaColheita: DateTime
+    -dataMaturacao: DateTime
+    -areaPlantada: Float
+    -densidadePlanejada: Float
+    -densidadePlantioReal: Float
+    -phSoloInicial: Float
+    -umidadeSoloInicial: Float
+    -loteSemente: String
+    -taxaGerminacao: Float
+    -tratamentoSemente: String
+    -profundidadeSemeadura: Float
+    -espacamentoEntreLinhas: Float
+    -orientacaoTransplantio: String
+    -mmAguaAplicado: Float
+    -irrigacaoVolume: Float
+    -irrigacaoDuracao: Int
+    -aduboNitrogenioDose: Float
+    -aduboNitrogenioUnidade: UnidadeDoseEnum
+    -aduboFosforoDose: Float
+    -aduboFosforoUnidade: UnidadeDoseEnum
+    -aduboPotassioDose: Float
+    -aduboPotassioUnidade: UnidadeDoseEnum
+    -defensivoUtilizado: String
+    -doseDefensivo: Float
+    -unidadeDefensivo: UnidadeDoseEnum
+    -rendimentoEstimado: Float
+    -custoSemente: Float
+    -custoFertilizante: Float
+    -custoDefensivo: Float
+    -custoCombustivel: Float
+    -custoOutros: Float
+    -custoTotal: Float
+    -statusPlantio: StatusPlantioEnum
+    -observacao: String
+    -ativo: Boolean
+    +calcularCustoTotal(): Float
+    +volumeIrrigacaoRecomendado(): Float
+    +custoPorSafra(anoNum)
+    +atualizarStatus(novoStatus): void
+}
+
+class OperacaoPlantio {
+    -id: Int
+    -plantio: Plantio
+    -talhao: Talhao
+    -tipoEtapa: TipoEtapaOperacaoEnum
+    -dataInicio: DateTime
+    -dataFim: DateTime
+    -areaHa: Float
+    -custoTotal: Float
+    -custoPorHa: Float
+    -observacao: String
+    -ativo: Boolean
+    +calcularCustoPorHa(custoTotal, areaHa): Float
+    +areaDentroDoPlantio(): Boolean
+}
+
+class Aplicacao {
+    -id: Int
+    -operacaoPlantio: OperacaoPlantio
+    -produtoEstoque: ProdutosEstoque
+    -tipo: TipoAplicacaoEnum
+    -nomeProduto: String
+    -dosePorHa: Float
+    -unidadeDose: UnidadeDoseEnum
+    -quantidadeTotal: Float
+    -custoAplicacao: Float
+    -dataAplicacao: DateTime
+    -observacao: String
+    -ativo: Boolean
+    -calcularQuantidadeTotal(dosePorHa, areaHa): Float
+}
+
+class ProdutosEstoque {
+    -id: Int
+    -nome: String
+    -descricao: String
+    -marca: String
+    -quantidade: Int
+    -valorUnitario: Float
+    -unidadeMedida: UnidadeMedidaEnum
+    -dataValidade: DateTime
+    -categoria: CategoriaEstoqueEnum
+    -status: StatusEstoqueEnum
+    -fazenda: Fazenda
+    -fornecedor: Fornecedor
+    -ativo: Boolean
+    +aumentarQuantidade(quantidade): void
+    +removerQuantidade(quantidade): void
+}
+
+' ===========================
+' RELACIONAMENTOS
+' ===========================
+Usuario "1" --> "1..*" Fazenda : usuario
+Usuario "1" --> "*" UsuarioPlano : usuario
+Usuario "1" --> "*" Cultivar : usuario
+Usuario "1" --> "*" AnaliseSolo : usuario
+Usuario "1" --> "*" Fornecedor : usuario
+
+Plano "1" --> "*" UsuarioPlano : plano
+Plano "0..1" --> "1" Usuario : plano
+
+UsuarioPlano "1" --> "*" Cobranca : usuarioPlano
+UsuarioPlano "1" --> "*" PagamentoPlano : usuarioPlano
+
+Fazenda "1" --> "*" Talhao : fazenda
+Fazenda "1" --> "*" ZonaManejo : fazenda
+Fazenda "1" --> "*" Plantio : fazenda
+Fazenda "1" --> "*" ProdutosEstoque : fazenda
+
+Talhao "1" --> "*" Plantio : talhao
+Talhao "1" --> "*" OperacaoPlantio : talhao
+Talhao "0..1" --> "*" ZonaManejo : talhao
+
+Cultivar "1" --> "*" Plantio : cultivar
+Praga "0..1" --> "*" Cultivar : praga
+Fornecedor "0..1" --> "*" Cultivar : fornecedor
+Fornecedor "1" --> "*" ProdutosEstoque : fornecedor
+
+AnaliseSolo "0..1" --> "*" Plantio : analiseSolo
+Plantio "1" --> "*" OperacaoPlantio : plantio
+OperacaoPlantio "1" --> "*" Aplicacao : operacaoPlantio
+ProdutosEstoque "0..1" --> "*" Aplicacao : produtoEstoque
+
+@enduml
