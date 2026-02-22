@@ -17,7 +17,6 @@ Documentação das tecnologias utilizadas no projeto e das APIs externas consumi
 |------------|--------|-----------------|
 | **NestJS** | ^10.4.x | Framework backend: módulos, injeção de dependência, guards, interceptors. |
 | **Express** | (via @nestjs/platform-express) | Servidor HTTP sob o NestJS. |
-| **serverless-http** | ^4.0.0 | Adaptador para rodar a API em ambiente serverless (ex.: Vercel). |
 
 ### Banco de dados e ORM
 | Tecnologia | Versão | Uso no projeto |
@@ -71,7 +70,7 @@ Documentação das tecnologias utilizadas no projeto e das APIs externas consumi
 ### Deploy e ferramentas de desenvolvimento
 | Tecnologia | Uso no projeto |
 |------------|-----------------|
-| **Vercel** | Hospedagem serverless da API (api/index.ts). |
+| **Google Cloud Run** | Hospedagem da API em container (Docker). Ver `CLOUD_RUN.md`. |
 | **Jest** | Testes unitários e e2e. |
 | **ESLint + Prettier** | Lint e formatação. |
 | **Prisma CLI** | Migrations, seeds, `prisma generate`. |

@@ -8,7 +8,6 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "nest build && prisma generate",
-    "build:vercel": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -43,7 +42,6 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "serverless-http": "^4.0.0",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

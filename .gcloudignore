@@ -1,0 +1,22 @@
+# Ignorar no gcloud builds submit (evita enviar arquivos desnecessários)
+.git
+.gitignore
+node_modules
+dist
+coverage
+.nyc_output
+*.log
+.env
+.env.*
+.vscode
+.idea
+.DS_Store
+*.md
+!package.json
+docs
+test
+*.spec.ts
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
