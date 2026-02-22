@@ -182,6 +182,36 @@ Depois: configurar **Variables & Secrets** no Cloud Run com `DATABASE_URL`, `JWT
 
 ---
 
+## Solução de problemas: "Container failed to start and listen on PORT=8080"
+
+1. **Porta do container no Cloud Run**  
+   No console: serviço **terra-manager** → **Editar e implantar nova revisão** → aba **Container** → em **Porta do contêiner** defina **8080**. Se estiver em branco ou outro valor, o Cloud Run não enxerga a aplicação.
+
+2. **Deploy via gcloud com porta explícita**  
+   ```bash
+   gcloud run deploy terra-manager \
+     --image ... \
+     --port 8080 \
+     --region ... \
+     --platform managed \
+     --allow-unauthenticated
+   ```
+
+3. **Tempo de inicialização**  
+   Se a aplicação demorar para subir (muitos módulos, banco lento), aumente o **Tempo limite da solicitação** (ex.: 300s) e, se existir, o tempo de **inicialização** do serviço.
+
+4. **Logs no Cloud Logging**  
+   Use o link "Abrir o Cloud Logging" da revisão. Procure por:
+   - `[Terra Manager] Iniciando aplicação...` — processo iniciou
+   - `[Terra Manager] Escutando na porta 8080` — está prestes a abrir a porta
+   - `[Terra Manager] Servidor iniciado` — subiu com sucesso
+   - `Falha ao iniciar a aplicação:` — erro (ex.: `DATABASE_URL` ausente, Prisma falhou)
+
+5. **Variáveis de ambiente**  
+   Sem `DATABASE_URL` (e outras obrigatórias), o NestJS pode falhar ao carregar módulos. Configure **Variables & Secrets** no serviço com pelo menos `DATABASE_URL`, `JWT_SECURITY` e `JWT_EXPIRATION`.
+
+---
+
 ## Arquivos do projeto
 
 | Arquivo        | Uso                                      |

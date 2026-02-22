@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
+  const port = parseInt(process.env.PORT ?? '8080', 10) || 8080;
+  console.log('[Terra Manager] Iniciando aplicação...');
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -107,6 +109,11 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  console.log('[Terra Manager] Escutando na porta', port, '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
+  console.log('[Terra Manager] Servidor iniciado em http://0.0.0.0:' + port);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Falha ao iniciar a aplicação:', err);
+  process.exit(1);
+});
