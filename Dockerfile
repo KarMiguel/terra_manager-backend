@@ -1,34 +1,33 @@
-# Use Node 20 com Alpine
-FROM node:20-alpine
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
-# Diretório da aplicação
 WORKDIR /app
 
-# Dependências do sistema
 RUN apk add --no-cache openssl
 
-# Copia arquivos de dependência primeiro para otimizar cache
 COPY package*.json ./
-
-# Instala dependências
+COPY prisma ./prisma/
 RUN npm ci
 
-# Copia a pasta do Prisma e gera client
-COPY prisma ./prisma/
-RUN npx prisma generate
-
-# Copia todo o resto do projeto
 COPY . .
-
-# Build do NestJS
 RUN npm run build
 
-# Variáveis de ambiente (Cloud Run injeta PORT=8080)
+# Stage 2: Produção
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+RUN apk add --no-cache openssl
+
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci --only=production && npm cache clean --force
+RUN npx prisma generate
+
+COPY --from=builder /app/dist ./dist
+
 ENV NODE_ENV=production
 ENV PORT=8080
-
 EXPOSE 8080
 
-# Script de entrada: garante PORT e log; exec para PID 1
-RUN chmod +x scripts/start-cloudrun.sh
-CMD ["./scripts/start-cloudrun.sh"]
+CMD ["node", "dist/main.js"]
