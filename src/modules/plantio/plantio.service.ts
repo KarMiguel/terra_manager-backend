@@ -19,6 +19,55 @@ export class PlantioService extends CrudService<Plantio, PlantioModel> {
     dto: CreatePlantioDto,
     createdBy: string,
   ): Promise<PlantioModel> {
+    const [cultivar, fazenda] = await this.prisma.$transaction([
+      this.prisma.cultivar.findUnique({
+        where: { id: dto.idCultivar },
+        select: { id: true },
+      }),
+      this.prisma.fazenda.findUnique({
+        where: { id: dto.idFazenda },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!cultivar) {
+      throw new NotFoundException(`Cultivar com ID ${dto.idCultivar} não encontrada.`);
+    }
+
+    if (!fazenda) {
+      throw new NotFoundException(`Fazenda com ID ${dto.idFazenda} não encontrada.`);
+    }
+
+    if (dto.idTalhao) {
+      const talhao = await this.prisma.talhao.findUnique({
+        where: { id: dto.idTalhao },
+        select: { id: true, idFazenda: true },
+      });
+
+      if (!talhao) {
+        throw new NotFoundException(`Talhão com ID ${dto.idTalhao} não encontrado.`);
+      }
+
+      if (talhao.idFazenda !== dto.idFazenda) {
+        throw new BadRequestException(
+          `Talhão com ID ${dto.idTalhao} não pertence à fazenda ${dto.idFazenda}.`,
+        );
+      }
+    }
+
+    if (dto.idAnaliseSolo) {
+      const analiseSolo = await this.prisma.analiseSolo.findUnique({
+        where: { id: dto.idAnaliseSolo },
+        select: { id: true },
+      });
+
+      if (!analiseSolo) {
+        throw new NotFoundException(
+          `Análise de solo com ID ${dto.idAnaliseSolo} não encontrada.`,
+        );
+      }
+    }
+
     const {
       dataPlantio,
       dataEmergencia,

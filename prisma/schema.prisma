@@ -319,6 +319,7 @@ model ZonaManejo {
 
   fazenda Fazenda @relation(fields: [idFazenda], references: [id], onDelete: Cascade)
   talhao  Talhao? @relation(fields: [idTalhao], references: [id], onDelete: SetNull)
+  analisesSolo AnaliseSolo[]
 
   @@map("zona_manejo")
 }
@@ -434,6 +435,7 @@ model Cultivar {
 model AnaliseSolo {
   id        Int @id @default(autoincrement())
   idUsuario Int @map("id_usuario")
+  idZonaManejo Int? @map("id_zona_manejo")
 
   nomeSolo      String? @map("nome_solo") @db.VarChar(255)
   ph            Float? @map("ph")
@@ -457,6 +459,7 @@ model AnaliseSolo {
   modifiedBy   String?  @map("modified_by") @db.VarChar(255)
 
   usuario  Usuario   @relation(fields: [idUsuario], references: [id])
+  zonaManejo ZonaManejo? @relation(fields: [idZonaManejo], references: [id], onDelete: SetNull)
   plantios Plantio[]
 
   @@map("analise_solo")

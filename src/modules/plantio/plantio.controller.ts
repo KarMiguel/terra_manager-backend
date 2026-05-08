@@ -26,7 +26,7 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   @Post()
   @ApiOperation({ 
     summary: 'Cria um novo registro de plantio',
-    description: 'Cria um novo plantio associado a uma fazenda e cultivar. O plantio representa uma área cultivada em uma fazenda específica.'
+    description: 'Cria um novo plantio associado a uma fazenda e cultivar. Opcionalmente aceita talhão e análise de solo.'
   })
   @ApiResponse({ 
     status: 201, 
@@ -34,7 +34,11 @@ export class PlantioController extends CrudController<Plantio, PlantioModel> {
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Dados inválidos ou fazenda/cultivar não encontrados' 
+    description: 'Dados inválidos ou relacionamento inconsistente entre fazenda e talhão' 
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Cultivar, fazenda, talhão ou análise de solo não encontrados',
   })
   @ApiResponse({ 
     status: 401, 

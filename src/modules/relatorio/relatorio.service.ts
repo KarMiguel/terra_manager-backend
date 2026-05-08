@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient, StatusPagamentoEnum } from '@prisma/client';
 import * as puppeteer from 'puppeteer';
 import { PlanoService } from '../plano/plano.service';
@@ -36,31 +36,42 @@ export class RelatorioService {
 
   async gerarRelatorioPlantios(
     idUsuario: number,
-    ano?: number,
-    idFazenda?: number,
+    ano: number,
+    idFazenda: number,
+    mes: number,
   ): Promise<Buffer> {
+    const anoRef = ano;
+    if (mes < 1 || mes > 12) {
+      throw new BadRequestException('Parâmetro "mes" deve estar entre 1 e 12.');
+    }
+
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: idUsuario },
       select: { nome: true },
     });
     const nomeUsuario = usuario?.nome ?? 'Usuário';
 
-    const fazendasWhere = { idUsuario, ativo: true };
-    if (idFazenda) (fazendasWhere as any).id = idFazenda;
+    const fazendasWhere = { idUsuario, ativo: true, id: idFazenda };
 
     const fazendas = await this.prisma.fazenda.findMany({
       where: fazendasWhere,
       select: { id: true, nome: true },
     });
+    if (!fazendas.length) {
+      throw new NotFoundException(`Fazenda com ID ${idFazenda} não encontrada para o usuário.`);
+    }
     const idsFazendas = fazendas.map((f) => f.id);
 
-    const where: any = { fazenda: { id: { in: idsFazendas } }, ativo: true };
-    if (ano) {
-      where.dataPlantio = {
-        gte: new Date(ano, 0, 1),
-        lte: new Date(ano, 11, 31, 23, 59, 59),
-      };
-    }
+    const inicioPeriodo = mes ? new Date(anoRef, mes - 1, 1) : new Date(anoRef, 0, 1);
+    const fimPeriodo = mes ? new Date(anoRef, mes, 0, 23, 59, 59) : new Date(anoRef, 11, 31, 23, 59, 59);
+    const where: any = {
+      fazenda: { id: { in: idsFazendas } },
+      ativo: true,
+      dataPlantio: {
+        gte: inicioPeriodo,
+        lte: fimPeriodo,
+      },
+    };
 
     const plantiosRaw = await this.prisma.plantio.findMany({
       where,
@@ -74,8 +85,8 @@ export class RelatorioService {
     });
 
     const filtros: string[] = [];
-    if (ano) filtros.push(`Ano: ${ano}`);
-    if (idFazenda) filtros.push(`Fazenda: ${fazendas[0]?.nome ?? idFazenda}`);
+    filtros.push(`Período: ${String(mes).padStart(2, '0')}/${anoRef}`);
+    filtros.push(`Fazenda: ${fazendas[0]?.nome ?? idFazenda}`);
 
     let areaTotal = 0;
     let custoTotalGeral = 0;
@@ -138,8 +149,10 @@ export class RelatorioService {
 
   async gerarRelatorioEstoque(
     idUsuario: number,
-    idFazenda?: number,
+    idFazenda: number,
     categoria?: string,
+    ano?: number,
+    mes?: number,
   ): Promise<Buffer> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: idUsuario },
@@ -147,12 +160,14 @@ export class RelatorioService {
     });
     const nomeUsuario = usuario?.nome ?? 'Usuário';
 
-    const fazendasWhere = { idUsuario, ativo: true };
-    if (idFazenda) (fazendasWhere as any).id = idFazenda;
+    const fazendasWhere = { idUsuario, ativo: true, id: idFazenda };
     const fazendas = await this.prisma.fazenda.findMany({
       where: fazendasWhere,
       select: { id: true, nome: true },
     });
+    if (!fazendas.length) {
+      throw new NotFoundException(`Fazenda com ID ${idFazenda} não encontrada para o usuário.`);
+    }
     const idsFazendas = fazendas.map((f) => f.id);
 
     const where: any = { fazenda: { id: { in: idsFazendas } }, ativo: true };
@@ -168,7 +183,8 @@ export class RelatorioService {
     });
 
     const filtros: string[] = [];
-    if (idFazenda) filtros.push(`Fazenda: ${fazendas[0]?.nome ?? idFazenda}`);
+    if (mes && ano) filtros.push(`Período: ${String(mes).padStart(2, '0')}/${ano}`);
+    filtros.push(`Fazenda: ${fazendas[0]?.nome ?? idFazenda}`);
     if (categoria) filtros.push(`Categoria: ${categoria}`);
 
     const hoje = new Date();
@@ -243,20 +259,40 @@ export class RelatorioService {
     return this.generatePdf(html);
   }
 
-  async gerarRelatorioAnalisesSolo(idUsuario: number, ano?: number): Promise<Buffer> {
+  async gerarRelatorioAnalisesSolo(
+    idUsuario: number,
+    idFazenda: number,
+    ano: number,
+    mes: number,
+  ): Promise<Buffer> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: idUsuario },
       select: { nome: true },
     });
     const nomeUsuario = usuario?.nome ?? 'Usuário';
 
-    const where: any = { idUsuario, ativo: true };
-    if (ano) {
-      where.dateCreated = {
-        gte: new Date(ano, 0, 1),
-        lte: new Date(ano, 11, 31, 23, 59, 59),
-      };
+    const fazenda = await this.prisma.fazenda.findFirst({
+      where: { id: idFazenda, idUsuario, ativo: true },
+      select: { id: true, nome: true },
+    });
+    if (!fazenda) {
+      throw new NotFoundException(`Fazenda com ID ${idFazenda} não encontrada para o usuário.`);
     }
+
+    const where: any = {
+      idUsuario,
+      ativo: true,
+      plantios: {
+        some: {
+          idFazenda,
+          ativo: true,
+        },
+      },
+      dateCreated: {
+        gte: new Date(ano, mes - 1, 1),
+        lte: new Date(ano, mes, 0, 23, 59, 59),
+      },
+    };
 
     const analises = await this.prisma.analiseSolo.findMany({
       where,
@@ -264,7 +300,8 @@ export class RelatorioService {
     });
 
     const filtros: string[] = [];
-    if (ano) filtros.push(`Ano: ${ano}`);
+    filtros.push(`Período: ${String(mes).padStart(2, '0')}/${ano}`);
+    filtros.push(`Fazenda: ${fazenda.nome}`);
 
     const analisesMap = analises.map((a) => ({
       nomeSolo: a.nomeSolo ?? null,
@@ -324,8 +361,9 @@ export class RelatorioService {
 
   async gerarRelatorioResumo(
     idUsuario: number,
-    ano?: number,
-    mes?: number,
+    idFazenda: number,
+    ano: number,
+    mes: number,
   ): Promise<Buffer> {
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: idUsuario },
@@ -333,20 +371,19 @@ export class RelatorioService {
     });
     const nomeUsuario = usuario?.nome ?? 'Usuário';
 
-    const anoRef = ano ?? new Date().getFullYear();
-    const inicio = mes
-      ? new Date(anoRef, mes - 1, 1)
-      : new Date(anoRef, 0, 1);
-    const fim = mes
-      ? new Date(anoRef, mes, 0, 23, 59, 59)
-      : new Date(anoRef, 11, 31, 23, 59, 59);
+    const anoRef = ano;
+    const inicio = new Date(anoRef, mes - 1, 1);
+    const fim = new Date(anoRef, mes, 0, 23, 59, 59);
 
     const idsFazendas = await this.prisma.fazenda
       .findMany({
-        where: { idUsuario, ativo: true },
+        where: { idUsuario, ativo: true, id: idFazenda },
         select: { id: true },
       })
       .then((rows) => rows.map((r) => r.id));
+    if (!idsFazendas.length) {
+      throw new NotFoundException(`Fazenda com ID ${idFazenda} não encontrada para o usuário.`);
+    }
 
     const inicioAnoSafra = new Date(anoRef, 0, 1);
     const fimAnoSafra = new Date(anoRef, 11, 31, 23, 59, 59);
@@ -469,7 +506,7 @@ export class RelatorioService {
     }
     custoSafraAnoAtual = Math.round(custoSafraAnoAtual * 100) / 100;
 
-    const periodoLabel = mes ? `${String(mes).padStart(2, '0')}/${anoRef}` : `Ano ${anoRef}`;
+    const periodoLabel = `${String(mes).padStart(2, '0')}/${anoRef}`;
     const filtros = `Período: ${periodoLabel}`;
 
     const destaques: string[] = [];

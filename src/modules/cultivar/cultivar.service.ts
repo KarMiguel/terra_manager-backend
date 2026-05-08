@@ -24,8 +24,32 @@ export class CultivarService extends CrudService<Cultivar, CultivarModel> {
     }
   
     const { praga, ...rest } = createCultivarDto;
+
+    if (rest.idFornecedor) {
+      const fornecedor = await this.prisma.fornecedor.findUnique({
+        where: { id: rest.idFornecedor },
+        select: { id: true },
+      });
+
+      if (!fornecedor) {
+        throw new NotFoundException(
+          `Fornecedor com id ${rest.idFornecedor} não encontrado.`,
+        );
+      }
+    }
   
     let idPraga: number | undefined = rest.idPraga;
+
+    if (idPraga && !praga) {
+      const pragaExistente = await this.prisma.praga.findUnique({
+        where: { id: idPraga },
+        select: { id: true },
+      });
+
+      if (!pragaExistente) {
+        throw new NotFoundException(`Praga com id ${idPraga} não encontrada.`);
+      }
+    }
     
     if (praga) {
       const createdPraga = await this.prisma.praga.create({

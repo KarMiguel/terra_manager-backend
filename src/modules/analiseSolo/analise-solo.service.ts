@@ -1,4 +1,4 @@
-﻿import { BadRequestException, Injectable } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AnaliseSolo, PrismaClient } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { calculatePagination } from '../../common/utils/calculatePagination';
@@ -34,6 +34,25 @@ export class AnaliseSoloService extends CrudService<AnaliseSolo, AnaliseSoloMode
 
     if (!usuario) {
       throw new BadRequestException('Usuário não encontrado.');
+    }
+
+    if (createAnaliseSoloDto.idZonaManejo) {
+      const zonaManejo = await this.prisma.zonaManejo.findUnique({
+        where: { id: createAnaliseSoloDto.idZonaManejo },
+        select: { id: true, idFazenda: true, fazenda: { select: { idUsuario: true } } },
+      });
+
+      if (!zonaManejo) {
+        throw new NotFoundException(
+          `Zona de manejo com ID ${createAnaliseSoloDto.idZonaManejo} não encontrada.`,
+        );
+      }
+
+      if (zonaManejo.fazenda.idUsuario !== userId) {
+        throw new BadRequestException(
+          `Zona de manejo com ID ${createAnaliseSoloDto.idZonaManejo} não pertence ao usuário logado.`,
+        );
+      }
     }
 
     const createdAnaliseSolo = await this.prisma.analiseSolo.create({
