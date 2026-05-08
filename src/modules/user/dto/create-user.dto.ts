@@ -22,7 +22,7 @@ export class CreateUserDto {
 
   @ApiProperty({
     description: 'Email do usuário.',
-    example: 'joao.silva@email.com',
+    example: 'carlosmiguel.dsa12@gmail.com',
   })
   @IsNotEmpty({ message: 'O campo "email" é obrigatório.' })
   @IsEmail({}, { message: 'O campo "email" deve conter um e-mail válido.' })

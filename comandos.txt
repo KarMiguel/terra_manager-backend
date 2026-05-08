@@ -1,0 +1,23 @@
+# Prisma - comandos uteis (desenvolvimento)
+
+# 1) Resetar banco e rodar todas as migrations novamente (APAGA TODOS OS DADOS)
+npx prisma migrate reset
+
+# 2) Gerar/atualizar Prisma Client
+npx prisma generate
+
+# 3) Rodar migrations em desenvolvimento sem resetar tudo
+npx prisma migrate dev
+
+# 4) Aplicar migrations pendentes em producao (sem apagar dados)
+npx prisma migrate deploy
+
+# 5) Executar seeds do projeto
+npm run seed
+npm run seed:praga
+npm run seed:plano
+
+# Fluxo comum DEV (reset completo):
+# npx prisma migrate reset
+# npx prisma generate
+# npm run seed
